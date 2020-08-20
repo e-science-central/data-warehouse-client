@@ -1,5 +1,6 @@
 db-credentials.json
 output/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -23,6 +24,8 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+.idea/
+.pylint.d/
 *.egg-info/
 .installed.cfg
 *.egg
