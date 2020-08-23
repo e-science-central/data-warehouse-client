@@ -15,6 +15,7 @@
 import csv
 import json
 import sys
+from typing import List
 
 import matplotlib.pyplot as pyplot
 import psycopg2
@@ -50,7 +51,7 @@ class DataWarehouse:
         cur = self.dbConnection.cursor()
         cur.execute(queryText)
         rows = cur.fetchall()
-        printRows(rows)
+        self.printRows(rows)
 
     def printRows(self, rows):
         """
@@ -68,14 +69,15 @@ class DataWarehouse:
 
         The output file has a header row, followed by a row for each measurement. This has the columns:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
-        :param rows: a list of rows returned by a query
+        :param rows: a list of rows returned by getMeasurements, getMeasurementsWithValueTest or
+                       getMeasurementGroupInstancesWithValueTests
         :param fname: the filename of the output CSV file
         """
         with open(fname, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(
-                ["Id", "Time", "Study", "Participant", "MeasurementType", "MeasurementTypeName", "MeasurementGroup",
-                 "MeasurementGroupInstance", "Trial", "ValType", "Value"])
+                ["Id", "Time", "Study", "Participant", "Measurement Type", "Measurement Type Name", "Measurement Group",
+                 "Measurement Group Instance", "Trial", "Value Type", "Value"])
             writer.writerows(rows)
 
     def formMeasurements(self, rows):
@@ -91,7 +93,6 @@ class DataWarehouse:
         """
         nRows: int = len(rows)
         nCols: int = 11
-        #  rowOut = [[0]*nCols]*nRows
         rowOut = [[None] * nCols for i in range(nRows)]
         for r in range(nRows):
             rowOut[r][0] = rows[r][0]  # id
@@ -125,6 +126,69 @@ class DataWarehouse:
             else:
                 print("typeval error of ", rows[r][9])
         return rowOut
+
+    def formMeasurementGroup(self,rows):
+        """
+        Takes the output of getMeasurementGroupInstancesWithValueTests and creates a result where each
+           measurement group instance occupies one row.
+        :param rows: list of rows returned by getMeasurementGroupInstancesWithValueTests or
+                     getMeasurements (where it returns whole measurement group instances - i.e. where
+                                      measurementType is not specified, but measurement group or
+                                      measurement group instance is specified)
+        :return: list of rows, each representing one measurement group instance, held in a list with elements:
+               groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
+                   value1, value2....
+               where value n is the value for the nth measurement in the instance (ordered by measurement type)
+        """
+        measurementGroup:int = rows[0][6]
+        nMeasurementsPerInstance: int = self.numTypesInAMeasurementGroup(measurementGroup)
+        nRows: int = len(rows) // nMeasurementsPerInstance # integer division in Python 3
+        nCols: int = 6 + nMeasurementsPerInstance
+        rowOut = [[None] * nCols for i in range(nRows)]
+        firstMeasurementInInstance:int = 0
+        for i in range(nRows):
+            rowOut[i][0] = rows[firstMeasurementInInstance][7]  # groupInstance
+            rowOut[i][1] = rows[firstMeasurementInInstance][1]  # time
+            rowOut[i][2] = rows[firstMeasurementInInstance][2]  # study
+            rowOut[i][3] = rows[firstMeasurementInInstance][3]  # participant
+            rowOut[i][4] = rows[firstMeasurementInInstance][6]  # measurementGroup
+            rowOut[i][5] = rows[firstMeasurementInInstance][8]  # trial
+            for m in range(nMeasurementsPerInstance):
+                rowOut[i][6+m] = rows[firstMeasurementInInstance+m][10]
+            firstMeasurementInInstance = firstMeasurementInInstance + nMeasurementsPerInstance
+        return rowOut
+
+    def printMeasurementGroupInstances(self, rows):
+        """
+        Prints a list of measurement group instances, converting the datetime to strings
+        :param rows: a list of measurement group instances in the format produced by formatMeasurementGroup
+        """
+        if len(rows)>0:
+           nTypes:int = len(rows[0])-6
+        for row in rows:
+            print(row[0], ",", str(row[1]),end='')
+            for i in range(nTypes+4):
+               print(",", row[2+i],end='')
+            print("")
+
+    def exportMeasurementGroupsAsCSV(self, rows, groupId, fname):
+        """
+        Stores measurements returned by queries in a CSV file
+        The input rows must be in the format produced by formMeasurementGroups
+        The output file has a header row, followed by a row for each measurement group instance. This has the columns:
+            id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
+        :param rows: a list of rows returned by formatMeasurementGroup
+        :param groupId: the measurementGroupId
+        :param fname: the filename of the output CSV file
+        """
+        typeNames:List[str] = self.getTypesInAMeasurementGroup(groupId)
+        with open(fname, "w", newline="") as f:
+            writer = csv.writer(f)
+            headerRow:List[str] = ["Measurement Group Instance","Time","Study","Participant","Measurement Group","Trial"]
+            for t in range(len(typeNames)):
+                headerRow.append(typeNames[t][0])
+            writer.writerow(headerRow)
+            writer.writerows(rows)
 
     def coreSQLforMeasurements(self):
         """
@@ -363,7 +427,7 @@ class DataWarehouse:
         """
         A helper function that returns the number of measurement types in a measurement group
         :param measurementGroup: measurement group id
-        :return: number of measurement types in the group
+        :return: number of measurement types in the measurement group
         """
         q = ""
         q += " SELECT "
@@ -376,6 +440,25 @@ class DataWarehouse:
         q += ";"
         numTypes = self.returnQueryResult(q)
         return numTypes[0][0]
+
+    def getTypesInAMeasurementGroup(self, measurementGroup):
+        """
+        A helper function that returns the names of the measurement types in a measurement group
+        :param measurementGroup: measurement group id
+        :return: list of names of the measurement types in the measurement group
+        """
+        q = ""
+        q += " SELECT "
+        q += "    measurementtypetogroup.name  "
+        q += " FROM "
+        q += "    measurementtypetogroup "
+        q += " WHERE "
+        q += "    measurementtypetogroup.measurementgroup = "
+        q += str(measurementGroup)
+        q += " ORDER BY measurementtypetogroup.measurementtype"
+        q += ";"
+        numTypes = self.returnQueryResult(q)
+        return numTypes
 
     def getMeasurementGroupInstancesWithValueTests(self, measurementGroup, valueTestConditions, study=-1,
                                                    participant=-1, trial=-1, startTime=-1, endTime=-1):

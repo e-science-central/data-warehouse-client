@@ -68,7 +68,7 @@ data_warehouse.plotMeasurementType(ms4, 155, 'output/example2.png')
 print("\nQ13: Create a CSV file for all measurements in study 3 with type = 155 where the value is greater that 9")
 data_warehouse.exportMeasurementAsCSV(ms4, 'output/example2.csv')
 
-print("\nQ14: all measurements in group 15")
+print("\nQ14: All measurements in group 15")
 ms5 = data_warehouse.getMeasurements(measurementGroup=15)
 data_warehouse.printMeasurements(ms5)
 
@@ -77,6 +77,12 @@ print("          and body mass is less than 55kgs")
 ms6 = data_warehouse.getMeasurementGroupInstancesWithValueTests(15, [(151, ">22"), (154, "<55.0")])
 data_warehouse.printMeasurements(ms6)
 
-print("\nQ16:The average of all measurements of type 155 from study 3")
+print("\nQ16: The average of all measurements of type 155 from study 3")
 ms7 = data_warehouse.aggregateMeasurements(155, "avg", study=3)
 data_warehouse.printRows(ms7)
+
+print("\nQ17: The output of Q15 with one Measurement Group instance per row")
+ms8 = data_warehouse.formMeasurementGroup(ms6)
+data_warehouse.printMeasurementGroupInstances(ms8)
+data_warehouse.exportMeasurementGroupsAsCSV(ms8,15,'output/example17.csv')
+
