@@ -123,6 +123,8 @@ class DataWarehouse:
                 rowOut[r][10] = rows[r][14]
             elif (rows[r][9] == 7):  # boundedint
                 rowOut[r][10] = rows[r][10]
+            elif (rows[r][9] == 8):  # boundedreal
+                rowOut[r][10] = rows[r][11]
             else:
                 print("typeval error of ", rows[r][9])
         return rowOut
@@ -347,6 +349,8 @@ class DataWarehouse:
             field = "measurement.valinteger"    # note we use the integer encoding for ordinals
         elif valType == 7:                      # bounded integer
             field = "measurement.valinteger"
+        elif valType == 8:                      # bounded real
+            field = "measurement.valreal"
         else:
             print("Error: valType out of range: ", valType)
         return field
