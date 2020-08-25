@@ -131,8 +131,7 @@ class DataWarehouse:
 
     def formMeasurementGroup(self,rows):
         """
-        Takes the output of getMeasurementGroupInstancesWithValueTests and creates a result where each
-           measurement group instance occupies one row.
+        Creates a result where each measurement group instance occupies one row.
         :param rows: list of rows returned by getMeasurementGroupInstancesWithValueTests or
                      getMeasurements (where it returns whole measurement group instances - i.e. where
                                       measurementType is not specified, but measurement group or
@@ -163,6 +162,11 @@ class DataWarehouse:
     def printMeasurementGroupInstances(self, rows):
         """
         Prints a list of measurement group instances, converting the datetime to strings
+        The input rows must be in the format produced by formMeasurementGroups
+        The output file has a row for each measurement group instance. The fields are:
+            groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
+                   value1, value2....
+               where value n is the value for the nth measurement in the instance (ordered by measurement type)
         :param rows: a list of measurement group instances in the format produced by formatMeasurementGroup
         """
         if len(rows)>0:
@@ -175,10 +179,12 @@ class DataWarehouse:
 
     def exportMeasurementGroupsAsCSV(self, rows, groupId, fname):
         """
-        Stores measurements returned by queries in a CSV file
+        Stores measurements returned by formMeasurementGroups in a CSV file
         The input rows must be in the format produced by formMeasurementGroups
-        The output file has a header row, followed by a row for each measurement group instance. This has the columns:
-            id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
+        The output file has a header row, followed by a row for each measurement group instance. The table has columns:
+            groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
+                   value1, value2....
+               where value n is the value for the nth measurement in the instance (ordered by measurement type)
         :param rows: a list of rows returned by formatMeasurementGroup
         :param groupId: the measurementGroupId
         :param fname: the filename of the output CSV file
