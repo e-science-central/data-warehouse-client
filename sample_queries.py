@@ -86,3 +86,21 @@ ms8 = data_warehouse.formMeasurementGroup(ms6)
 data_warehouse.printMeasurementGroupInstances(ms8)
 data_warehouse.exportMeasurementGroupsAsCSV(ms8,15,'output/example17.csv')
 
+print("\nQ18: All measurements for Study 5")
+ms18 = data_warehouse.getMeasurements(study=5)
+data_warehouse.printMeasurements(ms18)
+
+print("\nQ19: All measurements for Study 5 in tabular form")
+mgs19 = data_warehouse.formMeasurementGroup(ms18)
+data_warehouse.printMeasurementGroupInstances(mgs19)
+data_warehouse.exportMeasurementGroupsAsCSV(mgs19,20,'output/example19.csv')
+
+print("\nQ20: All measurements for Study 5, trial 2 in tabular form")
+ms20 = data_warehouse.getMeasurements(study=5,trial=2)
+mgs20 = data_warehouse.formMeasurementGroup(ms20)
+data_warehouse.printMeasurementGroupInstances(mgs20)
+
+print("\nQ21: All measurements for Study 5, trial 3 in tabular form")
+ms21 = data_warehouse.getMeasurements(study=5,trial=3)
+mgs21 = data_warehouse.formMeasurementGroup(ms21)
+data_warehouse.printMeasurementGroupInstances(mgs21)

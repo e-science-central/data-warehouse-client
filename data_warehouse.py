@@ -141,23 +141,26 @@ class DataWarehouse:
                    value1, value2....
                where value n is the value for the nth measurement in the instance (ordered by measurement type)
         """
-        measurementGroup:int = rows[0][6]
-        nMeasurementsPerInstance: int = self.numTypesInAMeasurementGroup(measurementGroup)
-        nRows: int = len(rows) // nMeasurementsPerInstance # integer division in Python 3
-        nCols: int = 6 + nMeasurementsPerInstance
-        rowOut = [[None] * nCols for i in range(nRows)]
-        firstMeasurementInInstance:int = 0
-        for i in range(nRows):
-            rowOut[i][0] = rows[firstMeasurementInInstance][7]  # groupInstance
-            rowOut[i][1] = rows[firstMeasurementInInstance][1]  # time
-            rowOut[i][2] = rows[firstMeasurementInInstance][2]  # study
-            rowOut[i][3] = rows[firstMeasurementInInstance][3]  # participant
-            rowOut[i][4] = rows[firstMeasurementInInstance][6]  # measurementGroup
-            rowOut[i][5] = rows[firstMeasurementInInstance][8]  # trial
-            for m in range(nMeasurementsPerInstance):
-                rowOut[i][6+m] = rows[firstMeasurementInInstance+m][10]
-            firstMeasurementInInstance = firstMeasurementInInstance + nMeasurementsPerInstance
-        return rowOut
+        if len(rows) > 0:
+            measurementGroup:int = rows[0][6]
+            nMeasurementsPerInstance: int = self.numTypesInAMeasurementGroup(measurementGroup)
+            nRows: int = len(rows) // nMeasurementsPerInstance # integer division in Python 3
+            nCols: int = 6 + nMeasurementsPerInstance
+            rowOut = [[None] * nCols for i in range(nRows)]
+            firstMeasurementInInstance:int = 0
+            for i in range(nRows):
+                rowOut[i][0] = rows[firstMeasurementInInstance][7]  # groupInstance
+                rowOut[i][1] = rows[firstMeasurementInInstance][1]  # time
+                rowOut[i][2] = rows[firstMeasurementInInstance][2]  # study
+                rowOut[i][3] = rows[firstMeasurementInInstance][3]  # participant
+                rowOut[i][4] = rows[firstMeasurementInInstance][6]  # measurementGroup
+                rowOut[i][5] = rows[firstMeasurementInInstance][8]  # trial
+                for m in range(nMeasurementsPerInstance):
+                    rowOut[i][6+m] = rows[firstMeasurementInInstance+m][10]
+                firstMeasurementInInstance = firstMeasurementInInstance + nMeasurementsPerInstance
+            return rowOut
+        else:
+            return []
 
     def printMeasurementGroupInstances(self, rows):
         """
