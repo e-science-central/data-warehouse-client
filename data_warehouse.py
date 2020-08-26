@@ -16,6 +16,7 @@ import csv
 import json
 import sys
 from typing import List
+from tabulate import tabulate
 
 import matplotlib.pyplot as pyplot
 import psycopg2
@@ -43,23 +44,13 @@ class DataWarehouse:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successfull! Running queries.\n")
 
-    def printQueryResult(self, queryText):
-        """
-        executes a query and prints each row of the result
-        :param queryText: the SQL query to be executed
-        """
-        cur = self.dbConnection.cursor()
-        cur.execute(queryText)
-        rows = cur.fetchall()
-        self.printRows(rows)
-
-    def printRows(self, rows):
+    def printRows(self, rows, header:List[str]):
         """
         prints each row returned by a query
         :param rows: a list of rows. Each row is a list of fields
+        :param rows: a list of field names
         """
-        for row in rows:
-            print(row)
+        print(tabulate(rows, headers=header))
 
     def exportMeasurementAsCSV(self, rows, fname):
         """
@@ -162,7 +153,7 @@ class DataWarehouse:
         else:
             return []
 
-    def printMeasurementGroupInstances(self, rows):
+    def printMeasurementGroupInstances(self, rows, groupId):
         """
         Prints a list of measurement group instances, converting the datetime to strings
         The input rows must be in the format produced by formMeasurementGroups
@@ -171,14 +162,23 @@ class DataWarehouse:
                    value1, value2....
                where value n is the value for the nth measurement in the instance (ordered by measurement type)
         :param rows: a list of measurement group instances in the format produced by formatMeasurementGroup
+        :param groupId: the measurementGroupId
         """
-        if len(rows)>0:
-           nTypes:int = len(rows[0])-6
-        for row in rows:
-            print(row[0], ",", str(row[1]),end='')
-            for i in range(nTypes+4):
-               print(",", row[2+i],end='')
-            print("")
+        typeNames: List[str] = self.getTypesInAMeasurementGroup(groupId)
+        nTypes:int = len(typeNames)
+        headerRow: List[str] = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group",
+                                "Trial"]
+        for t in range(nTypes):
+            headerRow.append(typeNames[t][0])
+        print(tabulate(rows, headers=headerRow))
+        #for f in range(len(headerRow)-1):
+        #    print(headerRow[f],",",sep='',end='')
+        #print(headerRow[len(headerRow)-1])
+        #for row in rows:
+        #    print(row[0], ",", str(row[1]),end='')
+        #    for i in range(2,5+nTypes):
+        #       print(",", row[i],end='')
+        #    print("")
 
     def exportMeasurementGroupsAsCSV(self, rows, groupId, fname):
         """
@@ -388,7 +388,7 @@ class DataWarehouse:
                                                           groupInstance, trial, startTime, endTime)
         q += w
         rawResult = self.returnQueryResult(q)
-        return rawResult[0]
+        return rawResult[0][0]
 
     def makeValueTest(self, valType, valueTestCondition):
         """
@@ -544,9 +544,9 @@ class DataWarehouse:
         :param rows: a list of measurements with the elements id,time,study,participant,measurementType,
                         typeName,measurementGroup,groupInstance,trial,valType,value
         """
-        for row in rows:
-            print(row[0], ",", str(row[1]), ",", row[2], ",", row[3], ",", row[4], ",", row[5], ",", row[6], ",",
-                  row[7], ",", row[8], ",", row[9], ",", row[10])
+        headerRow: List[str] = ["Id", "Time", "Study", "Participant", "MeasurementType", "Type Name",
+                                "Measurement Group","Group Instance", "Trial", "Val Type", "Value"]
+        print(tabulate(rows, headers=headerRow))
 
     def getMeasurementTypeInfo(self, measurementTypeId):
         """
