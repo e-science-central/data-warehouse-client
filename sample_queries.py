@@ -105,3 +105,12 @@ print("\nQ21: All measurements for Study 5, trial 3 in tabular form\n")
 ms21 = data_warehouse.getMeasurements(study=5,trial=3)
 mgs21 = data_warehouse.formMeasurementGroup(ms21)
 data_warehouse.printMeasurementGroupInstances(mgs21,20)
+
+print("\nQ22: All measurements for Study 5, from 2018\n")
+yearQuery:str = "SELECT measurement.id,measurement.time,measurement.measurementtype,measurement.valreal" +\
+                " FROM  measurement " + \
+                " WHERE  EXTRACT(YEAR FROM measurement.time) = '2018'"
+ms22 = data_warehouse.returnQueryResult(yearQuery)
+ms22Header = ["Id", "Time", "Measurement Type", "Value"]
+data_warehouse.printRows(ms22,ms22Header)
+
