@@ -171,14 +171,6 @@ class DataWarehouse:
         for t in range(nTypes):
             headerRow.append(typeNames[t][0])
         print(tabulate(rows, headers=headerRow))
-        #for f in range(len(headerRow)-1):
-        #    print(headerRow[f],",",sep='',end='')
-        #print(headerRow[len(headerRow)-1])
-        #for row in rows:
-        #    print(row[0], ",", str(row[1]),end='')
-        #    for i in range(2,5+nTypes):
-        #       print(",", row[i],end='')
-        #    print("")
 
     def exportMeasurementGroupsAsCSV(self, rows, groupId, fname):
         """
