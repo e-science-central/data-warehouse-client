@@ -198,6 +198,13 @@ class DataWarehouse:
         Creates the select and from clauses used by many of the functions that query the data warehouse
         :return: the select and from clauses used by several of the functions that query the data warehouse
         """
+        return self.coreSQLSelectForMeasurements() + self.coreSQLFromForMesaurements()
+
+    def coreSQLSelectForMeasurements(self):
+        """
+         Creates the select clause used by many of the functions that query the data warehouse
+         :return: the select clause used by several of the functions that query the data warehouse
+         """
         q: str
         q = ""
         q += " SELECT "
@@ -206,12 +213,11 @@ class DataWarehouse:
         q += "    measurement.measurementgroup,measurement.groupinstance,measurement.trial,"
         q += "    measurement.valtype, measurement.valinteger,"
         q += "    measurement.valreal , textvalue.textval, datetimevalue.datetimeval,category.categoryname "
-        q += self.coreSQLFromForMesaurements()
         return q
 
     def coreSQLFromForMesaurements(self):
         """
-        Creates the select and from clauses used by many of the functions that query the data warehouse
+        Creates the from clause used by many of the functions that query the data warehouse
         :return: the from clause used by several of the functions that query the data warehouse
         """
         q: str
@@ -409,7 +415,6 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        # Returns all the measurements of type measurementType that match the valueTestCondition (expressed using SQL syntax) and meet the conditions from the other parameters
         q = self.coreSQLforMeasurements()
         (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
                                                           groupInstance, trial, startTime, endTime)
@@ -424,6 +429,41 @@ class DataWarehouse:
             q += " AND " # if there have already been conditions
         cond = self.makeValueTest(valType, valueTestCondition)
         q += cond
+        q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
+        rawResults = self.returnQueryResult(q)
+        return self.formMeasurements(rawResults)
+
+    def getMeasurementsByCohort(self, cohortId, study=-1, participant=-1, measurementType=-1,
+                                measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
+        """
+        Find all measurements in a cohort that meet the criteria.
+        :param cohortId: the value of the category in measurementType 181 that represents the condition
+        :param study: a study id
+        :param participant: a participant id
+        :param measurementGroup: a measurementGroup
+        :param groupInstance: a groupInstance
+        :param trial: a trial id
+        :param startTime: the start of a time period of interest
+        :param endTime: the end of a time period of interest
+        :return: a list of measurements. Each measurement is held in a list with the following fields:
+            id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
+        """
+        c: str
+        c  = "" # get all particpants in a cohort
+        c += " SELECT measurement.participant "
+        c += " FROM   measurement "
+        c += " WHERE  measurement.measurementtype = 181 AND" # the measurementType folding the condition
+        c += "        measurement.valinteger      = " + str(cohortId)
+
+        q:str = self.coreSQLforMeasurements()
+        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
+                                                          groupInstance, trial, startTime, endTime)
+        q += w
+        if (conditionCount == 0):
+            q += " WHERE " # if this is the first condition in the where clause
+        else:
+            q += " AND " # if there have already been conditions
+        q += " measurement.participant IN (" + c + ") "
         q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
         rawResults = self.returnQueryResult(q)
         return self.formMeasurements(rawResults)

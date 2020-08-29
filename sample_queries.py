@@ -91,26 +91,33 @@ print("\nQ18: All measurements for Study 5\n")
 ms18 = data_warehouse.getMeasurements(study=5)
 data_warehouse.printMeasurements(ms18)
 
-print("\nQ19: All measurements for Study 5 in tabular form\n")
-mgs19 = data_warehouse.formMeasurementGroup(ms18)
+print("\nQ19: All measurements in group 20 for Study 5 in tabular form\n")
+ms19 = data_warehouse.getMeasurements(study=5,measurementGroup=20)
+mgs19 = data_warehouse.formMeasurementGroup(ms19)
 data_warehouse.printMeasurementGroupInstances(mgs19,20)
 data_warehouse.exportMeasurementGroupsAsCSV(mgs19,20,'output/example19.csv')
 
 print("\nQ20: All measurements for Study 5, trial 2 in tabular form\n")
-ms20 = data_warehouse.getMeasurements(study=5,trial=2)
+ms20 = data_warehouse.getMeasurements(study=5,trial=2, measurementGroup=20)
 mgs20 = data_warehouse.formMeasurementGroup(ms20)
 data_warehouse.printMeasurementGroupInstances(mgs20,20)
 
 print("\nQ21: All measurements for Study 5, trial 3 in tabular form\n")
-ms21 = data_warehouse.getMeasurements(study=5,trial=3)
+ms21 = data_warehouse.getMeasurements(study=5,trial=3,measurementGroup=20)
 mgs21 = data_warehouse.formMeasurementGroup(ms21)
 data_warehouse.printMeasurementGroupInstances(mgs21,20)
 
-print("\nQ22: All measurements for Study 5, from 2018\n")
+print("\nQ22: All measurements for Study 5, measurement Group 20, from 2018\n")
 yearQuery:str = "SELECT measurement.id,measurement.time,measurement.measurementtype,measurement.valreal" +\
                 " FROM  measurement " + \
-                " WHERE  EXTRACT(YEAR FROM measurement.time) = '2018'"
+                " WHERE  EXTRACT(YEAR FROM measurement.time) = '2018' AND " +\
+                "        measurement.measurementgroup = 20;"
+
 ms22 = data_warehouse.returnQueryResult(yearQuery)
 ms22Header = ["Id", "Time", "Measurement Type", "Value"]
 data_warehouse.printRows(ms22,ms22Header)
+
+print("\nQ23: Cohort-based analysis: all measurements from all participants with Multiple Sclerosis")
+ms23 = data_warehouse.getMeasurementsByCohort(2,study=5)
+data_warehouse.printMeasurements(ms23)
 
