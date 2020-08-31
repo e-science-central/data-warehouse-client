@@ -121,3 +121,15 @@ print("\nQ23: Cohort-based analysis: all measurements from all participants with
 ms23 = data_warehouse.getMeasurementsByCohort(2,study=5)
 data_warehouse.printMeasurements(ms23)
 
+print("\nQ24: Test Inserts: insert an integer value")
+newrowid = data_warehouse.insertOneMeasurement(6,23,182,0,333,participant=36)
+print(newrowid)
+
+print("\nQ25: Test Inserts: insert a measurement group ")
+newrowid = data_warehouse.insertMeasurementGroup(6,22,[(182,0,58),(183,1,99.94),(184,2,"The quick brown fox"),
+                                                       (185,3,'2020-03-08 14:05:06'),
+                                                       (186,4,1),(187,5,1),(188,6,2),
+                                                       (189,7,4),(190,8,3.142)],participant=36)
+ms25 = data_warehouse.getMeasurements(groupInstance=newrowid)
+mgs25 = data_warehouse.formMeasurementGroup(ms25)
+data_warehouse.printMeasurementGroupInstances(mgs25,22)

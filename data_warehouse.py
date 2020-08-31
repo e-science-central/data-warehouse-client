@@ -17,10 +17,9 @@ import json
 import sys
 from typing import List
 from tabulate import tabulate
-
+import datetime
 import matplotlib.pyplot as pyplot
 import psycopg2
-
 
 class DataWarehouse:
     def __init__(self, credentialsFile, dbName):
@@ -42,7 +41,7 @@ class DataWarehouse:
             self.dbConnection = psycopg2.connect(conn_string)
         except Exception as e:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
-        print("Init successfull! Running queries.\n")
+        print("Init successful! Running queries.\n")
 
     def printRows(self, rows, header:List[str]):
         """
@@ -632,14 +631,25 @@ class DataWarehouse:
         rowsq = cur.fetchall()
         return rowsq
 
-    def execQuery(self, queryText):
+    def execInsertWithReturn(self, queryText):
         """
-        executes SQL and commits the outcome. It is used to execute INSERT, UPDATE and DELETE.
+        Executes INSERT, commits the outcome and returns the result from the RETURNING clause.
+        :param queryText: the SQL
+        :return the result from the RETURNING clause
+        """
+        cur = self.dbConnection.cursor()
+        cur.execute(queryText)
+        self.dbConnection.commit()
+        return cur.fetchone()
+
+    def execSQLWithNoReturn(self,queryText):
+        """
+        executes SQL and commits the outcome. Used to execute INSERT, UPDATE and DELETE statements with no RETURNING.
         :param queryText: the SQL
         """
         cur = self.dbConnection.cursor()
         cur.execute(queryText)
-        cur.commit()
+        self.dbConnection.commit()
 
     def getAllMeasurementGroupsAndTypesInAStudy(self, studyId):
         """
@@ -661,3 +671,126 @@ class DataWarehouse:
         q += str(studyId)
         q += " ORDER BY measurementtypetogroup.measurementgroup, measurementtypetogroup.measurementtype; "
         return self.returnQueryResult(q)
+
+    def insertOneMeasurement(self,study,measurementGroup,measurementType,valType,value,
+                             time =-1,trial = None,participant = None,source = None): # None maps to SQL NULL
+        """
+        Insert one measurement
+        :param study: the study id
+        :param measurementGroup: the measurement group
+        :param measurementType: the measurement type
+        :param valType: the value type
+        :param value: the measurement value
+        :param time: the time the measurement was taken. It defaults to the current time
+        :param trial: optional trial id
+        :param participant: optional participant id
+        :param source: optional source
+        :return the id of the measurement
+        """
+        if time == -1:                     # use the current date and time if none is specified
+            time = datetime.datetime.now() # use the current date and time if none is specified
+
+        if valType in [0,4,5,6,7]: # the value must be stored in valInteger
+            valInteger = value
+            valReal    = None
+        elif valType in [1,8]:     # the value must be stored in valReal
+            valInteger = None
+            valReal    = value
+        elif valType in [2,3]:     # the value must be stored in the text or datetime tables
+            valInteger = None
+            valReal    = None
+        else:
+            print("Error in valType in insertOneMeasurement")
+        groupInstance = 0
+        cur = self.dbConnection.cursor()
+        cur.execute("""
+                    INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
+                                             measurementtype,participant,source,valtype,valinteger,valreal)
+                    VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                    """,
+                    (time, study, trial, measurementGroup,groupInstance,measurementType,participant,
+                     source,valType,valInteger,valReal))
+        id = cur.fetchone()[0]
+        groupInstance = id
+        # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
+        cur.execute("""
+                    UPDATE measurement SET groupinstance = %s
+                    WHERE id = %s;
+                    """,
+                    (groupInstance,id))
+
+        if valType == 2: # it's a Text Value so make entry in textvalue table
+            cur.execute("""
+                        INSERT INTO textvalue(measurement,textval,study)
+                        VALUES (%s, %s, %s);
+                        """,
+                        (id, value, study))
+        if valType == 3: # it's a DateTime value so make entry in datetimevalue table
+            cur.execute("""
+                        INSERT INTO datetimevalue(measurement,datetimeval,study)
+                        VALUES (%s, %s, %s);
+                        """,
+                        (id, value, study))
+        self.dbConnection.commit()
+        return id
+
+    def insertMeasurementGroup(self,study,measurementGroup,values,
+                               time =-1,trial = None,participant = None,source = None): # None maps to SQL NULL
+        """
+         Insert one measurement group
+         :param study: the study id
+         :param measurementGroup: the measurement group
+         :param a list of the values from the measurement group in the form (measurementType,valType,value)
+         :param time: the time the measurement was taken. It defaults to the current time
+         :param trial: optional trial id
+         :param participant: optional participant id
+         :param source: optional source
+         :return the measurement group instance
+         """
+        if time == -1:                     # use the current date and time if none is specified
+            time = datetime.datetime.now() # use the current date and time if none is specified
+
+        groupInstance = 0
+        cur = self.dbConnection.cursor()
+        for (measurementType,valType,value) in values:
+            if valType in [0,4,5,6,7]: # the value must be stored in valInteger
+                valInteger = value
+                valReal    = None
+            elif valType in [1,8]:     # the value must be stored in valReal
+                valInteger = None
+                valReal    = value
+            elif valType in [2,3]:     # the value must be stored in the text or datetime tables
+                valInteger = None
+                valReal    = None
+            else:
+                print("Error in valType in insertMeasurementGroup")
+            cur.execute("""
+                        INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
+                                                 measurementtype,participant,source,valtype,valinteger,valreal)
+                        VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                        """,
+                        (time, study, trial, measurementGroup,groupInstance,measurementType,participant,
+                         source,valType,valInteger,valReal))
+            id = cur.fetchone()[0]
+            if groupInstance == 0:
+                groupInstance = id
+            # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
+                cur.execute("""
+                            UPDATE measurement SET groupinstance = %s
+                            WHERE id = %s;
+                            """,
+                            (groupInstance,groupInstance))
+            if valType == 2: # it's a Text Value so make entry in textvalue table
+                cur.execute("""
+                            INSERT INTO textvalue(measurement,textval,study)
+                            VALUES (%s, %s, %s);
+                            """,
+                            (id, value, study))
+            if valType == 3: # it's a DateTime value so make entry in datetimevalue table
+                cur.execute("""
+                            INSERT INTO datetimevalue(measurement,datetimeval,study)
+                            VALUES (%s, %s, %s);
+                            """,
+                            (id, value, study))
+        self.dbConnection.commit()
+        return groupInstance
