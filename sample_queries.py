@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import data_warehouse
+import warehouse_checker
 
 #Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
@@ -133,3 +134,4 @@ newrowid = data_warehouse.insertMeasurementGroup(6,22,[(182,0,58),(183,1,99.94),
 ms25 = data_warehouse.getMeasurements(groupInstance=newrowid)
 mgs25 = data_warehouse.formMeasurementGroup(ms25)
 data_warehouse.printMeasurementGroupInstances(mgs25,22)
+
