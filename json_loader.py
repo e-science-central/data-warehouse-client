@@ -79,7 +79,7 @@ def get_participantid(studyid,js):
     res =  data_warehouse.returnQueryResult(q)
     return res[0]
 
-def mk_e_screening_chf(js):
+def mk_e_screening_chf(js):   #measurement group 24
     """
     transforms a e-screening-chf json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -99,7 +99,24 @@ def mk_e_screening_chf(js):
             (200, 4, mk_01(data['literate'])),
             (201, 4, mk_01(data['shoe']))]
 
-def mk_walking_aids_group(js):
+def mk_e_screening_ha(js): # measurement group 25
+    """
+        transforms a e-screening-ha json form into the triples used by insertMeasurementGroup to
+            store each measurement that is in the form
+        :param js: the json form
+        :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
+    """
+    data = js['data']
+    return [(191, 4, mk_01(data['metre'])),
+            (193, 4, mk_01(data['ageval'])),
+            (195, 4, mk_01(data['willing'])),
+            (196, 4, mk_01(data['eligible'])),
+            (197, 4, mk_01(data['available'])),
+            (199, 4, mk_01(data['history'])),
+            (200, 4, mk_01(data['literate'])),
+            (201, 4, mk_01(data['shoe']))]
+
+def mk_walking_aids_group(js):     # measurement group 4
     """
     transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -115,7 +132,7 @@ def mk_walking_aids_group(js):
              (23 ,5, mk_category(data['outdoor'],['None','One cane/crutch','Two crutches','Walker','Rollator','Other'])),
              (24 ,5, mk_category(data['outdoorfreq'],['Regularly', 'Occasionally']))]
 
-def mk_falls_description(js):
+def mk_falls_description(js):  # measurement group 8
     """
     transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
        store each measurement that is in the form
@@ -170,4 +187,7 @@ json_load(4,8,mk_falls_description,'input\h-falls-description.json')
 
 print("\n Load measurements from i-medication-usage json file\n")
 json_load(4,13,mk_i_medication_usage,'input\i-medication-usage.json')
+
+print("\n Load measurements from e-screening-ha json file\n")
+json_load(4,25,mk_e_screening_ha,'input\e-screening-ha.json')
 
