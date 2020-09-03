@@ -127,37 +127,47 @@ def mk_falls_description(js):
             (49,  2, data['falldesc']),
             (50,  2, data['fallinjury'])]
 
+def mk_i_medication_usage(js): # measurement group 13
+    """
+    transforms a i-medication-usage.json form into the triples used by insertMeasurementGroup to
+          store each measurement that is in the form
+    :param js: the json form
+    :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
+    """
+    data = js['data']
+    return  [(108, 2, data['drug']),
+             (109, 2, data['dose'])] + \
+             split_enum(data['freq'], [110, 111, 112, 113],['Morning', 'Afternoon', 'Evening', 'At night']) + \
+            [(114, 5, mk_category(data['reg' ],['Regular', 'Occasional'])),
+             (115, 5, mk_category(data['oral'],['Oral', 'Sub-cutaneous', 'Intravenous']))]
+
+def json_load(study,measurement_group,load_fn,fname):
+    """
+    load contents of json file into the data warehouse and then retrieve it and print it
+    :param study: study id
+    :param measurement_group: measurement group id
+    :param load_fn: the function to perform the load
+    :param fname: filename to load from
+    """
+    js = load_json_file(fname)
+    participantid = get_participantid(study, js)
+    instanceid = data_warehouse.insertMeasurementGroup(study, measurement_group, load_fn(js), participant=participantid)
+    newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
+    dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
+    data_warehouse.printMeasurementGroupInstances(dataInTabularForm, measurement_group)
+
 #Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 print("\n Load measurements from e-screening-chf json file\n")
-js = load_json_file('input\e-screening-chf.json')
-participantid = get_participantid(4,js)
-# insert new instance in the warehouse
-instanceid = data_warehouse.insertMeasurementGroup(4,24,mk_e_screening_chf(js),participant=participantid)
-
-newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
-dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
-data_warehouse.printMeasurementGroupInstances(dataInTabularForm,24)
+json_load(4,24,mk_e_screening_chf,'input\e-screening-chf.json')
 
 print("\n Load measurements from j-walking-aids json file\n")
-js = load_json_file('input\j-walking-aids.json')
-participantid = get_participantid(4,js)
-
-# insert new instance in the warehouse
-instanceid = data_warehouse.insertMeasurementGroup(4,4,mk_walking_aids_group(js),participant=participantid)
-
-newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
-dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
-data_warehouse.printMeasurementGroupInstances(dataInTabularForm,4)
+json_load(4,4,mk_walking_aids_group,'input\j-walking-aids.json')
 
 print("\n Load measurements from h-falls-description json file\n")
-js = load_json_file('input\h-falls-description.json')
-participantid = get_participantid(4,js)
+json_load(4,8,mk_falls_description,'input\h-falls-description.json')
 
-# insert new instance in the warehouse
-instanceid = data_warehouse.insertMeasurementGroup(4,8,mk_falls_description(js),participant=participantid)
+print("\n Load measurements from i-medication-usage json file\n")
+json_load(4,13,mk_i_medication_usage,'input\i-medication-usage.json')
 
-newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
-dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
-data_warehouse.printMeasurementGroupInstances(dataInTabularForm,8)
