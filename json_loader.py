@@ -115,10 +115,22 @@ def mk_walking_aids_group(js):
              (23 ,5, mk_category(data['outdoor'],['None','One cane/crutch','Two crutches','Walker','Rollator','Other'])),
              (24 ,5, mk_category(data['outdoorfreq'],['Regularly', 'Occasionally']))]
 
+def mk_falls_description(js):
+    """
+    transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
+       store each measurement that is in the form
+    :param js: the json form
+    :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
+    """
+    data = js['data']
+    return [(48,  7, data['fallint']),
+            (49,  2, data['falldesc']),
+            (50,  2, data['fallinjury'])]
+
 #Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
-print("\n Test of loading database from e-screening-chf json file\n")
+print("\n Load measurements from e-screening-chf json file\n")
 js = load_json_file('input\e-screening-chf.json')
 participantid = get_participantid(4,js)
 # insert new instance in the warehouse
@@ -128,7 +140,7 @@ newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
 dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
 data_warehouse.printMeasurementGroupInstances(dataInTabularForm,24)
 
-print("\n Test of loading database from j-walking-aids json file\n")
+print("\n Load measurements from j-walking-aids json file\n")
 js = load_json_file('input\j-walking-aids.json')
 participantid = get_participantid(4,js)
 
@@ -139,3 +151,13 @@ newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
 dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
 data_warehouse.printMeasurementGroupInstances(dataInTabularForm,4)
 
+print("\n Load measurements from h-falls-description json file\n")
+js = load_json_file('input\h-falls-description.json')
+participantid = get_participantid(4,js)
+
+# insert new instance in the warehouse
+instanceid = data_warehouse.insertMeasurementGroup(4,8,mk_falls_description(js),participant=participantid)
+
+newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
+dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
+data_warehouse.printMeasurementGroupInstances(dataInTabularForm,8)
