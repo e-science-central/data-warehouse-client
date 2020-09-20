@@ -47,50 +47,44 @@ study_id = 4
 esc_project = "BB001"
 project = mc.getProjectByStudyCode(esc_project)
 
-esc_parts = participant_loader_from_esc.get_all_participants_in_esc_study(mc, project.id)
-print("Participants in e-Science Central")
-for p in esc_parts:
-    print(p)
+#print(f'Participants in e-Science Central Project {esc_project}:')
+#esc_parts = participant_loader_from_esc.get_all_participants_in_esc_study(mc, project.id)
+#print(*esc_parts, sep='\n')
 
-dw_parts = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
-print("Participants in Data Warehouse")
-for p in dw_parts:
-    print(p)
+#print(f'Participants in Data Warehouse Study {study_id}')
+#dw_parts = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
+#print(*dw_parts, sep='\n')
 
-print("New Participants")
-new_parts = participant_loader_from_esc.list_difference(esc_parts, dw_parts)
-for p in new_parts:
-    print(p)
-
+print(f'Insert new participants from e-Science Central project {esc_project} into Data Warehouse study {study_id}')
 new_participants = participant_loader_from_esc.insert_new_participants_in_warehouse(mc, data_warehouse,
                                                                                     project.id, study_id)
-print("Inserted Participants")
-for p in new_participants:
-    print(p)
+n_new_participants = len(new_participants)
+print(f'There were {n_new_participants} added to the Data Warehouse:')
+print(*new_participants, sep='\n')
 
-dw_participants = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
-print("Participants now in the DW")
-for p in dw_participants:
-    print(p)
+#print(f'Participants now in the DW for Study {study_id}')
+#dw_participants = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
+#print(*dw_participants, sep='\n')
 
+print(f'Copy events from e-Science Central project {esc_project} into Data Warehouse study {study_id}')
+print(f'Events in e-Science Central Project {esc_project}:')
 events = warehouse_loader_from_esc.extract_events_from_esc(mc, esc_project)
-for e in events:
-    print(e)
+print(*events, sep='\n')
 
 # find unique types of data:
 # event_types = warehouse_loader_from_esc.get_data_types_from_esc(mc, esc_project)
 # print("All Event Types")
-# for e in event_types:
-#    print(e)
+# print(*event_types, sep='\n')
 
 # print all mapper functions
-print("All Mapper Functions")
-for f in mobilise_load_fns.fn_mapper().keys():
-    print(f)
+# print("All Mapper Functions")
+# print(*(mobilise_load_fns.fn_mapper().keys()), sep='\n')
 
 unique_id_measurement_type = 220  # the measurement type that holds the unique id for each measurement group
 
-print("Load Data from e-Science Central into Data Warehouse")
+print(f'\nLoad Data from e-Science Central Project {esc_project} into Data Warehouse Study {study_id}')
 new_instances = warehouse_loader_from_esc.load_dw_from_esc( mc, data_warehouse, study_id, esc_project,
                                                             unique_id_measurement_type, mobilise_load_fns.fn_mapper())
+n_instances_added = len(new_instances)
+print(f'There were {n_instances_added} New Instances added:')
 print(*new_instances, sep='\n')
