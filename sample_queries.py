@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import data_warehouse
-import warehouse_checker
+#import warehouse_checker
 
 #Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
@@ -31,11 +31,11 @@ print("\nQ3: All the measurements of type 1\n")
 q3res = data_warehouse.getMeasurements(measurementType=1)
 data_warehouse.printMeasurements(q3res)
 
-print("\nQ4: All measurements in Measurement Group 1, within Study 1(\n")
+print("\nQ4: All measurements in Measurement Group 1, within Study 1\n")
 q4res = data_warehouse.getMeasurements(measurementGroup=1, study=1)
 data_warehouse.printMeasurements(q4res)
 
-print("\nQ5: All results on participant 1\n")
+print("\nQ5: All results for participant 1\n")
 resultRows = data_warehouse.getMeasurements(participant=1)
 data_warehouse.printMeasurements(resultRows)
 

@@ -21,6 +21,7 @@ import datetime
 import matplotlib.pyplot as pyplot
 import psycopg2
 
+
 class DataWarehouse:
     def __init__(self, credentialsFile, dbName):
         # construct a connection to the warehouse
@@ -43,11 +44,11 @@ class DataWarehouse:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
 
-    def printRows(self, rows, header:List[str]):
+    def printRows(self, rows, header: List[str]):
         """
         prints each row returned by a query
         :param rows: a list of rows. Each row is a list of fields
-        :param rows: a list of field names
+        :param header: a list of field names
         """
         print(tabulate(rows, headers=header))
 
@@ -134,7 +135,7 @@ class DataWarehouse:
         if len(rows) > 0:
             measurementGroup:int = rows[0][6]
             nMeasurementsPerInstance: int = self.numTypesInAMeasurementGroup(measurementGroup)
-            nRows: int = len(rows) // nMeasurementsPerInstance # integer division in Python 3
+            nRows: int = len(rows) // nMeasurementsPerInstance  # integer division in Python 3
             nCols: int = 6 + nMeasurementsPerInstance
             rowOut = [[None] * nCols for i in range(nRows)]
             firstMeasurementInInstance:int = 0
@@ -197,7 +198,7 @@ class DataWarehouse:
         Creates the select and from clauses used by many of the functions that query the data warehouse
         :return: the select and from clauses used by several of the functions that query the data warehouse
         """
-        return self.coreSQLSelectForMeasurements() + self.coreSQLFromForMesaurements()
+        return self.coreSQLSelectForMeasurements() + self.coreSQLFromForMeasurements()
 
     def coreSQLSelectForMeasurements(self):
         """
@@ -214,7 +215,7 @@ class DataWarehouse:
         q += "    measurement.valreal , textvalue.textval, datetimevalue.datetimeval,category.categoryname "
         return q
 
-    def coreSQLFromForMesaurements(self):
+    def coreSQLFromForMeasurements(self):
         """
         Creates the from clause used by many of the functions that query the data warehouse
         :return: the from clause used by several of the functions that query the data warehouse
@@ -380,7 +381,7 @@ class DataWarehouse:
         mtInfo = self.getMeasurementTypeInfo(measurementType)
         valType = mtInfo[0][2]
         q = "SELECT " + aggregation + "(" + self.fieldHoldingValue(valType) + ") "
-        q += self.coreSQLFromForMesaurements()
+        q += self.coreSQLFromForMeasurements()
         (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
                                                           groupInstance, trial, startTime, endTime)
         q += w
@@ -526,7 +527,7 @@ class DataWarehouse:
         q = ""  # q returns the instance ids of all instances that meet meet the criteria
         q += " SELECT restable.groupinstance "
         q += " FROM ( "
-        q += " SELECT groupinstance " + self.coreSQLFromForMesaurements()
+        q += " SELECT groupinstance " + self.coreSQLFromForMeasurements()
         (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, -1, measurementGroup, -1, trial,
                                                           startTime, endTime)
         q += w
@@ -708,8 +709,8 @@ class DataWarehouse:
                                              measurementtype,participant,source,valtype,valinteger,valreal)
                     VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
                     """,
-                    (time, study, trial, measurementGroup,groupInstance,measurementType,participant,
-                     source,valType,valInteger,valReal))
+                    (time, study, trial, measurementGroup, groupInstance, measurementType, participant,
+                     source, valType, valInteger, valReal))
         id = cur.fetchone()[0]
         groupInstance = id
         # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
@@ -740,7 +741,7 @@ class DataWarehouse:
          Insert one measurement group
          :param study: the study id
          :param measurementGroup: the measurement group
-         :param a list of the values from the measurement group in the form (measurementType,valType,value)
+         :param values: a list of the values from the measurement group in the form (measurementType,valType,value)
          :param time: the time the measurement was taken. It defaults to the current time
          :param trial: optional trial id
          :param participant: optional participant id
@@ -769,8 +770,8 @@ class DataWarehouse:
                                                  measurementtype,participant,source,valtype,valinteger,valreal)
                         VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
                         """,
-                        (time, study, trial, measurementGroup,groupInstance,measurementType,participant,
-                         source,valType,valInteger,valReal))
+                        (time, study, trial, measurementGroup, groupInstance, measurementType, participant,
+                         source, valType, valInteger, valReal))
             id = cur.fetchone()[0]
             if groupInstance == 0:
                 groupInstance = id
@@ -794,3 +795,89 @@ class DataWarehouse:
                             (id, value, study))
         self.dbConnection.commit()
         return groupInstance
+
+
+    def get_participant(self, study_id, local_participant_id):
+        """
+        maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
+        :param study_id: the study id
+        :param local_participant_id: the local participant id in the study
+        :return The id of the participant
+        """
+        q = " SELECT COUNT(id) FROM participant " \
+            "WHERE participant.study       = " + str(study_id) + \
+            "AND participant.participantid = '" + local_participant_id + "';"
+        res = self.returnQueryResult(q)
+        found = res[0][0] == 1
+        if found:
+            return (found, res[0])
+        else:
+            print("Participant", local_participant_id, " not found in participant.particpantid")
+            return (found, res)
+
+
+    def get_measurement_group(self, study_id, measurementgroup_description):
+        """
+        maps from the measurementgroup_description to the measurement group id used within the warehouse
+        :param study_id: the study id
+        :param measurementgroup_description: the description field of the measurement group
+        :return (whether the measurement group exists, the measurement group)
+        """
+
+        q = " SELECT COUNT(id) FROM measurementgroup " \
+            "WHERE measurementgroup.study       = " + str(study_id) + \
+            "AND   measurementgroup.description = '" + measurementgroup_description + "';"
+        res = self.returnQueryResult(q)
+        found = res[0][0] == 1
+        if found:
+            return (found, res[0])
+        else:
+            print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
+            return (found, res)
+
+
+    def get_participant_id(self, study_id, local_participant_id):
+        """
+        maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
+        :param study_id: the study id
+        :param local_participant_id: a local participant id
+        :return The id of the participant
+        """
+        q = " SELECT id FROM participant " \
+            " WHERE participant.study       = " + str(study_id) + \
+            " AND participant.participantid = '" + local_participant_id + "';"
+        res = self.returnQueryResult(q)
+        return res[0]
+
+
+    def get_participants(self, study_id):
+        """
+        Get all participants in a study
+        :param study_id: the study id
+        :return: list of all the participants (id and participantid)
+        """
+        q = " SELECT id,participantid FROM participant " \
+            " WHERE participant.study       = " + str(study_id) + ";"
+        res = self.returnQueryResult(q)
+        return res
+
+
+    def add_participant(self, study_id, local_participant_id):
+        """
+        add a participant into the data warehouse
+        :param study_id: the study id
+        :param local_participant_id: the local name for the participant
+        :res the new participant id
+        """
+        cur = self.dbConnection.cursor()
+        q = " SELECT MAX(id) FROM participant " \
+            " WHERE participant.study = " + str(study_id) + ";"
+        res = self.returnQueryResult(q)  # find the biggest id
+        free_id = res[0][0] + 1     # the next free id
+        cur.execute("""
+                    INSERT INTO participant(id,participantid,study)
+                    VALUES (%s, %s, %s);
+                    """,
+                    (free_id, local_participant_id, study_id))  # insert the new entry
+        self.dbConnection.commit()
+        return free_id
