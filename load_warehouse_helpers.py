@@ -48,6 +48,15 @@ def mk_category(cat_name, cat_list):
     """
     return cat_list.index(cat_name)
 
+def mk_category_from_dict(cat_name, cat_dict):
+    """
+    Returns the category id from the category name.
+    :param cat_name: the category name from the category table
+    :param cat_dict: a directory with the category names as keys, and the categoryid as the values
+    :return the categoryid of the category
+    """
+    return cat_dict[cat_name]
+
 def split_enum(jfields, typeids, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
