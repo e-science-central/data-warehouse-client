@@ -41,10 +41,12 @@ print(mc.validateToken(token))
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 # example 1
-study_id = 4
+# study_id = 11
+study_id = 9
 
 # Find a project in e-Science Central by ID
-esc_project = "BB001"
+# esc_project = "BB001"
+esc_project = "HA01"
 project = mc.getProjectByStudyCode(esc_project)
 
 #print(f'Participants in e-Science Central Project {esc_project}:')
@@ -88,3 +90,4 @@ new_instances = warehouse_loader_from_esc.load_dw_from_esc( mc, data_warehouse, 
 n_instances_added = len(new_instances)
 print(f'There were {n_instances_added} New Instances added:')
 print(*new_instances, sep='\n')
+
