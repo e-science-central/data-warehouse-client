@@ -145,7 +145,7 @@ def mk_e_screening_pff(data_id, data):  # measurement group 31
             (221, 4, lwh.mk_01(data['xray']))]
 
 
-def mk_walking_aids_group(data_id, data):  # measurement group 4
+def mk_walking_aids(data_id, data):  # measurement group 4
     """
     transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -201,8 +201,7 @@ def mk_comorbidity(data_id, data):  # measurement group 26
     :param data: data array from the json form
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
-    val_list = [(220, 2, data_id),
-                (202, 4, lwh.mk_01(data['copd-sdiag'])),
+    val_list = [(220, 2, data_id), (202, 4, lwh.mk_01(data['copd-sdiag'])),
                 (203, 4, lwh.mk_01(data['copd-sdiagfx'])),
                 (204, 4, lwh.mk_01(data['chf-sdiag'])),
                 (205, 4, lwh.mk_01(data['chf-sdiagfx'])),
@@ -212,10 +211,10 @@ def mk_comorbidity(data_id, data):  # measurement group 26
                 (209, 4, lwh.mk_01(data['pd-sdiagfx'])),
                 (210, 4, lwh.mk_01(data['pff-sdiag'])),
                 (211, 4, lwh.mk_01(data['pff-sdiagfx']))]
-    if 'pffq' in data:
-        val_list.append((212, 4, lwh.mk_01(data['pffq'])))
-    if 'pffx' in data:
-        val_list.append((213, 0, data['pffx']))
+    for sublist in lwh.mk_optional_boolean(212, 222, data, 'pffq'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_boolean(213, 223, data, 'pffx'):
+        val_list.append(sublist)
     return val_list
 
 
@@ -304,21 +303,35 @@ def mk_llfdi(data_id, data):  # measurement group 10
             :param data: data array from the json form
             :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
             """
-    return [(220, 2, data_id),
-            (55, 7, data['f1']), (56, 7, data['f2']), (57, 7, data['f3']),
-            (58, 7, data['f4']), (59, 7, data['f5']), (60, 7, data['f6']),
-            (61, 7, data['f7']), (62, 7, data['f8']), (63, 7, data['f9']),
-            (64, 7, data['f10']), (65, 7, data['f11']), (66, 7, data['f12']),
-            (67, 7, data['f13']), (68, 7, data['f14']), (69, 7, data['f15']),
-            (70, 7, data['f16']), (71, 7, data['f17']), (72, 7, data['f18']),
-            (73, 7, data['f19']), (74, 7, data['f20']), (75, 7, data['f21']),
-            (76, 7, data['f22']), (77, 7, data['f23']), (78, 7, data['f24']),
-            (79, 7, data['f25']), (80, 7, data['f26']), (81, 7, data['f27']),
-            (82, 7, data['f28']), (83, 7, data['f29']), (84, 7, data['f30']),
-            (85, 7, data['f31']), (86, 7, data['f32']), (87, 7, data['fd7']),
-            (88, 7, data['fd8']), (89, 7, data['fd14']), (90, 7, data['fd15']),
-            (91, 7, data['fd26']), (92, 7, data['fd29']), (93, 7, data['fd30']),
-            (94, 7, data['fd32'])]
+    val_list = [(220, 2, data_id),
+                (55, 7, data['f1']), (56, 7, data['f2']), (57, 7, data['f3']),
+                (58, 7, data['f4']), (59, 7, data['f5']), (60, 7, data['f6']),
+                (61, 7, data['f7']), (62, 7, data['f8']), (63, 7, data['f9']),
+                (64, 7, data['f10']), (65, 7, data['f11']), (66, 7, data['f12']),
+                (67, 7, data['f13']), (68, 7, data['f14']), (69, 7, data['f15']),
+                (70, 7, data['f16']), (71, 7, data['f17']), (72, 7, data['f18']),
+                (73, 7, data['f19']), (74, 7, data['f20']), (75, 7, data['f21']),
+                (76, 7, data['f22']), (77, 7, data['f23']), (78, 7, data['f24']),
+                (79, 7, data['f25']), (80, 7, data['f26']), (81, 7, data['f27']),
+                (82, 7, data['f28']), (83, 7, data['f29']), (84, 7, data['f30']),
+                (85, 7, data['f31']), (86, 7, data['f32'])]
+    for sublist in lwh.mk_optional_int(87, 224, data, 'fd7'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(88, 225, data, 'fd8'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(89, 226, data, 'fd14'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(90, 227, data, 'fd15'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(91, 228, data, 'fd26'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(92, 229, data, 'fd29'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(93, 230, data, 'fd30'):
+        val_list.append(sublist)
+    for sublist in lwh.mk_optional_int(94, 231, data, 'fd32'):
+        val_list.append(sublist)
+    return val_list
 
 
 def mk_rabinovich(data_id, data):  # measurement group 5
@@ -353,6 +366,20 @@ def mk_crs(data_id, data):  # measurement group 7
             (44, 7, data['cq3']), (45, 7, data['cq4']),
             (46, 7, data['cq5']), (47, 7, data['cq6'])]
 
+
+def mk_consent(data_id, data): # measurement group 6
+    """
+                transforms a a-consent.json form into the triples used by insertMeasurementGroup to
+                    store each measurement that is in the form
+                :param data_id: unique id from the json form
+                :param data: data array from the json form
+                :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
+                """
+    return [(220, 2, data_id),
+            (40, 4, lwh.mk_01(data['pis'])),
+            (41, 4, lwh.mk_01(data['consent']))]
+
+
 def fn_mapper():
     """
     maps from the event_type used in e-Science Central to:
@@ -368,7 +395,7 @@ def fn_mapper():
             "e-screening-ms"        : {"fn": mk_e_screening_ms,         "mg": 29},
             "e-screening-pd"        : {"fn": mk_e_screening_pd,         "mg": 30},
             "e-screening-pff"       : {"fn": mk_e_screening_pff,        "mg": 31},
-            "j-walking-aids-group"  : {"fn": mk_walking_aids_group,     "mg":  4},
+            "j-walking-aids"        : {"fn": mk_walking_aids,           "mg":  4},
             "h-falls-description"   : {"fn": mk_falls_description,      "mg":  8},
             "i-medication-usage"    : {"fn": mk_i_medication_usage,     "mg": 13},
             "c-comorbidity"         : {"fn": mk_comorbidity,            "mg": 26},
@@ -378,5 +405,6 @@ def fn_mapper():
             "g-falls"               : {"fn": mk_falls,                  "mg": 12},
             "k-llfdi"               : {"fn": mk_llfdi,                  "mg": 10},
             "l-rabinovich"          : {"fn": mk_rabinovich,             "mg":  5},
-            "m-crs"                 : {"fn": mk_crs,                    "mg":  7}
-}
+            "m-crs"                 : {"fn": mk_crs,                    "mg":  7},
+            "a-consent"             : {"fn": mk_consent,                "mg":  6}
+    }

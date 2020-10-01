@@ -70,8 +70,8 @@ def load_data_into_dw(dw, study, unique_id_measurement_type, mapper_dict, event_
     """
     new_ids_in_dw = []
     for (data_id, event_type, object_id, data, timestamp) in event_data:
-        not_already_in_warehouse = len(dw.getMeasurementsWithValueTest(unique_id_measurement_type,
-                                                                       "='" + data_id + "'", study)) == 0
+        not_already_in_warehouse = len(dw.getMeasurementsWithValueTest(unique_id_measurement_type, study,
+                                                                       "='" + data_id + "'")) == 0
         # check if there's a converter function and message group for this type of data
         (event_found, load_fn, measurement_group) = load_warehouse_helpers.get_converter_fn(event_type, mapper_dict)
         if not event_found:
@@ -91,8 +91,10 @@ def load_data_into_dw(dw, study, unique_id_measurement_type, mapper_dict, event_
                 print(f'Error: Missing field: {ke}, in {event_type} in: {data_id}')
             except ValueError as ve:
                 print(f'Error: Unknown category: {ve} in: {data_id}')
-            else:
-                print("Error loading:", data_id)
+            except Exception as e:
+                print("Error: ", e.__class__, "occurred.")
+            # else:
+                #  print("Error loading:", data_id)
     return new_ids_in_dw  # return all the inserted instance group ids
 
 

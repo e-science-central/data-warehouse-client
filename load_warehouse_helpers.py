@@ -33,10 +33,49 @@ def mk_optional_string(data, jfield):
     :return if the field exists then it's returned; otherwise an empty string is returned
     """
     val = data.get(jfield)
-    if val is None :
+    if val is None:
         return ""
     else:
         return val
+
+
+def mk_optional_boolean(data_id, present_id, data, jfield):
+    """
+        Returns a list of tuples containing measurement group, boolean value type, and the value for 'jfield' if
+        present or absent to handle optional types for boolean fields in json
+        :param data_id:    measurement type of jfield in the data warehouse
+        :param present_id: measurement type of jfield-present in the data warehouse
+        :param data:       json that may contain the jfield
+        :param jfield:     the name of the field
+        :return            if the field exists then a list is returned specifying its presence and the corresponding
+                           field value; if the field doesn't exist then a list is returned specifying its absence and
+                           field value as 0
+        """
+    val = data.get(jfield)
+    if val is None:
+        return [(data_id, 4, mk_01('N')), (present_id, 4, mk_01('N'))] # jfield is not present in the json
+    else:
+        return [(data_id, 4, mk_01(val)), (present_id, 4, mk_01('Y'))] # jfield is present in the json
+
+
+def mk_optional_int(data_id, present_id, data, jfield):
+    """
+        Returns a list of tuples containing measurement group, integer value type, and the value for 'jfield' if
+        present or absent to handle optional types for integer fields in json
+        :param data_id:    measurement type of jfield in the data warehouse
+        :param present_id: measurement type of jfield-present in the data warehouse
+        :param data:       json that may contain the jfield
+        :param jfield:     the name of the field
+        :return            if the field exists then a list is returned specifying its presence and the corresponding
+                           field value; if the field doesn't exist then a list is returned specifying its absence and
+                           field value as 0
+        """
+    val = data.get(jfield)
+    if val is None:
+        return [(data_id, 0, 0), (present_id, 4, mk_01('N'))] # jfield is not present in the json
+    else:
+        return [(data_id, 0, val), (present_id, 4, mk_01('Y'))] # jfield is present in the json
+
 
 def mk_category(cat_name, cat_list):
     """

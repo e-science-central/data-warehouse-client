@@ -19,6 +19,7 @@ from typing import List
 from tabulate import tabulate
 import datetime
 import matplotlib.pyplot as pyplot
+from more_itertools import intersperse
 import psycopg2
 
 
@@ -117,43 +118,10 @@ class DataWarehouse:
             elif (rows[r][9] == 8):  # boundedreal
                 rowOut[r][10] = rows[r][11]
             else:
-                print("typeval error of ", rows[r][9])
+                print("typeval error of ", rows[r][9], " for id", rows[r][0], " study ", rows[r][2])
         return rowOut
 
-    def formMeasurementGroup(self,rows):
-        """
-        Creates a result where each measurement group instance occupies one row.
-        :param rows: list of rows returned by getMeasurementGroupInstancesWithValueTests or
-                     getMeasurements (where it returns whole measurement group instances - i.e. where
-                                      measurementType is not specified, but measurement group or
-                                      measurement group instance is specified)
-        :return: list of rows, each representing one measurement group instance, held in a list with elements:
-               groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
-                   value1, value2....
-               where value n is the value for the nth measurement in the instance (ordered by measurement type)
-        """
-        if len(rows) > 0:
-            measurementGroup:int = rows[0][6]
-            nMeasurementsPerInstance: int = self.numTypesInAMeasurementGroup(measurementGroup)
-            nRows: int = len(rows) // nMeasurementsPerInstance  # integer division in Python 3
-            nCols: int = 6 + nMeasurementsPerInstance
-            rowOut = [[None] * nCols for i in range(nRows)]
-            firstMeasurementInInstance:int = 0
-            for i in range(nRows):
-                rowOut[i][0] = rows[firstMeasurementInInstance][7]  # groupInstance
-                rowOut[i][1] = rows[firstMeasurementInInstance][1]  # time
-                rowOut[i][2] = rows[firstMeasurementInInstance][2]  # study
-                rowOut[i][3] = rows[firstMeasurementInInstance][3]  # participant
-                rowOut[i][4] = rows[firstMeasurementInInstance][6]  # measurementGroup
-                rowOut[i][5] = rows[firstMeasurementInInstance][8]  # trial
-                for m in range(nMeasurementsPerInstance):
-                    rowOut[i][6+m] = rows[firstMeasurementInInstance+m][10]
-                firstMeasurementInInstance = firstMeasurementInInstance + nMeasurementsPerInstance
-            return rowOut
-        else:
-            return []
-
-    def printMeasurementGroupInstances(self, rows, groupId):
+    def printMeasurementGroupInstances(self, rows, groupId, study):
         """
         Prints a list of measurement group instances, converting the datetime to strings
         The input rows must be in the format produced by formMeasurementGroups
@@ -163,8 +131,9 @@ class DataWarehouse:
                where value n is the value for the nth measurement in the instance (ordered by measurement type)
         :param rows: a list of measurement group instances in the format produced by formatMeasurementGroup
         :param groupId: the measurementGroupId
+        :param study: study id
         """
-        typeNames: List[str] = self.getTypesInAMeasurementGroup(groupId)
+        typeNames: List[str] = self.getTypesInAMeasurementGroup(study, groupId)
         nTypes:int = len(typeNames)
         headerRow: List[str] = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group",
                                 "Trial"]
@@ -172,7 +141,7 @@ class DataWarehouse:
             headerRow.append(typeNames[t][0])
         print(tabulate(rows, headers=headerRow))
 
-    def exportMeasurementGroupsAsCSV(self, rows, groupId, fname):
+    def exportMeasurementGroupsAsCSV(self, rows, groupId, study, fname):
         """
         Stores measurements returned by formMeasurementGroups in a CSV file
         The input rows must be in the format produced by formMeasurementGroups
@@ -182,12 +151,13 @@ class DataWarehouse:
                where value n is the value for the nth measurement in the instance (ordered by measurement type)
         :param rows: a list of rows returned by formatMeasurementGroup
         :param groupId: the measurementGroupId
+        :param study: study id
         :param fname: the filename of the output CSV file
         """
-        typeNames:List[str] = self.getTypesInAMeasurementGroup(groupId)
+        typeNames:List[str] = self.getTypesInAMeasurementGroup(study, groupId)
         with open(fname, "w", newline="") as f:
             writer = csv.writer(f)
-            headerRow:List[str] = ["Measurement Group Instance","Time","Study","Participant","Measurement Group","Trial"]
+            headerRow: List[str] = ["Measurement Group Instance","Time","Study","Participant","Measurement Group","Trial"]
             for t in range(len(typeNames)):
                 headerRow.append(typeNames[t][0])
             writer.writerow(headerRow)
@@ -223,11 +193,18 @@ class DataWarehouse:
         q: str
         q = ""
         q += " FROM "
-        q += "    measurement INNER JOIN measurementtype ON measurement.measurementtype = measurementtype.id "
-        q += "    INNER JOIN measurementtypetogroup ON measurement.measurementgroup = measurementtypetogroup.measurementgroup AND measurement.measurementtype = measurementtypetogroup.measurementtype"
-        q += "    LEFT OUTER JOIN textvalue ON textvalue.measurement = measurement.id "
-        q += "    LEFT OUTER JOIN datetimevalue ON datetimevalue.measurement = measurement.id "
-        q += "    LEFT OUTER JOIN category  ON measurement.valinteger = category.categoryid AND measurement.measurementtype = category.measurementtype"
+        q += "    measurement INNER JOIN measurementtype ON  measurement.measurementtype = measurementtype.id "
+        q += "                                           AND measurement.study           = measurementtype.study "
+        q += "    INNER JOIN measurementtypetogroup ON measurement.measurementgroup  = measurementtypetogroup.measurementgroup "
+        q += "                                         AND measurement.measurementtype   = measurementtypetogroup.measurementtype "
+        q += "                                         AND measurement.study             = measurementtypetogroup.study "
+        q += "    LEFT OUTER JOIN textvalue ON  textvalue.measurement = measurement.id "
+        q += "                              AND textvalue.study       = measurement.study "
+        q += "    LEFT OUTER JOIN datetimevalue ON  datetimevalue.measurement = measurement.id "
+        q += "                                  AND datetimevalue.study       = measurement.study "
+        q += "    LEFT OUTER JOIN category  ON  measurement.valinteger      = category.categoryid "
+        q += "                              AND measurement.measurementtype = category.measurementtype "
+        q += "                              AND measurement.study           = category.study "
         return q
 
     def coreSQLforWhereClauses(self, study: int, participant: int, measurementType: int, measurementGroup: int,
@@ -362,14 +339,14 @@ class DataWarehouse:
             print("Error: valType out of range: ", valType)
         return field
 
-    def aggregateMeasurements(self, measurementType, aggregation, study=-1, participant=-1, measurementGroup=-1,
+    def aggregateMeasurements(self, measurementType,  study, aggregation, participant=-1, measurementGroup=-1,
                               groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
         """
 
         :param measurementType: the type of the measurements to be aggregated
+        :param study: a study id
         :param aggregation: the aggregation function: this can be any of the postgres SQL aggregation functions,
                                   e.g."avg", "count", "max", "min", "sum"
-        :param study: a study id
         :param participant: a participant id
         :param measurementGroup: a measurementGroup
         :param groupInstance: a groupInstance
@@ -378,7 +355,7 @@ class DataWarehouse:
         :param endTime: the end of a time period of interest
         :return: the result of the aggregation
         """
-        mtInfo = self.getMeasurementTypeInfo(measurementType)
+        mtInfo = self.getMeasurementTypeInfo(study, measurementType)
         valType = mtInfo[0][2]
         q = "SELECT " + aggregation + "(" + self.fieldHoldingValue(valType) + ") "
         q += self.coreSQLFromForMeasurements()
@@ -398,14 +375,14 @@ class DataWarehouse:
         cond = " (" + self.fieldHoldingValue(valType) + valueTestCondition + ") "
         return cond
 
-    def getMeasurementsWithValueTest(self, measurementType, valueTestCondition, study=-1, participant=-1,
+    def getMeasurementsWithValueTest(self, measurementType, study, valueTestCondition, participant=-1,
                                      measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
         """
         Find all measurement of a particular type whose value meets some criteria.
         :param measurementType: the measurement type of the measurements to be tested
+        :param study: a study id
         :param valueTestCondition: a string holding the condition
                   against which the value in each measurement is compared.
-        :param study: a study id
         :param participant: a participant id
         :param measurementGroup: a measurementGroup
         :param groupInstance: a groupInstance
@@ -420,8 +397,8 @@ class DataWarehouse:
                                                           groupInstance, trial, startTime, endTime)
         q += w
 
-        mtInfo = self.getMeasurementTypeInfo(measurementType)
-        valType = mtInfo[0][2] # find the vlaue type of the measurement
+        mtInfo = self.getMeasurementTypeInfo(study, measurementType)
+        valType = mtInfo[0][2] # find the value type of the measurement
         # Add a clause to test the field that is relevant to the type of the measurement
         if (conditionCount == 0):
             q += " WHERE " # if this is the first condition in the where clause
@@ -433,8 +410,9 @@ class DataWarehouse:
         rawResults = self.returnQueryResult(q)
         return self.formMeasurements(rawResults)
 
-    def getMeasurementsByCohort(self, cohortId, study=-1, participant=-1, measurementType=-1,
-                                measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
+
+    def getMeasurementsByCohort(self, cohortId, study, participant=-1, measurementType=-1,
+                                  measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
         """
         Find all measurements in a cohort that meet the criteria.
         :param cohortId: the value of the category in measurementType 181 that represents the condition
@@ -449,11 +427,12 @@ class DataWarehouse:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
         c: str
-        c  = "" # get all particpants in a cohort
+        c  = "" # get all participants in a cohort
         c += " SELECT measurement.participant "
         c += " FROM   measurement "
-        c += " WHERE  measurement.measurementtype = 181 AND" # the measurementType folding the condition
-        c += "        measurement.valinteger      = " + str(cohortId)
+        c += " WHERE  measurement.measurementtype = 181 " # the measurementType holding the condition
+        c += " AND    measurement.valinteger      = " + str(cohortId)
+        c += " AND    measurement.study           = " + str(study)
 
         q:str = self.coreSQLforMeasurements()
         (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
@@ -468,7 +447,8 @@ class DataWarehouse:
         rawResults = self.returnQueryResult(q)
         return self.formMeasurements(rawResults)
 
-    def numTypesInAMeasurementGroup(self, measurementGroup):
+
+    def numTypesInAMeasurementGroup(self, study, measurementGroup):
         """
         A helper function that returns the number of measurement types in a measurement group
         :param measurementGroup: measurement group id
@@ -482,11 +462,15 @@ class DataWarehouse:
         q += " WHERE "
         q += "    measurementtypetogroup.measurementgroup = "
         q += str(measurementGroup)
+        q += " AND "
+        q += "    measurementtypetogroup.study = "
+        q += str(study)
         q += ";"
         numTypes = self.returnQueryResult(q)
         return numTypes[0][0]
 
-    def getTypesInAMeasurementGroup(self, measurementGroup):
+
+    def getTypesInAMeasurementGroup(self, study, measurementGroup):
         """
         A helper function that returns the names of the measurement types in a measurement group
         :param measurementGroup: measurement group id
@@ -500,22 +484,47 @@ class DataWarehouse:
         q += " WHERE "
         q += "    measurementtypetogroup.measurementgroup = "
         q += str(measurementGroup)
+        q += " AND "
+        q += "    measurementtypetogroup.study = "
+        q += str(study)
         q += " ORDER BY measurementtypetogroup.measurementtype"
         q += ";"
-        numTypes = self.returnQueryResult(q)
-        return numTypes
+        type_names = self.returnQueryResult(q)
+        return type_names
 
-    def getMeasurementGroupInstancesWithValueTests(self, measurementGroup, valueTestConditions, study=-1,
-                                                   participant=-1, trial=-1, startTime=-1, endTime=-1):
+
+    def mk_value_tests(self, value_test_conditions, study):
+        """
+        Helper function used to creat a Where clause to find measurements that fail the conditions
+        :param value_test_conditions:   a list where each element is takes the following form:
+                                        (measurementType,condition)
+                                        where condition is a string holding the condition
+                                        against which the value in each measurement is compared.
+        :param study: study id
+        :return:
+        """
+        all_conditions = []
+        for (measurement_type, condition) in value_test_conditions:
+            mt_info = self.getMeasurementTypeInfo(study, measurement_type)
+            val_type = mt_info[0][2]
+            cond = "((measurement.measurementtype = " + str(measurement_type) + ") AND NOT " + \
+                   self.makeValueTest(val_type, condition) + ")"
+            all_conditions = all_conditions + [cond]
+        result = ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
+        return result
+
+
+    def getMeasurementGroupInstancesWithValueTests(self, measurementGroup, study, valueTestConditions,
+                                                    participant=-1, trial=-1, startTime=-1, endTime=-1):
         """
         Return all instances of a measurement group in which one or more of the measurements within the
             instance meet some specified criteria
         :param measurementGroup: a measurement group
+        :param study: a study id
         :param valueTestConditions: a list where each element is takes the following form:
                                     (measurementType,condition)
                                        where condition is a string holding the condition
                                        against which the value in each measurement is compared.
-        :param study: a study id
         :param participant: a participant id
         :param trial: a trial id
         :param startTime: the start of a time period of interest
@@ -524,51 +533,24 @@ class DataWarehouse:
                     id,time,study,participant,measurementType,typeName,measurementGroup,
                     groupInstance,trial,valType,value
         """
-        q = ""  # q returns the instance ids of all instances that meet meet the criteria
-        q += " SELECT restable.groupinstance "
-        q += " FROM ( "
-        q += " SELECT groupinstance " + self.coreSQLFromForMeasurements()
+        problem_q = ""  #  returns the instance ids of all instances that fail the criteria
+        problem_q += " SELECT measurement.groupinstance "
+        problem_q += self.coreSQLFromForMeasurements()
         (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, -1, measurementGroup, -1, trial,
                                                           startTime, endTime)
-        q += w
-        if (conditionCount == 0):
-            q += " WHERE (" # first condition in a where clause
-        else:
-            q += " AND ("
-        totalConditions = len(valueTestConditions)
-        c = 1  # the current condition being processed
-        for (measurementType, condition) in valueTestConditions:
-            mtInfo = self.getMeasurementTypeInfo(measurementType)
-            valType = mtInfo[0][2]
-            cond = "((measurement.measurementtype = " + str(measurementType) + ") AND " +\
-                   self.makeValueTest(valType,condition) + ")"
-            q += cond
-            if (c < totalConditions):
-                q += " OR "
-            c = c + 1
-        q += " OR "
-        q += " (measurement.measurementtype NOT IN ("
-        # make list of MeasurementTypesFrom valueTestConditions
-        c = 1
-        for (measurementType, condition) in valueTestConditions:
-            q += str(measurementType)
-            if (c < totalConditions):
-                q += ","
-            c = c + 1
-        q += ") "
-        q += "))) AS restable"
-        q += " GROUP BY restable.groupinstance "
-        q += " HAVING   COUNT(*) = "
-        groupSize = self.numTypesInAMeasurementGroup(measurementGroup)
-        q += str(groupSize)
+        problem_q += w
+        if len(valueTestConditions) > 0:
+            problem_q += " AND (" + self.mk_value_tests(valueTestConditions, study) + ")"
 
-        outerQuery = self.coreSQLforMeasurements()
-        outerQuery += " WHERE "
-        outerQuery += "    measurement.groupinstance IN (" + q + ")"
+        outerQuery =  self.coreSQLforMeasurements()
+        outerQuery += w
+        outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outerQuery += " ORDER BY groupinstance, measurementtype"
         outerQuery += ";"
+        #  print(outerQuery)
         rawResults = self.returnQueryResult(outerQuery)
         return self.formMeasurements(rawResults)
+
 
     def printMeasurements(self, rows):
         """
@@ -580,9 +562,10 @@ class DataWarehouse:
                                 "Measurement Group","Group Instance", "Trial", "Val Type", "Value"]
         print(tabulate(rows, headers=headerRow))
 
-    def getMeasurementTypeInfo(self, measurementTypeId):
+    def getMeasurementTypeInfo(self, study, measurementTypeId):
         """
         Returns information on a measurement type
+        :param study: the study id
         :param measurementTypeId: the id of a measurement type
         :return: a list containing the elements: id, description, value type, name
         """
@@ -590,21 +573,26 @@ class DataWarehouse:
         q += " SELECT "
         q += "    measurementtype.id,measurementtype.description,measurementtype.valtype,units.name "
         q += " FROM "
-        q += "    measurementtype LEFT OUTER JOIN units ON measurementtype.units = units.id"
+        q += "    measurementtype LEFT OUTER JOIN units ON  measurementtype.units = units.id "
+        q += "                                          AND measurementtype.study = units.study "
         q += " WHERE "
         q += "    measurementtype.id = "
         q += str(measurementTypeId)
+        q += " AND "
+        q += "    measurementtype.study = "
+        q += str(study)
         q += ";"
         mtinfo = self.returnQueryResult(q)
         return mtinfo
 
-    def plotMeasurementType(self, rows, measurementTypeId, plotFile):
+    def plotMeasurementType(self, rows, measurementTypeId, study, plotFile):
         """
         Plot the value of a measurement over time.
         :param rows: a list of measurements generated by the other client functions. Each measurement is in the form:
                         id,time,study,participant,measurementType,
                         typeName,measurementGroup,groupInstance,trial,valType,value
         :param measurementTypeId: the measurement type of the measurements to be plotted
+        :param study: study id
         :param plotFile: the name of the file into which the plot will be written
         """
         # https://matplotlib.org/api/pyplot_api.html
@@ -612,7 +600,7 @@ class DataWarehouse:
         x = trans[1]  # the data and time
         y = trans[10]  # the measurement value
 
-        mtInfo = self.getMeasurementTypeInfo(measurementTypeId)
+        mtInfo = self.getMeasurementTypeInfo(study, measurementTypeId)
         units = mtInfo[0][3]  # get the units name
         pyplot.title(rows[0][5])
         pyplot.xlabel("Time") # Set the x-axis label
@@ -651,6 +639,24 @@ class DataWarehouse:
         cur = self.dbConnection.cursor()
         cur.execute(queryText)
         self.dbConnection.commit()
+
+    def get_all_measurement_groups(self, study_id):
+        """
+        A helper function that returns information on all the measurement groups in a study
+        :param study_id: the study id
+        :return: a list of [measurement group id, measurement group description]
+        """
+        q = ""
+        q += " SELECT"
+        q += "    measurementgroup.id,"
+        q += "    measurementgroup.description "
+        q += " FROM "
+        q += "    measurementgroup "
+        q += " WHERE "
+        q += "    measurementgroup.study = "
+        q += str(study_id)
+        q += " ORDER BY measurementgroup.id; "
+        return self.returnQueryResult(q)
 
     def getAllMeasurementGroupsAndTypesInAStudy(self, studyId):
         """
@@ -765,13 +771,19 @@ class DataWarehouse:
                 valReal    = None
             else:
                 print("Error in valType in insertMeasurementGroup")
-            cur.execute("""
-                        INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
-                                                 measurementtype,participant,source,valtype,valinteger,valreal)
-                        VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                        """,
-                        (time, study, trial, measurementGroup, groupInstance, measurementType, participant,
-                         source, valType, valInteger, valReal))
+            try:
+                cur.execute("""
+                            INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
+                                                     measurementtype,participant,source,valtype,valinteger,valreal)
+                            VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                            """,
+                            (time, study, trial, measurementGroup, groupInstance, measurementType, participant,
+                            source, valType, valInteger, valReal))
+            except psycopg2.Error as e:
+                print("Error in insertMeasurementGroup: ", e.pgcode, "occurred.")
+                print("See https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE")
+                print(f'Study = {study},Trial = {trial}, Measurement Group = {measurementGroup},'
+                      f'Measurement Type = {measurementType},Source = {source}')
             id = cur.fetchone()[0]
             if groupInstance == 0:
                 groupInstance = id
@@ -805,8 +817,8 @@ class DataWarehouse:
         :return The id of the participant
         """
         q = " SELECT COUNT(id) FROM participant " \
-            "WHERE participant.study       = " + str(study_id) + \
-            "AND participant.participantid = '" + local_participant_id + "';"
+            " WHERE participant.study       = " + str(study_id) + \
+            " AND participant.participantid = '" + local_participant_id + "';"
         res = self.returnQueryResult(q)
         found = res[0][0] == 1
         if found:
@@ -825,8 +837,8 @@ class DataWarehouse:
         """
 
         q = " SELECT COUNT(id) FROM measurementgroup " \
-            "WHERE measurementgroup.study       = " + str(study_id) + \
-            "AND   measurementgroup.description = '" + measurementgroup_description + "';"
+            " WHERE measurementgroup.study       = " + str(study_id) + \
+            " AND   measurementgroup.description = '" + measurementgroup_description + "';"
         res = self.returnQueryResult(q)
         found = res[0][0] == 1
         if found:
@@ -873,7 +885,11 @@ class DataWarehouse:
         q = " SELECT MAX(id) FROM participant " \
             " WHERE participant.study = " + str(study_id) + ";"
         res = self.returnQueryResult(q)  # find the biggest id
-        free_id = res[0][0] + 1     # the next free id
+        max_id = res[0][0]
+        if max_id is None:
+            free_id = 0
+        else:
+            free_id = max_id + 1     # the next free id
         cur.execute("""
                     INSERT INTO participant(id,participantid,study)
                     VALUES (%s, %s, %s);
@@ -881,3 +897,94 @@ class DataWarehouse:
                     (free_id, local_participant_id, study_id))  # insert the new entry
         self.dbConnection.commit()
         return free_id
+
+
+    def n_mg_instances(self, mg_id, study):
+        """
+        Return the number of instances of a measurement group in a study
+        :param mg_id:
+        :param study:
+        :return: number of instances
+        """
+        q =  " SELECT COUNT(DISTINCT measurement.groupinstance) FROM measurement "
+        q += " WHERE measurement.study       = " + str(study)
+        q += " AND measurement.measurementgroup = " + str(mg_id)
+        q += " ;"
+        res = self.returnQueryResult(q)
+        return res[0][0]
+
+    def mg_instances(self, mg_id, study):
+        """
+        Return the ids of instances of a measurement group in a study
+        :param mg_id:
+        :param study:
+        :return: ids
+        """
+        q =  " SELECT DISTINCT measurement.groupinstance FROM measurement "
+        q += " WHERE measurement.study       = " + str(study)
+        q += " AND measurement.measurementgroup = " + str(mg_id)
+        q += " ORDER BY measurement.groupinstance;"
+        res = self.returnQueryResult(q)
+        return res
+
+    def get_type_ids_in_measurement_group(self, study, measurement_group):
+        """
+        A helper function that returns the ids of the measurement types in a measurement group
+        :param study: study id
+        :param measurementGroup: measurement group id
+        :return: list of ids of the measurement types in the measurement group
+        """
+        q = ""
+        q += " SELECT "
+        q += "    measurementtypetogroup.measurementtype  "
+        q += " FROM "
+        q += "    measurementtypetogroup "
+        q += " WHERE "
+        q += "    measurementtypetogroup.measurementgroup = "
+        q += str(measurement_group)
+        q += " AND "
+        q += "    measurementtypetogroup.study = "
+        q += str(study)
+        q += " ORDER BY measurementtypetogroup.measurementtype"
+        q += ";"
+        type_ids = self.returnQueryResult(q)
+        result = []
+        for r in type_ids:
+            result = result + [r[0]]
+        return result
+
+
+    def formMeasurementGroup(self, study, rows):
+        """
+        Creates a result where each measurement group instance occupies one row.
+        :param study: study id
+        :param rows: list of rows returned by getMeasurementGroupInstancesWithValueTests or
+                     getMeasurements (where it returns whole measurement group instances - i.e. where
+                                      measurementType is not specified, but measurement group or
+                                      measurement group instance is specified)
+        :return: list of rows, each representing one measurement group instance, held in a list with elements:
+               groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
+                   value1, value2....
+               where value n is the value for the nth measurement in the instance (ordered by measurement type)
+               Null is used if a value is missing
+        """
+        if len(rows)> 0:
+            measurement_group:int = rows[0][6]
+            mts = self.get_type_ids_in_measurement_group(study, measurement_group)
+        result_values = {}  # the measurement values
+        result_common = {}  # the common values returned for each instance:
+                            # instance,time of first measurement,study,participant,measurementGroup,trial
+        for (id, time, study_id, participant, mt, tn, mg, mgi, trial, val_type,value) in rows:
+            if not (mgi in result_common):
+                result_common.update({mgi: [mgi, time, study, participant, mg, trial]})
+                result_values.update({mgi:{}})
+            result_values[mgi][mt] = value  # add values to the directory
+        result = []
+        for instance in result_values:
+            val_dict = result_values[instance]
+            values = []
+            for mt in mts:
+                val = val_dict.get(mt,None)
+                values = values + [val]
+            result = result + [(result_common[instance]+values)]
+        return result

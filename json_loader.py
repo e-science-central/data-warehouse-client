@@ -16,6 +16,7 @@ import data_warehouse
 import json
 import sys
 
+
 def load_json_file(fname:str):
     """
     Load a json file
@@ -29,31 +30,34 @@ def load_json_file(fname:str):
     except Exception as e:
         sys.exit("Unable to load the json file! Exiting.\n" + str(e))
 
+
 def mk_01(s:str):
     """
     Transform a boolean represented as a 'T' or 'F' string into 0 for False or 1 for True
     :param s: 'T' or 'F'
     :return integer 0 for False or 1 for True
     """
-    if s=='N':
+    if s == 'N':
         return 0
     else:
         return 1
 
-def mk_optional_string(data,jfield):
+
+def mk_optional_string(data, jfield):
     """
     Returns either the string represented in a json structure, or an empty string if it's not present
-    :param date:   json that may contian the jfield
+    :param data:   json that may contain the jfield
     :param jfield: the name of the field
     :return if the field exists then it's returned; otherwise an empty string is returned
     """
     val = data.get(jfield)
-    if val == None:
+    if val is None:
         return ""
     else:
         return val
 
-def mk_category(cat_name,cat_list):
+
+def mk_category(cat_name, cat_list):
     """
     Returns the position of a category in a list of category names.
     (N.B. only works if categorids in the category table run consecutively from 0)
@@ -63,7 +67,8 @@ def mk_category(cat_name,cat_list):
     """
     return cat_list.index(cat_name)
 
-def split_enum(jfields,typeids,valuelist):
+
+def split_enum(jfields, typeids, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
     measurementtype per value. This function takes a json list of values and creates the list of measurements from it -
@@ -75,11 +80,12 @@ def split_enum(jfields,typeids,valuelist):
     :return The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     res = []
-    for (typeid,value) in zip(typeids,valuelist):
-        res = res + [(typeid,4,int(value in jfields))] # the 4 is because the type is boolean
+    for (typeid,value) in zip(typeids, valuelist):
+        res = res + [(typeid, 4, int(value in jfields))]  # the 4 is because the type is boolean
     return res
 
-def get_participantid(studyid,js):
+
+def get_participantid(studyid, js):
     """
     maps from the participantid that is local to the study, to the unique id stored with measurements in the warehouse
     :poram studyid: the study id
@@ -90,10 +96,11 @@ def get_participantid(studyid,js):
     q = " SELECT id FROM participant " \
         "WHERE participant.study       = "  + str(studyid) + \
         "AND participant.participantid = '" + localid + "';"
-    res =  data_warehouse.returnQueryResult(q)
+    res = data_warehouse.returnQueryResult(q)
     return res[0]
 
-def mk_e_screening_chf(js):   #measurement group 24
+
+def mk_e_screening_chf(js):   # measurement group 24
     """
     transforms a e-screening-chf json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -113,7 +120,8 @@ def mk_e_screening_chf(js):   #measurement group 24
             (200, 4, mk_01(data['literate'])),
             (201, 4, mk_01(data['shoe']))]
 
-def mk_e_screening_ha(js): # measurement group 25
+
+def mk_e_screening_ha(js):  # measurement group 25
     """
         transforms a e-screening-ha json form into the triples used by insertMeasurementGroup to
             store each measurement that is in the form
@@ -129,6 +137,7 @@ def mk_e_screening_ha(js): # measurement group 25
             (199, 4, mk_01(data['history'])),
             (200, 4, mk_01(data['literate'])),
             (201, 4, mk_01(data['shoe']))]
+
 
 def mk_walking_aids_group(js):     # measurement group 4
     """
@@ -146,6 +155,7 @@ def mk_walking_aids_group(js):     # measurement group 4
              (23 ,5, mk_category(data['outdoor'],['None','One cane/crutch','Two crutches','Walker','Rollator','Other'])),
              (24 ,5, mk_category(data['outdoorfreq'],['Regularly', 'Occasionally']))]
 
+
 def mk_falls_description(js):  # measurement group 8
     """
     transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
@@ -157,6 +167,7 @@ def mk_falls_description(js):  # measurement group 8
     return [(48,  7, data['fallint']),
             (49,  2, data['falldesc']),
             (50,  2, data['fallinjury'])]
+
 
 def mk_i_medication_usage(js): # measurement group 13
     """
@@ -172,7 +183,8 @@ def mk_i_medication_usage(js): # measurement group 13
             [(114, 5, mk_category(data['reg' ],['Regular', 'Occasional'])),
              (115, 5, mk_category(data['oral'],['Oral', 'Sub-cutaneous', 'Intravenous']))]
 
-def json_load(study,measurement_group,load_fn,fname):
+
+def json_load(study, measurement_group, load_fn,fname):
     """
     load contents of json file into the data warehouse and then retrieve it and print it
     :param study: study id
@@ -184,8 +196,9 @@ def json_load(study,measurement_group,load_fn,fname):
     participantid = get_participantid(study, js)
     instanceid = data_warehouse.insertMeasurementGroup(study, measurement_group, load_fn(js), participant=participantid)
     newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
-    dataInTabularForm = data_warehouse.formMeasurementGroup(newdata)
-    data_warehouse.printMeasurementGroupInstances(dataInTabularForm, measurement_group)
+    dataInTabularForm = data_warehouse.formMeasurementGroup(study, newdata)
+    data_warehouse.printMeasurementGroupInstances(dataInTabularForm, measurement_group, study)
+
 
 #Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
