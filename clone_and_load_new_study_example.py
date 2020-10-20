@@ -17,6 +17,9 @@ import data_warehouse
 import mobilise_load_fns
 import clone_and_load_new_study
 import study_summary
+import delete_study_contents
+
+print(f'Clone and Load New Study\n')
 
 # Configure connection to e-Science Central
 #   e-Science Central Networking info
@@ -36,7 +39,7 @@ token = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI1NSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNjI2Mz
 mc.jwt = token
 
 #   Use this to validate a token that you already have
-print('Validating')
+print('Validating Token')
 print(mc.validateToken(token))
 
 # Create a connection to the Data Warehouse
@@ -45,10 +48,11 @@ data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawareho
 
 # Example:
 old_study = 4
-new_study = 15 # NB this must have already been created
+new_study = 27 # NB this must have already been created
 esc_project = "HA01"
 unique_id_measurement_type = 220
 
+delete_study_contents.delete_study_contents(data_warehouse, new_study)
 clone_and_load_new_study.create_and_load_new_study(data_warehouse, old_study, new_study, mc, esc_project,
                               unique_id_measurement_type, mobilise_load_fns.fn_mapper())
 
