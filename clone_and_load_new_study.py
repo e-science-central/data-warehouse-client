@@ -18,6 +18,8 @@ import warehouse_loader_from_esc
 import warehouse_checker
 import study_summary
 import participant_loader_from_esc
+import mobilise_cohort_selection
+from tabulate import tabulate
 
 # Create a new study, clone it from the metatdata in an existing study, check for errors and summarise
 
@@ -44,7 +46,12 @@ def create_and_load_new_study(dw_handle, old_study, new_study, esc_handle, esc_p
                                                                                         project.id, new_study)
     n_new_participants = len(new_participants)
     print(f'There were {n_new_participants} added to the Data Warehouse:')
-    print(*new_participants, sep='\n')
+    print(tabulate(new_participants, headers=['Id', 'Local Id']))
+    print()
+
+    print(f'Write Condition and Site Information for new participants')
+    for p in new_participants:
+        mobilise_cohort_selection.write_condition_and_site(dw_handle, new_study, p[0], esc_project)
 
     # print(f'Participants now in the DW for Study {study_id}')
     # dw_participants = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
@@ -61,7 +68,8 @@ def create_and_load_new_study(dw_handle, old_study, new_study, esc_handle, esc_p
                                                                load_fns)
     n_instances_added = len(new_instances)
     print(f'There were {n_instances_added} New Instances added:')
-    print(*new_instances, sep='\n')
+    print(*new_instances, sep=',')
+    print()
 
     warehouse_checker.print_check_warhouse(dw_handle, new_study)
     study_summary.print_study_summary(dw_handle, new_study)

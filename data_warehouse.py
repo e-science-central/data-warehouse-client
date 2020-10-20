@@ -121,6 +121,7 @@ class DataWarehouse:
                 print("typeval error of ", rows[r][9], " for id", rows[r][0], " study ", rows[r][2])
         return rowOut
 
+
     def printMeasurementGroupInstances(self, rows, groupId, study):
         """
         Prints a list of measurement group instances, converting the datetime to strings
@@ -134,7 +135,7 @@ class DataWarehouse:
         :param study: study id
         """
         typeNames: List[str] = self.getTypesInAMeasurementGroup(study, groupId)
-        nTypes:int = len(typeNames)
+        nTypes: int = len(typeNames)
         headerRow: List[str] = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group",
                                 "Trial"]
         for t in range(nTypes):
@@ -207,81 +208,88 @@ class DataWarehouse:
         q += "                              AND measurement.study           = category.study "
         return q
 
-    def coreSQLforWhereClauses(self, study: int, participant: int, measurementType: int, measurementGroup: int,
-                               groupInstance: int, trial: int, startTime, endTime):
+    def mk_where_condition(self,first_condition,column, test, value):
+        """
+        :param first_condition: true if this is the first condition in a where clause
+        :param column: column name in measurement table
+        :param test: comparator for value
+        :param value: value to be tested in the where clause
+        :return: (where clause, first_condition)
+        """
+        if value != -1:
+            if first_condition:
+                q = " WHERE "
+            else:
+                q = " AND "
+            q += "   measurement." + column + test + str(value)
+            first_condition = False
+        else:
+            q = ""
+        return(q,first_condition)
+
+
+    def core_sql_for_where_clauses(self, study: int, participant: int, measurement_type: int, measurement_group: int,
+                                        group_instance: int, trial: int, start_time, end_time):
         """
         Returns the where clauses used by many of the functions that query the data warehouse to filter out rows
         according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
         created for it
         :param study: a study id
         :param participant: a participant id
+        :param measurement_type: a measurementType
+        :param measurement_group: a measurementGroup
+        :param group_instance: a groupInstance
+        :param trial: a trial id
+        :param start_time: the start of a time period of interest
+        :param end_time: the end of a time period of interest
+        :return: a tuple containing the SQL for the where clauses, and a count of how many there are
+        """
+        first_condition = True
+        (qs,  first_condition) = self.mk_where_condition(first_condition, "study", "=", study)
+        (qp,  first_condition) = self.mk_where_condition(first_condition, "participant", "=", participant)
+        (qmt, first_condition) = self.mk_where_condition(first_condition, "measurementtype", "=", measurement_type)
+        (qmg, first_condition) = self.mk_where_condition(first_condition, "measurementgroup", "=", measurement_group)
+        (qgi, first_condition) = self.mk_where_condition(first_condition, "groupinstance", "=", group_instance)
+        (qst, first_condition) = self.mk_where_condition(first_condition, "trial", "=", trial)
+        (qet, first_condition) = self.mk_where_condition(first_condition, "time" , ">=", start_time)
+        (qt,  first_condition) = self.mk_where_condition(first_condition, "time" , "<=", end_time)
+        return (" " + qs + qp + qmt + qmg + qgi + qst + qet + qt + " ", first_condition)
+
+
+    def core_sql_for_where_clauses_for_cohort(self, study, participants, measurementType: int,
+                                              measurementGroup: int, groupInstance: int, trial: int, startTime, endTime):
+        """
+        Returns the where clauses used by functions that query the data warehouse to filter out rows
+        according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
+        created for it
+        :param study: a study id
+        :param participants: a list of participant ids
         :param measurementType: a measurementType
         :param measurementGroup: a measurementGroup
         :param groupInstance: a groupInstance
         :param trial: a trial id
         :param startTime: the start of a time period of interest
         :param endTime: the end of a time period of interest
-        :return: a tuple containing the SQL for the where clauses, and a count of how many there are
+        :return: the SQL for the where clauses
         """
-        conditionCount: int = 0
-        q: str = " "
-        if (study != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.study = " + str(study)
-        if (participant != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.participant = " + str(participant)
-        if (measurementType != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.measurementtype = " + str(measurementType)
-        if (measurementGroup != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.measurementgroup = " + str(measurementGroup)
-        if (groupInstance != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.groupinstance = " + str(groupInstance)
-        if (trial != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.trial = " + str(trial)
-        if (startTime != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.time >= " + str(startTime)
-        if (endTime != -1):
-            conditionCount = conditionCount + 1
-            if (conditionCount == 1):
-                q += " WHERE "
-            else:
-                q += " AND "
-            q += "   measurement.time <= " + str(endTime)
-        return (q, conditionCount)
+        participants_str = map(lambda p:str(p),participants)
+        q = " WHERE measurement.participant IN (" + ' '.join([elem for elem in intersperse(",", participants_str)]) + ") "
+        if study != -1:
+            q += " AND measurement.study = " + str(study)
+        if measurementType != -1:
+            q += " AND measurement.measurementtype = " + str(measurementType)
+        if measurementGroup != -1:
+            q += " AND measurement.measurementgroup = " + str(measurementGroup)
+        if groupInstance != -1:
+            q += " AND measurement.groupinstance = " + str(groupInstance)
+        if trial != -1:
+            q += " AND measurement.trial = " + str(trial)
+        if startTime != -1:
+            q += " AND measurement.time >= " + str(startTime)
+        if endTime != -1:
+            q += " AND measurement.time <= " + str(endTime)
+        return q
+
 
     def getMeasurements(self, study=-1, participant=-1, measurementType=-1, measurementGroup=-1, groupInstance=-1,
                         trial=-1, startTime=-1, endTime=-1):
@@ -302,8 +310,8 @@ class DataWarehouse:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
         q = self.coreSQLforMeasurements()
-        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
-                                                          groupInstance, trial, startTime, endTime)
+        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
+                                                                groupInstance, trial, startTime, endTime)
         q += w
         q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
         rawResults = self.returnQueryResult(q)
@@ -359,8 +367,8 @@ class DataWarehouse:
         valType = mtInfo[0][2]
         q = "SELECT " + aggregation + "(" + self.fieldHoldingValue(valType) + ") "
         q += self.coreSQLFromForMeasurements()
-        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
-                                                          groupInstance, trial, startTime, endTime)
+        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
+                                                                groupInstance, trial, startTime, endTime)
         q += w
         rawResult = self.returnQueryResult(q)
         return rawResult[0][0]
@@ -393,14 +401,14 @@ class DataWarehouse:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
         q = self.coreSQLforMeasurements()
-        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
-                                                          groupInstance, trial, startTime, endTime)
+        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
+                                                                groupInstance, trial, startTime, endTime)
         q += w
 
         mtInfo = self.getMeasurementTypeInfo(study, measurementType)
         valType = mtInfo[0][2] # find the value type of the measurement
         # Add a clause to test the field that is relevant to the type of the measurement
-        if (conditionCount == 0):
+        if first_condition:
             q += " WHERE " # if this is the first condition in the where clause
         else:
             q += " AND " # if there have already been conditions
@@ -435,10 +443,10 @@ class DataWarehouse:
         c += " AND    measurement.study           = " + str(study)
 
         q:str = self.coreSQLforMeasurements()
-        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, measurementType, measurementGroup,
-                                                          groupInstance, trial, startTime, endTime)
+        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
+                                                                    groupInstance, trial, startTime, endTime)
         q += w
-        if (conditionCount == 0):
+        if first_condition:
             q += " WHERE " # if this is the first condition in the where clause
         else:
             q += " AND " # if there have already been conditions
@@ -513,6 +521,16 @@ class DataWarehouse:
         result = ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
         return result
 
+    def get_participants_in_result(self, results):
+        """
+
+        :param results: a list of measurements. Each measurement is held in a list with the following fields:
+                        id,time,study,participant,measurementType,typeName,measurementGroup,
+                        groupInstance,trial,valType,value
+        :return: a list of unique participants from the measurements
+        """
+        participants = map(lambda r : r[3],results) # pick out participant
+        return list(set(participants))
 
     def getMeasurementGroupInstancesWithValueTests(self, measurementGroup, study, valueTestConditions,
                                                     participant=-1, trial=-1, startTime=-1, endTime=-1):
@@ -536,15 +554,55 @@ class DataWarehouse:
         problem_q = ""  #  returns the instance ids of all instances that fail the criteria
         problem_q += " SELECT measurement.groupinstance "
         problem_q += self.coreSQLFromForMeasurements()
-        (w, conditionCount) = self.coreSQLforWhereClauses(study, participant, -1, measurementGroup, -1, trial,
-                                                          startTime, endTime)
+        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, -1, measurementGroup, -1, trial,
+                                                                startTime, endTime)
         problem_q += w
         if len(valueTestConditions) > 0:
             problem_q += " AND (" + self.mk_value_tests(valueTestConditions, study) + ")"
 
         outerQuery =  self.coreSQLforMeasurements()
         outerQuery += w
-        outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
+        if len(valueTestConditions) > 0:
+            outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
+        outerQuery += " ORDER BY groupinstance, measurementtype"
+        outerQuery += ";"
+        #  print(outerQuery)
+        rawResults = self.returnQueryResult(outerQuery)
+        return self.formMeasurements(rawResults)
+
+
+    def get_measurement_group_instances_for_cohort(self, measurement_group, study, participants, value_test_conditions,
+                                                    trial=-1, start_time=-1, end_time=-1):
+        """
+        Return all instances of a measurement group in which one or more of the measurements within the
+            instance meet some specified criteria for the specified cohort of participants
+        :param measurement_group: a measurement group
+        :param study: a study id
+        :param participants: a list of participant ids
+        :param value_test_conditions: a list where each element is takes the following form:
+                                    (measurementType,condition)
+                                       where condition is a string holding the condition
+                                       against which the value in each measurement is compared.
+        :param trial: a trial id
+        :param start_time: the start of a time period of interest
+        :param end_time: the end of a time period of interest
+        :return: a list of measurements. Each measurement is held in a list with the following fields:
+                    id,time,study,participant,measurementType,typeName,measurementGroup,
+                    groupInstance,trial,valType,value
+        """
+        problem_q = ""  #  returns the instance ids of all instances that fail the criteria
+        problem_q += " SELECT measurement.groupinstance "
+        problem_q += self.coreSQLFromForMeasurements()
+        where_clause = self.core_sql_for_where_clauses_for_cohort(study, participants, -1, measurement_group,
+                                                                    -1, trial, start_time, end_time)
+        problem_q += where_clause
+        if len(value_test_conditions) > 0:
+            problem_q += " AND (" + self.mk_value_tests(value_test_conditions, study) + ")"
+
+        outerQuery =  self.coreSQLforMeasurements()
+        outerQuery += where_clause
+        if len(value_test_conditions) > 0:
+            outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outerQuery += " ORDER BY groupinstance, measurementtype"
         outerQuery += ";"
         #  print(outerQuery)
@@ -631,6 +689,7 @@ class DataWarehouse:
         self.dbConnection.commit()
         return cur.fetchone()
 
+
     def execSQLWithNoReturn(self,queryText):
         """
         executes SQL and commits the outcome. Used to execute INSERT, UPDATE and DELETE statements with no RETURNING.
@@ -639,6 +698,7 @@ class DataWarehouse:
         cur = self.dbConnection.cursor()
         cur.execute(queryText)
         self.dbConnection.commit()
+
 
     def get_all_measurement_groups(self, study_id):
         """
@@ -657,6 +717,7 @@ class DataWarehouse:
         q += str(study_id)
         q += " ORDER BY measurementgroup.id; "
         return self.returnQueryResult(q)
+
 
     def getAllMeasurementGroupsAndTypesInAStudy(self, studyId):
         """
@@ -678,6 +739,7 @@ class DataWarehouse:
         q += str(studyId)
         q += " ORDER BY measurementtypetogroup.measurementgroup, measurementtypetogroup.measurementtype; "
         return self.returnQueryResult(q)
+
 
     def insertOneMeasurement(self,study,measurementGroup,measurementType,valType,value,
                              time =-1,trial = None,participant = None,source = None): # None maps to SQL NULL
@@ -741,8 +803,9 @@ class DataWarehouse:
         self.dbConnection.commit()
         return id
 
-    def insertMeasurementGroup(self,study,measurementGroup,values,
-                               time =-1,trial = None,participant = None,source = None): # None maps to SQL NULL
+
+    def insertMeasurementGroup(self, study, measurementGroup, values,
+                               time =-1, trial = None, participant = None, source = None): # None maps to SQL NULL
         """
          Insert one measurement group
          :param study: the study id
@@ -787,12 +850,13 @@ class DataWarehouse:
             id = cur.fetchone()[0]
             if groupInstance == 0:
                 groupInstance = id
-            # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
+            # Now we know the id of the new measurement we can set the groupinstance field to be the same value for
+            # all measurements in the group
                 cur.execute("""
                             UPDATE measurement SET groupinstance = %s
                             WHERE id = %s;
                             """,
-                            (groupInstance,groupInstance))
+                            (groupInstance, groupInstance))   # set the groupinstance for the first measurement
             if valType == 2: # it's a Text Value so make entry in textvalue table
                 cur.execute("""
                             INSERT INTO textvalue(measurement,textval,study)
@@ -809,6 +873,25 @@ class DataWarehouse:
         return groupInstance
 
 
+    def get_participant_by_id(self, study, participant):
+        """
+         maps from unique participant.id to the local; id stored with measurements in the warehouse
+         :param study: the study id
+         :param participant: the id of the participant in the study
+         :return The participantid of the participant
+         """
+        q = " SELECT participantid FROM participant " \
+            " WHERE participant.study       = " + str(study) + \
+            " AND participant.id = '" + participant + "';"
+        res = self.returnQueryResult(q)
+        found = len(res) == 1
+        if found:
+            return (found, res[0][0])
+        else:
+            print("Participant", participant, " not found in participant.id")
+            return (found, res)
+
+
     def get_participant(self, study_id, local_participant_id):
         """
         maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
@@ -816,13 +899,13 @@ class DataWarehouse:
         :param local_participant_id: the local participant id in the study
         :return The id of the participant
         """
-        q = " SELECT COUNT(id) FROM participant " \
+        q = " SELECT id FROM participant " \
             " WHERE participant.study       = " + str(study_id) + \
             " AND participant.participantid = '" + local_participant_id + "';"
         res = self.returnQueryResult(q)
-        found = res[0][0] == 1
+        found = len(res) == 1
         if found:
-            return (found, res[0])
+            return (found, res[0][0])
         else:
             print("Participant", local_participant_id, " not found in participant.particpantid")
             return (found, res)
@@ -836,30 +919,30 @@ class DataWarehouse:
         :return (whether the measurement group exists, the measurement group)
         """
 
-        q = " SELECT COUNT(id) FROM measurementgroup " \
+        q = " SELECT id FROM measurementgroup " \
             " WHERE measurementgroup.study       = " + str(study_id) + \
             " AND   measurementgroup.description = '" + measurementgroup_description + "';"
         res = self.returnQueryResult(q)
-        found = res[0][0] == 1
+        found = len(res) == 1
         if found:
-            return (found, res[0])
+            return (found, res[0][0])
         else:
             print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
             return (found, res)
 
 
-    def get_participant_id(self, study_id, local_participant_id):
-        """
-        maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
-        :param study_id: the study id
-        :param local_participant_id: a local participant id
-        :return The id of the participant
-        """
-        q = " SELECT id FROM participant " \
-            " WHERE participant.study       = " + str(study_id) + \
-            " AND participant.participantid = '" + local_participant_id + "';"
-        res = self.returnQueryResult(q)
-        return res[0]
+#    def get_participant_id(self, study_id, local_participant_id):
+#        """
+#        maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
+#        :param study_id: the study id
+#        :param local_participant_id: a local participant id
+#        :return The id of the participant
+#        """
+#        q = " SELECT id FROM participant " \
+#            " WHERE participant.study       = " + str(study_id) + \
+#            " AND participant.participantid = '" + local_participant_id + "';"
+#        res = self.returnQueryResult(q)
+#        return res[0]
 
 
     def get_participants(self, study_id):
@@ -899,6 +982,33 @@ class DataWarehouse:
         return free_id
 
 
+    def add_participant_if_new(self, study_id, participant_id, local_participant_id):
+        """
+        add a participant into the data warehouse unless they already exist
+        :param study_id: the study id
+        :param participant_id: the participant_id
+        :param local_participant_id: the local name for the participant
+        :res (participant_added, new participant id)
+        """
+        cur = self.dbConnection.cursor()
+
+        q = " SELECT id, participantid FROM participant " \
+            " WHERE participant.study = " + str(study_id) + \
+            " AND participant.id =  " + str(participant_id) + ";"
+        res = self.returnQueryResult(q)
+        participant_already_exists = len(res) > 0
+        if participant_already_exists:
+            return (False, participant_id)
+        else:
+            cur.execute("""
+                        INSERT INTO participant(id,participantid,study)
+                        VALUES (%s, %s, %s);
+                        """,
+                    (participant_id, local_participant_id, study_id))  # insert the new entry
+            self.dbConnection.commit()
+            return (True, participant_id)
+
+
     def n_mg_instances(self, mg_id, study):
         """
         Return the number of instances of a measurement group in a study
@@ -931,7 +1041,7 @@ class DataWarehouse:
         """
         A helper function that returns the ids of the measurement types in a measurement group
         :param study: study id
-        :param measurementGroup: measurement group id
+        :param measurement_group: measurement group id
         :return: list of ids of the measurement types in the measurement group
         """
         q = ""

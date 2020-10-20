@@ -52,7 +52,7 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    q =  data_warehouse.coreSQLforMeasurements()
+    q =   dw.coreSQLforMeasurements()
     q += " WHERE measurement.study = " + str(study)
     q += " AND ((measurement.valtype IN (0,4,5,6,7)) AND (measurement.valinteger    = NULL)) OR "
     q += "     ((measurement.valtype IN (1,8))       AND (measurement.valreal       = NULL)) OR "
@@ -168,12 +168,13 @@ def print_check_warhouse(dw, study):
         print(r[0])
     n_errors = len(r5)
     print(f'({n_errors} measurements)')
+    print()
 
 
 # Test
 # Create a connection to the data warehouse
 
-data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
-study_id = 11
-study_summary.print_study_summary(data_warehouse, study_id)
-print_check_warhouse(data_warehouse, study_id)
+#data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
+#study_id = 11
+#study_summary.print_study_summary(data_warehouse, study_id)
+#print_check_warhouse(data_warehouse, study_id)

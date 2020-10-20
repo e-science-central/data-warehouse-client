@@ -14,6 +14,7 @@
 
 import data_warehouse
 import study_summary
+import mobilise_cohort_selection
 #import warehouse_checker
 
 #Create a connection to the data warehouse
@@ -78,7 +79,19 @@ data_warehouse.printMeasurements(ms5)
 print("\nQ15: All instances of measurement group 15 where the participant's age is greater than 22")
 print("          and body mass is less than 55kgs in study 2")
 ms6 = data_warehouse.getMeasurementGroupInstancesWithValueTests(15, 2, [(151, ">22"), (154, "<55.0")])
-data_warehouse.printMeasurements(ms6)
+#data_warehouse.printMeasurements(ms6)
+mgs6 = data_warehouse.formMeasurementGroup(2,ms6)
+data_warehouse.printMeasurementGroupInstances(mgs6,15, 2)
+print("\nParticipants: ")
+parts = data_warehouse.get_participants_in_result(ms6)
+print(*parts,sep = ',')
+print()
+
+ms6a = data_warehouse.get_measurement_group_instances_for_cohort(15,2,parts,[])
+data_warehouse.printMeasurements(ms6a)
+
+ms6b = data_warehouse.get_measurement_group_instances_for_cohort(15,2,[4],[])
+data_warehouse.printMeasurements(ms6b)
 
 print("\nQ16: The average of all measurements of type 155 from study 3\n")
 ms7 = data_warehouse.aggregateMeasurements(155, 3, "avg")
@@ -148,3 +161,19 @@ data_warehouse.printMeasurementGroupInstances(mgs26,6, 10)
 
 print("\nQ27: All measurements in Study 14")
 study_summary.print_all_instances_in_a_study(data_warehouse,14)
+
+print("\nQ28: All measurement group 14 measurements for all participants in UNEW and USFD with HA or CHF in study 26")
+# Retrieve the cohort
+cohort = mobilise_cohort_selection.get_mobilise_cohort(data_warehouse, 26, ["UNEW","USFD"], ["HA","CHF"])
+# Use the cohort in a query
+# print(*cohort, sep=',')
+ms28 = data_warehouse.get_measurement_group_instances_for_cohort(14, 26, cohort, [])
+mgs28 = data_warehouse.formMeasurementGroup(14, ms28)
+data_warehouse.printMeasurementGroupInstances(mgs28, 14, 26)
+
+print("\nQ29: All instances of measurement group 15 where the participant's age is greater than 22")
+print("          and body mass is less than 55kgs in study 24")
+ms6 = data_warehouse.getMeasurementGroupInstancesWithValueTests(15, 2, [(151, ">22"), (154, "<55.0")])
+#data_warehouse.printMeasurements(ms6)
+mgs6 = data_warehouse.formMeasurementGroup(2, ms6)
+data_warehouse.printMeasurementGroupInstances(mgs6, 15, 2)
