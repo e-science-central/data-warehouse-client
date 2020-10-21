@@ -13,12 +13,17 @@
 # limitations under the License.
 
 
+import accelerometry_analytics
 import data_warehouse
-import study_summary
+from tabulate import tabulate
 
-#Create a connection to the data warehouse
+# Create a connection to the Data Warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
-study_id = 85
-study_summary.print_study_summary(data_warehouse,study_id)
-study_summary.print_all_instances_in_a_study(data_warehouse,study_id)
+res_second = accelerometry_analytics.enmo_aggregations(data_warehouse, 85, 0, 2, 3, 4, 'second')
+print(tabulate(res_second, headers=["Time","Average ENMO"]))
+print()
+
+res_minute = accelerometry_analytics.enmo_aggregations(data_warehouse, 85, 0, 2, 3, 4, 'minute')
+print(tabulate(res_minute, headers=["Time","Average ENMO"]))
+

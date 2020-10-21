@@ -24,7 +24,6 @@ def get_instances_per_measurement_group(dw, study):
     and the number of instances that don't have every measurement
     :param dw: data warehouse handle
     :param study: study id
-    :param mg_id: measurement group
     :return: number of instances in each measurement group, and the number of instances that don't have every measurement
     """
     measurement_groups = dw.get_all_measurement_groups(study)
