@@ -26,4 +26,8 @@ print()
 
 res_minute = accelerometry_analytics.enmo_aggregations(data_warehouse, 85, 0, 2, 3, 4, 'minute')
 print(tabulate(res_minute, headers=["Time","Average ENMO"]))
+print()
 
+ac = accelerometry_analytics.activity_classification(data_warehouse, 85, 0, 2, 3, 4, 'second')
+print(tabulate(ac, headers=["Classification","Count"]))
+print()
