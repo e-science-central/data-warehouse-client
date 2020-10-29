@@ -45,6 +45,7 @@ class DataWarehouse:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
 
+
     def printRows(self, rows, header: List[str]):
         """
         prints each row returned by a query
@@ -52,6 +53,7 @@ class DataWarehouse:
         :param header: a list of field names
         """
         print(tabulate(rows, headers=header))
+
 
     def exportMeasurementAsCSV(self, rows, fname):
         """
@@ -71,6 +73,7 @@ class DataWarehouse:
                 ["Id", "Time", "Study", "Participant", "Measurement Type", "Measurement Type Name", "Measurement Group",
                  "Measurement Group Instance", "Trial", "Value Type", "Value"])
             writer.writerows(rows)
+
 
     def formMeasurements(self, rows):
         """
@@ -164,12 +167,14 @@ class DataWarehouse:
             writer.writerow(headerRow)
             writer.writerows(rows)
 
+
     def coreSQLforMeasurements(self):
         """
         Creates the select and from clauses used by many of the functions that query the data warehouse
         :return: the select and from clauses used by several of the functions that query the data warehouse
         """
         return self.coreSQLSelectForMeasurements() + self.coreSQLFromForMeasurements()
+
 
     def coreSQLSelectForMeasurements(self):
         """
@@ -185,6 +190,7 @@ class DataWarehouse:
         q += "    measurement.valtype, measurement.valinteger,"
         q += "    measurement.valreal , textvalue.textval, datetimevalue.datetimeval,category.categoryname "
         return q
+
 
     def coreSQLFromForMeasurements(self):
         """
@@ -207,6 +213,7 @@ class DataWarehouse:
         q += "                              AND measurement.measurementtype = category.measurementtype "
         q += "                              AND measurement.study           = category.study "
         return q
+
 
     def mk_where_condition(self,first_condition,column, test, value):
         """
@@ -317,6 +324,7 @@ class DataWarehouse:
         rawResults = self.returnQueryResult(q)
         return self.formMeasurements(rawResults)
 
+
     def fieldHoldingValue(self, valType):
         """
         A helper function that returns the data warehouse field that holds measurement values of the type
@@ -347,6 +355,7 @@ class DataWarehouse:
             print("Error: valType out of range: ", valType)
         return field
 
+
     def aggregateMeasurements(self, measurementType,  study, aggregation, participant=-1, measurementGroup=-1,
                               groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
         """
@@ -373,6 +382,7 @@ class DataWarehouse:
         rawResult = self.returnQueryResult(q)
         return rawResult[0][0]
 
+
     def makeValueTest(self, valType, valueTestCondition):
         """
         creates a condition for the where clause of a query
@@ -382,6 +392,7 @@ class DataWarehouse:
         """
         cond = " (" + self.fieldHoldingValue(valType) + valueTestCondition + ") "
         return cond
+
 
     def getMeasurementsWithValueTest(self, measurementType, study, valueTestCondition, participant=-1,
                                      measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
@@ -521,6 +532,7 @@ class DataWarehouse:
         result = ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
         return result
 
+
     def get_participants_in_result(self, results):
         """
 
@@ -531,6 +543,7 @@ class DataWarehouse:
         """
         participants = map(lambda r : r[3],results) # pick out participant
         return list(set(participants))
+
 
     def getMeasurementGroupInstancesWithValueTests(self, measurementGroup, study, valueTestConditions,
                                                     participant=-1, trial=-1, startTime=-1, endTime=-1):
@@ -620,6 +633,7 @@ class DataWarehouse:
                                 "Measurement Group","Group Instance", "Trial", "Val Type", "Value"]
         print(tabulate(rows, headers=headerRow))
 
+
     def getMeasurementTypeInfo(self, study, measurementTypeId):
         """
         Returns information on a measurement type
@@ -642,6 +656,7 @@ class DataWarehouse:
         q += ";"
         mtinfo = self.returnQueryResult(q)
         return mtinfo
+
 
     def plotMeasurementType(self, rows, measurementTypeId, study, plotFile):
         """
@@ -667,6 +682,7 @@ class DataWarehouse:
         pyplot.savefig(plotFile)
         pyplot.close()
 
+
     def returnQueryResult(self, queryText):
         """
         executes an SQL query. It is used for SELECT queries.
@@ -677,6 +693,7 @@ class DataWarehouse:
         cur.execute(queryText)
         rowsq = cur.fetchall()
         return rowsq
+
 
     def execInsertWithReturn(self, queryText):
         """
@@ -1023,6 +1040,7 @@ class DataWarehouse:
         res = self.returnQueryResult(q)
         return res[0][0]
 
+
     def mg_instances(self, mg_id, study):
         """
         Return the ids of instances of a measurement group in a study
@@ -1036,6 +1054,7 @@ class DataWarehouse:
         q += " ORDER BY measurement.groupinstance;"
         res = self.returnQueryResult(q)
         return res
+
 
     def get_type_ids_in_measurement_group(self, study, measurement_group):
         """
@@ -1088,7 +1107,7 @@ class DataWarehouse:
             if not (mgi in result_common):
                 result_common.update({mgi: [mgi, time, study, participant, mg, trial]})
                 result_values.update({mgi:{}})
-            result_values[mgi][mt] = value  # add values to the directory
+            result_values[mgi][mt] = value  # add values to the dictionary
         result = []
         for instance in result_values:
             val_dict = result_values[instance]
