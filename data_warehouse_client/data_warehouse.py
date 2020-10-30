@@ -916,19 +916,6 @@ class DataWarehouse:
             print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
             return (found, res)
 
-    #    def get_participant_id(self, study_id, local_participant_id):
-    #        """
-    #        maps from a participantid that is local to the study, to the unique id stored with measurements in the warehouse
-    #        :param study_id: the study id
-    #        :param local_participant_id: a local participant id
-    #        :return The id of the participant
-    #        """
-    #        q = " SELECT id FROM participant " \
-    #            " WHERE participant.study       = " + str(study_id) + \
-    #            " AND participant.participantid = '" + local_participant_id + "';"
-    #        res = self.returnQueryResult(q)
-    #        return res[0]
-
     def get_participants(self, study_id):
         """
         Get all participants in a study
