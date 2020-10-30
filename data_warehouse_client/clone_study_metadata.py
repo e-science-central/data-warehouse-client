@@ -27,8 +27,8 @@ def clone_study_metadata(dw, source_study_id, dest_study_id):
     # extract existing metadata
     tbls = table_writer.data_warehouse_metadata_tables_to_dictionary(dw, source_study_id)
     # print("Source Tables:", tbls)
-    for table in tbls:                            # for each table
-        for row in tbls[table]:                         # for each row
+    for table in tbls:  # for each table
+        for row in tbls[table]:  # for each row
             row.update({'study': dest_study_id})  # update all occurrences of study to the destination study
     # print("Dest Tables:  ", tbls)
     return table_writer.write_tables_in_dw_from_dictionary(dw, tbls)  # write the result to the warehouse

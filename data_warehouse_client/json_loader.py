@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import data_warehouse
 import json
 import sys
 
+import data_warehouse
 
-def load_json_file(fname:str):
+
+def load_json_file(fname: str):
     """
     Load a json file
     :param fname: the filename of the json file
@@ -31,7 +32,7 @@ def load_json_file(fname:str):
         sys.exit("Unable to load the json file! Exiting.\n" + str(e))
 
 
-def mk_01(s:str):
+def mk_01(s: str):
     """
     Transform a boolean represented as a 'T' or 'F' string into 0 for False or 1 for True
     :param s: 'T' or 'F'
@@ -80,7 +81,7 @@ def split_enum(jfields, typeids, valuelist):
     :return The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     res = []
-    for (typeid,value) in zip(typeids, valuelist):
+    for (typeid, value) in zip(typeids, valuelist):
         res = res + [(typeid, 4, int(value in jfields))]  # the 4 is because the type is boolean
     return res
 
@@ -94,13 +95,13 @@ def get_participantid(studyid, js):
     """
     localid = js['metadata']['_userId']
     q = " SELECT id FROM participant " \
-        "WHERE participant.study       = "  + str(studyid) + \
+        "WHERE participant.study       = " + str(studyid) + \
         "AND participant.participantid = '" + localid + "';"
     res = data_warehouse.returnQueryResult(q)
     return res[0]
 
 
-def mk_e_screening_chf(js):   # measurement group 24
+def mk_e_screening_chf(js):  # measurement group 24
     """
     transforms a e-screening-chf json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -139,7 +140,7 @@ def mk_e_screening_ha(js):  # measurement group 25
             (201, 4, mk_01(data['shoe']))]
 
 
-def mk_walking_aids_group(js):     # measurement group 4
+def mk_walking_aids_group(js):  # measurement group 4
     """
     transforms a j-walking-aids.json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -147,13 +148,15 @@ def mk_walking_aids_group(js):     # measurement group 4
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     data = js['data']
-    return  split_enum( data['allaids'],[14,15,16,17,18,19],
-                        ['None','One cane/crutch','Two crutches','Walker','Rollator','Other']) +\
-            [(20, 2, mk_optional_string(data,'Other')),
-             (21, 5, mk_category(data['indoor'],['None','One cane/crutch','Two crutches','Walker','Rollator','Other'])),
-             (22 ,5, mk_category(data['indoorfreq'],['Regularly', 'Occasionally'])),
-             (23 ,5, mk_category(data['outdoor'],['None','One cane/crutch','Two crutches','Walker','Rollator','Other'])),
-             (24 ,5, mk_category(data['outdoorfreq'],['Regularly', 'Occasionally']))]
+    return split_enum(data['allaids'], [14, 15, 16, 17, 18, 19],
+                      ['None', 'One cane/crutch', 'Two crutches', 'Walker', 'Rollator', 'Other']) + \
+           [(20, 2, mk_optional_string(data, 'Other')),
+            (21, 5,
+             mk_category(data['indoor'], ['None', 'One cane/crutch', 'Two crutches', 'Walker', 'Rollator', 'Other'])),
+            (22, 5, mk_category(data['indoorfreq'], ['Regularly', 'Occasionally'])),
+            (23, 5,
+             mk_category(data['outdoor'], ['None', 'One cane/crutch', 'Two crutches', 'Walker', 'Rollator', 'Other'])),
+            (24, 5, mk_category(data['outdoorfreq'], ['Regularly', 'Occasionally']))]
 
 
 def mk_falls_description(js):  # measurement group 8
@@ -164,12 +167,12 @@ def mk_falls_description(js):  # measurement group 8
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     data = js['data']
-    return [(48,  7, data['fallint']),
-            (49,  2, data['falldesc']),
-            (50,  2, data['fallinjury'])]
+    return [(48, 7, data['fallint']),
+            (49, 2, data['falldesc']),
+            (50, 2, data['fallinjury'])]
 
 
-def mk_i_medication_usage(js): # measurement group 13
+def mk_i_medication_usage(js):  # measurement group 13
     """
     transforms a i-medication-usage.json form into the triples used by insertMeasurementGroup to
           store each measurement that is in the form
@@ -177,14 +180,14 @@ def mk_i_medication_usage(js): # measurement group 13
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     data = js['data']
-    return  [(108, 2, data['drug']),
-             (109, 2, data['dose'])] + \
-             split_enum(data['freq'], [110, 111, 112, 113],['Morning', 'Afternoon', 'Evening', 'At night']) + \
-            [(114, 5, mk_category(data['reg' ],['Regular', 'Occasional'])),
-             (115, 5, mk_category(data['oral'],['Oral', 'Sub-cutaneous', 'Intravenous']))]
+    return [(108, 2, data['drug']),
+            (109, 2, data['dose'])] + \
+           split_enum(data['freq'], [110, 111, 112, 113], ['Morning', 'Afternoon', 'Evening', 'At night']) + \
+           [(114, 5, mk_category(data['reg'], ['Regular', 'Occasional'])),
+            (115, 5, mk_category(data['oral'], ['Oral', 'Sub-cutaneous', 'Intravenous']))]
 
 
-def json_load(study, measurement_group, load_fn,fname):
+def json_load(study, measurement_group, load_fn, fname):
     """
     load contents of json file into the data warehouse and then retrieve it and print it
     :param study: study id
@@ -200,21 +203,20 @@ def json_load(study, measurement_group, load_fn,fname):
     data_warehouse.printMeasurementGroupInstances(dataInTabularForm, measurement_group, study)
 
 
-#Create a connection to the data warehouse
+# Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 print("\n Load measurements from e-screening-chf json file\n")
-json_load(4,24,mk_e_screening_chf,'input\e-screening-chf.json')
+json_load(4, 24, mk_e_screening_chf, 'input\e-screening-chf.json')
 
 print("\n Load measurements from j-walking-aids json file\n")
-json_load(4,4,mk_walking_aids_group,'input\j-walking-aids.json')
+json_load(4, 4, mk_walking_aids_group, 'input\j-walking-aids.json')
 
 print("\n Load measurements from h-falls-description json file\n")
-json_load(4,8,mk_falls_description,'input\h-falls-description.json')
+json_load(4, 8, mk_falls_description, 'input\h-falls-description.json')
 
 print("\n Load measurements from i-medication-usage json file\n")
-json_load(4,13,mk_i_medication_usage,'input\i-medication-usage.json')
+json_load(4, 13, mk_i_medication_usage, 'input\i-medication-usage.json')
 
 print("\n Load measurements from e-screening-ha json file\n")
-json_load(4,25,mk_e_screening_ha,'input\e-screening-ha.json')
-
+json_load(4, 25, mk_e_screening_ha, 'input\e-screening-ha.json')

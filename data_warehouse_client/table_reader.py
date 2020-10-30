@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 
-import data_warehouse
-import table_writer
 
-# Create a connection to the data warehouse
-data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
-
-# example 1
-study_id = 4
-
-print("Write all metdata tables in a study to a json file\n")
-
-file_name = "output/metadatatables" + str(study_id) + ".json"
-
-table_writer.data_warehouse_metadata_tables_to_file(data_warehouse, study_id, file_name)
+def read_json_tables(file_name):
+    """
+    Reads a table stored in a json file
+    :param file_name: filename in which to store the output (in directory output)
+    :return a list of dictionaries - one for each row of the table
+    """
+    try:
+        with open(file_name, 'r') as jIn:
+            j = json.load(jIn)
+            return j
+    except Exception as e:
+        print("Unable to load the json file! Exiting: \n" + str(e))
+    return j
