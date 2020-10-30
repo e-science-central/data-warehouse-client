@@ -20,5 +20,5 @@ import study_summary
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 study_id = 85
-study_summary.print_study_summary(data_warehouse,study_id)
-study_summary.print_all_instances_in_a_study(data_warehouse,study_id)
+study_summary.print_study_summary(data_warehouse, study_id)
+study_summary.print_all_instances_in_a_study(data_warehouse, study_id)

@@ -12,22 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# only run this if you're certain that you want to remove all metdata and measurements from a study!
-import delete_study_contents
-import table_writer
+# test of load 85+
+
 import data_warehouse
+import study_summary
 
 # Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
-#study = 86
-#file_name = "output/metadatatables" + str(study) + ".json"
-# store everything important just in case!
-# table_writer.data_warehouse_metadata_tables_to_file(data_warehouse, study, file_name)
+# example 1
+# source_study_id = 85
+dest_study_id   = 85
+trial = 1
+input_file_name = "input/NE____NE85+______0005___7D_________RW_00014__2009 06 16 10.08.54_12__.csv"
 
+# print("Copy Metadata Table rows from one study to another\n")
+# n_rows_inserted = clone_study_metadata.clone_study_metadata(data_warehouse, source_study_id, dest_study_id)
+# print(n_rows_inserted, "New Entries in Study Metadata tables")
 
-#  delete_study_contents.delete_study_contents(data_warehouse, study)
+#load_85_plus_study_file.load_85_plus_file(data_warehouse, input_file_name, dest_study_id, trial, 5000)
 
-#for study in range(8,26):
-#delete_study_contents.delete_study_completely(data_warehouse, ???)
+study_summary.print_study_summary(data_warehouse, dest_study_id)
+study_summary.print_all_instances_in_a_study(data_warehouse, dest_study_id)
 

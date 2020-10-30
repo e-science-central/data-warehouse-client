@@ -54,6 +54,6 @@ unique_id_measurement_type = 220
 
 delete_study_contents.delete_study_contents(data_warehouse, new_study)
 clone_and_load_new_study.create_and_load_new_study(data_warehouse, old_study, new_study, mc, esc_project,
-                              unique_id_measurement_type, mobilise_load_fns.fn_mapper())
+                                                   unique_id_measurement_type, mobilise_load_fns.fn_mapper())
 
-study_summary.print_all_instances_in_a_study(data_warehouse,new_study)
+study_summary.print_all_instances_in_a_study(data_warehouse, new_study)

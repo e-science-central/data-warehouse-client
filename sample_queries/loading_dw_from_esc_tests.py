@@ -85,8 +85,8 @@ print(*events, sep='\n')
 unique_id_measurement_type = 220  # the measurement type that holds the unique id for each measurement group
 
 print(f'\nLoad Data from e-Science Central Project {esc_project} into Data Warehouse Study {study_id}')
-new_instances = warehouse_loader_from_esc.load_dw_from_esc( mc, data_warehouse, study_id, esc_project,
-                                                            unique_id_measurement_type, mobilise_load_fns.fn_mapper())
+new_instances = warehouse_loader_from_esc.load_dw_from_esc(mc, data_warehouse, study_id, esc_project,
+                                                           unique_id_measurement_type, mobilise_load_fns.fn_mapper())
 n_instances_added = len(new_instances)
 print(f'There were {n_instances_added} New Instances added:')
 print(*new_instances, sep='\n')

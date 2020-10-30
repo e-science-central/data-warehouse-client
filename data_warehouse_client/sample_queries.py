@@ -160,11 +160,11 @@ mgs26 = data_warehouse.formMeasurementGroup(10,ms26)
 data_warehouse.printMeasurementGroupInstances(mgs26,6, 10)
 
 print("\nQ27: All measurements in Study 14")
-study_summary.print_all_instances_in_a_study(data_warehouse,14)
+study_summary.print_all_instances_in_a_study(data_warehouse, 14)
 
 print("\nQ28: All measurement group 14 measurements for all participants in UNEW and USFD with HA or CHF in study 26")
 # Retrieve the cohort
-cohort = mobilise_cohort_selection.get_mobilise_cohort(data_warehouse, 26, ["UNEW","USFD"], ["HA","CHF"])
+cohort = mobilise_cohort_selection.get_mobilise_cohort(data_warehouse, 26, ["UNEW", "USFD"], ["HA", "CHF"])
 # Use the cohort in a query
 # print(*cohort, sep=',')
 ms28 = data_warehouse.get_measurement_group_instances_for_cohort(14, 26, cohort, [])
