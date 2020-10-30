@@ -14,16 +14,19 @@
 
 
 import csv
+
 import data_warehouse
 
 # Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
+
 
 def object_types():
     """
     :return: the types of objets found in a kitti file, and their corresponding category id
     """
     return {'pedestrian': 0, 'car': 1}
+
 
 def map_to_category_number(category_string, category_mapper):
     """
@@ -33,6 +36,7 @@ def map_to_category_number(category_string, category_mapper):
     :return: the category id
     """
     return category_mapper[category_string]
+
 
 def read_kitti_file(file_name):
     """
@@ -70,7 +74,7 @@ for cl in r:
     data_warehouse.insertMeasurementGroup(study, measurement_group,
                                           [(1, 0, cl[frame_id_index]),
                                            (2, 0, cl[object_id_index]),
-                                           (3, 5, map_to_category_number(cl[object_type_index],object_types())),
+                                           (3, 5, map_to_category_number(cl[object_type_index], object_types())),
                                            (4, 1, cl[bounding_box_Left_index]),
                                            (5, 1, cl[bounding_box_Top_index]),
                                            (6, 1, cl[bounding_box_Right_index]),

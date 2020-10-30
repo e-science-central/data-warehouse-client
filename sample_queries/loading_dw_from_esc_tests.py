@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mobiliseclient import *
 import data_warehouse
-import participant_loader_from_esc
-import warehouse_loader_from_esc
-import mobilise_load_fns
+from sample_queries import mobilise_load_fns, participant_loader_from_esc, warehouse_loader_from_esc
+from sample_queries.mobiliseclient import *
 
 hostname = "mobilised.di-projects.net"
 port = 443
@@ -49,13 +47,13 @@ study_id = 9
 esc_project = "HA01"
 project = mc.getProjectByStudyCode(esc_project)
 
-#print(f'Participants in e-Science Central Project {esc_project}:')
-#esc_parts = participant_loader_from_esc.get_all_participants_in_esc_study(mc, project.id)
-#print(*esc_parts, sep='\n')
+# print(f'Participants in e-Science Central Project {esc_project}:')
+# esc_parts = participant_loader_from_esc.get_all_participants_in_esc_study(mc, project.id)
+# print(*esc_parts, sep='\n')
 
-#print(f'Participants in Data Warehouse Study {study_id}')
-#dw_parts = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
-#print(*dw_parts, sep='\n')
+# print(f'Participants in Data Warehouse Study {study_id}')
+# dw_parts = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
+# print(*dw_parts, sep='\n')
 
 print(f'Insert new participants from e-Science Central project {esc_project} into Data Warehouse study {study_id}')
 new_participants = participant_loader_from_esc.insert_new_participants_in_warehouse(mc, data_warehouse,
@@ -64,9 +62,9 @@ n_new_participants = len(new_participants)
 print(f'There were {n_new_participants} added to the Data Warehouse:')
 print(*new_participants, sep='\n')
 
-#print(f'Participants now in the DW for Study {study_id}')
-#dw_participants = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
-#print(*dw_participants, sep='\n')
+# print(f'Participants now in the DW for Study {study_id}')
+# dw_participants = participant_loader_from_esc.get_all_participants_in_dw_study(data_warehouse, study_id)
+# print(*dw_participants, sep='\n')
 
 print(f'Copy events from e-Science Central project {esc_project} into Data Warehouse study {study_id}')
 print(f'Events in e-Science Central Project {esc_project}:')
@@ -90,4 +88,3 @@ new_instances = warehouse_loader_from_esc.load_dw_from_esc(mc, data_warehouse, s
 n_instances_added = len(new_instances)
 print(f'There were {n_instances_added} New Instances added:')
 print(*new_instances, sep='\n')
-

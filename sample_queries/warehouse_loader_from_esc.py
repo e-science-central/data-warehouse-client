@@ -94,7 +94,7 @@ def load_data_into_dw(dw, study, unique_id_measurement_type, mapper_dict, event_
             except Exception as e:
                 print("Error: ", e.__class__, "occurred.")
             # else:
-                #  print("Error loading:", data_id)
+            #  print("Error loading:", data_id)
     return new_ids_in_dw  # return all the inserted instance group ids
 
 

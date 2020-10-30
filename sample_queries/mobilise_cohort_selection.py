@@ -14,8 +14,9 @@
 
 #  create measurement group for a participant holding the condition and site
 
-from more_itertools import intersperse
 import re
+
+from more_itertools import intersperse
 
 
 def get_condition_and_site(study_code):
@@ -120,7 +121,6 @@ def get_mobilise_cohort(dw, study, sites, conditions):
                                                              (308, " IN " + mk_sql_list(site_cat))])
         res = dw.get_participants_in_result(cps) + res
     return list(set(res))
-
 
 # example get_mobilise_cohort(dw,4,["NCL","MUN"],["HA","MS","PFF"]
 

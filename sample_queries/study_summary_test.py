@@ -16,7 +16,7 @@
 import data_warehouse
 import study_summary
 
-#Create a connection to the data warehouse
+# Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 study_id = 85

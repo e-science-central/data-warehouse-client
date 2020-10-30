@@ -27,5 +27,4 @@ def read_json_tables(file_name):
             return j
     except Exception as e:
         print("Unable to load the json file! Exiting: \n" + str(e))
-    return  j
-
+    return j

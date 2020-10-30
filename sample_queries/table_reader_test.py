@@ -13,5 +13,4 @@
 # limitations under the License.
 import table_reader
 
-
 print(table_reader.read_json_tables("output/metadatatables4.json"))

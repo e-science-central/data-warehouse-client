@@ -13,9 +13,8 @@
 # limitations under the License.
 
 
-import study_summary
 import data_warehouse
-
+import study_summary
 
 # Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")

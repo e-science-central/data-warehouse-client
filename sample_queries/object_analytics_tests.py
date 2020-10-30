@@ -21,9 +21,10 @@
 #    :return: a list of the results of applying the function to the values in each message group instance
 #    """
 
-import data_warehouse
-import object_analytics
 from tabulate import tabulate
+
+import data_warehouse
+from sample_queries import object_analytics
 
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
@@ -38,4 +39,3 @@ closeness_limit = 50
 q2 = object_analytics.social_distancing_violations_sql(study_id, object_analytics.pythagorus(), closeness_limit)
 r2 = data_warehouse.returnQueryResult(q2)
 print(tabulate(r2, headers=['Frame', 'Time', 'Obj 1 Id', 'Obj 2 Id', 'Distance']))
-

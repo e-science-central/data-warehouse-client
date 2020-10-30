@@ -263,7 +263,7 @@ def split_enum(jfields, measurement_types, valuelist):
     """
     res = []
     for (measurement_type, value) in zip(measurement_types, valuelist):
-        res = res + [(measurement_type, 4, int(value in jfields))]   # the 4 is because the type is boolean
+        res = res + [(measurement_type, 4, int(value in jfields))]  # the 4 is because the type is boolean
     return res
 
 

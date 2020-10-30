@@ -39,6 +39,7 @@ def mk_axis_query(study, mg, acc_type, axis_name):
         "         measurementgroup =  " + str(mg) + ") AS " + axis_name
     return q
 
+
 def mk_enmo_aggregation_query(study, mg, x_acc_type, y_acc_type, z_acc_type, aggregation):
     """
     Create a query to calculate and aggregate enmo from accelerometry
@@ -60,7 +61,7 @@ def mk_enmo_aggregation_query(study, mg, x_acc_type, y_acc_type, z_acc_type, agg
                          " FROM " + qx + " INNER JOIN " + qy + " ON (x.groupinstance=y.groupinstance) " + \
                          "                 INNER JOIN " + qz + " ON (x.groupinstance=z.groupinstance) ) AS enmovalues "
 
-        q_main = " SELECT date_trunc(\'" + aggregation + "\', timestamp) AS timestamp, AVG(enmo) as enmo " +\
+        q_main = " SELECT date_trunc(\'" + aggregation + "\', timestamp) AS timestamp, AVG(enmo) as enmo " + \
                  "  FROM " + q_combine_axes + \
                  "  GROUP BY date_trunc(\'" + aggregation + "\', timestamp)" + \
                  "  ORDER BY timestamp "
@@ -68,6 +69,7 @@ def mk_enmo_aggregation_query(study, mg, x_acc_type, y_acc_type, z_acc_type, agg
     else:
         print(f'{aggregation} is not a valid aggregation option.')
         return (False, "")
+
 
 def enmo_aggregations(dw, study, mg, x_acc_type, y_acc_type, z_acc_type, aggregation):
     """
@@ -106,15 +108,15 @@ def activity_classification(dw, study, mg, x_acc_type, y_acc_type, z_acc_type, a
     :return: the breakdown of activity in the form [(activity_level, count of values at that level)]
     """
     #  https://ubiq.co/database-blog/create-histogram-postgresql/
-    (valid,enmo_aggregation) = mk_enmo_aggregation_query(study, mg, x_acc_type, y_acc_type, z_acc_type, aggregation)
+    (valid, enmo_aggregation) = mk_enmo_aggregation_query(study, mg, x_acc_type, y_acc_type, z_acc_type, aggregation)
     if valid:
         q = "SELECT '1. Sedentary' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS s " + \
             "WHERE enmo BETWEEN 0.0 and 0.25 " + \
             "UNION(" + \
-            "SELECT '2. Low' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS l "  + \
+            "SELECT '2. Low' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS l " + \
             "WHERE enmo BETWEEN 0.25 and 0.5 ) " + \
             "UNION(" + \
-            "SELECT '3. Moderate' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS m "  + \
+            "SELECT '3. Moderate' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS m " + \
             "WHERE enmo BETWEEN 0.5 and 0.75 ) " + \
             "UNION(" + \
             "SELECT '4. Vigorous' as activity, COUNT(enmo) AS count FROM " + "(" + enmo_aggregation + ") AS v " + \

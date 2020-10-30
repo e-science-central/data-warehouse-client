@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import data_warehouse
-import study_summary
 
 # Warehouse Checker code - check:
 # valtype field points to non-NULL value field
@@ -31,12 +29,12 @@ def check_category_exists(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q =  " SELECT measurementtype.id "
+    q = " SELECT measurementtype.id "
     q += " FROM measurementtype INNER JOIN category ON "
     q += "      (measurementtype.id = category.measurementtype AND "
     q += "      measurementtype.study = category.study) "
 
-    outerq =  " SELECT measurementtype.id, measurementtype.description "
+    outerq = " SELECT measurementtype.id, measurementtype.description "
     outerq += " FROM   measurementtype "
     outerq += " WHERE  measurementtype.valtype IN (5,6) AND "
     outerq += "        measurementtype.study = " + str(study) + " AND "
@@ -52,7 +50,7 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    q =   dw.coreSQLforMeasurements()
+    q = dw.coreSQLforMeasurements()
     q += " WHERE measurement.study = " + str(study)
     q += " AND ((measurement.valtype IN (0,4,5,6,7)) AND (measurement.valinteger    = NULL)) OR "
     q += "     ((measurement.valtype IN (1,8))       AND (measurement.valreal       = NULL)) OR "
@@ -68,14 +66,14 @@ def check_category_in_range(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q =  " SELECT DISTINCT measurement.id "
+    q = " SELECT DISTINCT measurement.id "
     q += " FROM   measurement JOIN category ON "
     q += "        (measurement.measurementtype = category.measurementtype AND "
     q += "        measurement.study = category.study AND "
     q += "        measurement.valinteger = category.categoryid)"
     q += " WHERE  measurement.valtype IN (5,6)"
 
-    q1 =  " SELECT measurement.id "
+    q1 = " SELECT measurement.id "
     q1 += " FROM   measurement "
     q1 += " WHERE  measurement.study = " + str(study) + " AND "
     q1 += "        measurement.valtype IN (5,6) AND "
@@ -170,11 +168,10 @@ def print_check_warhouse(dw, study):
     print(f'({n_errors} measurements)')
     print()
 
-
 # Test
 # Create a connection to the data warehouse
 
-#data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
-#study_id = 11
-#study_summary.print_study_summary(data_warehouse, study_id)
-#print_check_warhouse(data_warehouse, study_id)
+# data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
+# study_id = 11
+# study_summary.print_study_summary(data_warehouse, study_id)
+# print_check_warhouse(data_warehouse, study_id)

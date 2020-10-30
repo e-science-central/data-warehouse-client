@@ -13,13 +13,13 @@
 # limitations under the License.
 
 
-import clone_study_metadata
-import warehouse_loader_from_esc
-import warehouse_checker
-import study_summary
-import participant_loader_from_esc
-import mobilise_cohort_selection
 from tabulate import tabulate
+
+import clone_study_metadata
+import study_summary
+import warehouse_checker
+from sample_queries import mobilise_cohort_selection, participant_loader_from_esc, warehouse_loader_from_esc
+
 
 # Create a new study, clone it from the metatdata in an existing study, check for errors and summarise
 

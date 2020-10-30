@@ -166,18 +166,18 @@ def mk_walking_aids(data_id, data):  # measurement group 4
     """
     return lwh.split_enum(data['allaids'], [14, 15, 16, 17, 18, 19],
                           ['None', 'One cane/crutch', 'Two crutches', 'Walker', 'Rollator', 'Other']) + \
-            lwh.mk_optional_string(20,data,'Other') + \
-            lwh.mk_optional_nominal_from_dict(21, data, 'indoor',
-                                              {'None': 0, 'One cane/crutch': 1, 'Two crutches': 2,
-                                                            'Walker': 3, 'Rollator': 4, 'Other': 5}) + \
-            lwh.mk_optional_nominal_from_dict(22, data, 'indoorfreq',
-                                              {'Regularly': 0, 'Occasionally': 1}) + \
-            lwh.mk_optional_nominal_from_dict(23, data, 'outdoor',
-                                              {'None': 0, 'One cane/crutch': 1, 'Two crutches': 2,
-                                                            'Walker': 3, 'Rollator': 4, 'Other': 5}) + \
-            lwh.mk_optional_nominal_from_dict(24, data, 'outdoorfreq',
-                                              {'Regularly': 0, 'Occasionally': 1}) + \
-            [mobilise_data_id_field(data_id)]
+           lwh.mk_optional_string(20, data, 'Other') + \
+           lwh.mk_optional_nominal_from_dict(21, data, 'indoor',
+                                             {'None': 0, 'One cane/crutch': 1, 'Two crutches': 2,
+                                              'Walker': 3, 'Rollator': 4, 'Other': 5}) + \
+           lwh.mk_optional_nominal_from_dict(22, data, 'indoorfreq',
+                                             {'Regularly': 0, 'Occasionally': 1}) + \
+           lwh.mk_optional_nominal_from_dict(23, data, 'outdoor',
+                                             {'None': 0, 'One cane/crutch': 1, 'Two crutches': 2,
+                                              'Walker': 3, 'Rollator': 4, 'Other': 5}) + \
+           lwh.mk_optional_nominal_from_dict(24, data, 'outdoorfreq',
+                                             {'Regularly': 0, 'Occasionally': 1}) + \
+           [mobilise_data_id_field(data_id)]
 
 
 def mk_falls_description(data_id, data):  # measurement group 8
@@ -205,7 +205,7 @@ def mk_i_medication_usage(data_id, data):  # measurement group 13
     return [mobilise_data_id_field(data_id),
             lwh.mk_string(108, data, 'drug'),
             lwh.mk_string(109, data, 'dose')] + \
-            lwh.split_enum(data['freq'], [110, 111, 112, 113], ['Morning', 'Afternoon', 'Evening', 'At night']) + \
+           lwh.split_enum(data['freq'], [110, 111, 112, 113], ['Morning', 'Afternoon', 'Evening', 'At night']) + \
            [lwh.mk_nominal(114, data, 'reg', {'Regular': 0, 'Occasional': 1}),
             lwh.mk_nominal(115, data, 'oral', {'Oral': 0, 'Sub-cutaneous': 1, 'Intravenous': 2})]
 
@@ -219,18 +219,18 @@ def mk_comorbidity(data_id, data):  # measurement group 26
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     return [mobilise_data_id_field(data_id),
-                lwh.mk_boolean(202, data, 'copd-sdiag'),
-                lwh.mk_boolean(203, data, 'copd-sdiagfx'),
-                lwh.mk_boolean(204, data, 'chf-sdiag'),
-                lwh.mk_boolean(205, data, 'chf-sdiagfx'),
-                lwh.mk_boolean(206, data, 'ms-sdiag'),
-                lwh.mk_boolean(207, data, 'ms-sdiagfx'),
-                lwh.mk_boolean(208, data, 'pd-sdiag'),
-                lwh.mk_boolean(209, data, 'pd-sdiagfx'),
-                lwh.mk_boolean(210, data, 'pff-sdiag'),
-                lwh.mk_boolean(211, data, 'pff-sdiagfx')] + \
-                lwh.mk_optional_boolean(212, data, 'pffq') + \
-                lwh.mk_optional_boolean(213, data, 'pffx')
+            lwh.mk_boolean(202, data, 'copd-sdiag'),
+            lwh.mk_boolean(203, data, 'copd-sdiagfx'),
+            lwh.mk_boolean(204, data, 'chf-sdiag'),
+            lwh.mk_boolean(205, data, 'chf-sdiagfx'),
+            lwh.mk_boolean(206, data, 'ms-sdiag'),
+            lwh.mk_boolean(207, data, 'ms-sdiagfx'),
+            lwh.mk_boolean(208, data, 'pd-sdiag'),
+            lwh.mk_boolean(209, data, 'pd-sdiagfx'),
+            lwh.mk_boolean(210, data, 'pff-sdiag'),
+            lwh.mk_boolean(211, data, 'pff-sdiagfx')] + \
+           lwh.mk_optional_boolean(212, data, 'pffq') + \
+           lwh.mk_optional_boolean(213, data, 'pffx')
 
 
 def mk_descriptives(data_id, data):  # measurement group 9
@@ -244,9 +244,9 @@ def mk_descriptives(data_id, data):  # measurement group 9
     return [mobilise_data_id_field(data_id),
             lwh.mk_bounded_int(51, data, 'yob'),
             lwh.mk_bounded_int(52, data, 'age'),
-            lwh.mk_nominal( 53, data, 'residence', {'Community-dwelling': 0, 'Nursing home': 1}),
-            lwh.mk_nominal( 54, data, 'education', {'12 years or less': 0, 'More than 12 years': 1}),
-            lwh.mk_nominal(214, data, 'gender'   , {'Male': 0, 'Female': 1, 'Prefer not to say': 2})]
+            lwh.mk_nominal(53, data, 'residence', {'Community-dwelling': 0, 'Nursing home': 1}),
+            lwh.mk_nominal(54, data, 'education', {'12 years or less': 0, 'More than 12 years': 1}),
+            lwh.mk_nominal(214, data, 'gender', {'Male': 0, 'Female': 1, 'Prefer not to say': 2})]
 
 
 def mk_moca(data_id, data):  # measurement group 14
@@ -297,11 +297,11 @@ def mk_living_arrangements(data_id, data):  # measurement group 11
     :param data: data array from the json form
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
-    return  [mobilise_data_id_field(data_id),
-            lwh.mk_nominal( 95, data, 'alone', {'Alone': 0, 'With someone': 1}),
-            lwh.mk_nominal( 96, data, 'arrange', {'House': 0, 'Apartment': 1,
-                                                    'Independent living unit': 2, 'Other': 3})] + \
-            lwh.mk_optional_string(97, data, 'othertext')
+    return [mobilise_data_id_field(data_id),
+            lwh.mk_nominal(95, data, 'alone', {'Alone': 0, 'With someone': 1}),
+            lwh.mk_nominal(96, data, 'arrange', {'House': 0, 'Apartment': 1,
+                                                 'Independent living unit': 2, 'Other': 3})] + \
+           lwh.mk_optional_string(97, data, 'othertext')
 
 
 def mk_falls(data_id, data):  # measurement group 12
@@ -313,16 +313,16 @@ def mk_falls(data_id, data):  # measurement group 12
     :return: The list of (typeid,valType,value) triples that are used by insertMeasurementGroup to add the measurements
     """
     return [mobilise_data_id_field(data_id),
-            lwh.mk_ordinal( 98, data, 'falls', {'Yes': 0, 'No': 1}),
-            lwh.mk_int( 99, data, 'fallsnum'),
+            lwh.mk_ordinal(98, data, 'falls', {'Yes': 0, 'No': 1}),
+            lwh.mk_int(99, data, 'fallsnum'),
             lwh.mk_ordinal(100, data, 'hfalls', {'Yes': 0, 'No': 1, 'N/A': 2}),
             lwh.mk_int(101, data, 'hfallsnum'),
             lwh.mk_ordinal(102, data, 'frax', {'Yes': 0, 'No': 1, 'N/A': 2}),
             lwh.mk_int(103, data, 'fraxfallsnum'),
             lwh.mk_int(104, data, 'fraxtotal'),
-            lwh.mk_nominal(106, data, 'injuries', {'Yes': 0, 'No': 1, 'N/A': 2}), # was ordinal
+            lwh.mk_nominal(106, data, 'injuries', {'Yes': 0, 'No': 1, 'N/A': 2}),  # was ordinal
             lwh.mk_int(107, data, 'injuriesnum')] + \
-            lwh.mk_optional_string(105, data, 'fraxdetails')
+           lwh.mk_optional_string(105, data, 'fraxdetails')
 
 
 def mk_llfdi(data_id, data):  # measurement group 10
@@ -366,14 +366,14 @@ def mk_llfdi(data_id, data):  # measurement group 10
             lwh.mk_bounded_int(84, data, 'f30'),
             lwh.mk_bounded_int(85, data, 'f31'),
             lwh.mk_bounded_int(86, data, 'f32')] + \
-            lwh.mk_optional_int(87, data, 'fd7') + \
-            lwh.mk_optional_int(88, data, 'fd8') + \
-            lwh.mk_optional_int(89, data, 'fd14') + \
-            lwh.mk_optional_int(90, data, 'fd15') + \
-            lwh.mk_optional_int(91, data, 'fd26') + \
-            lwh.mk_optional_int(92, data, 'fd29') + \
-            lwh.mk_optional_int(93, data, 'fd30') + \
-            lwh.mk_optional_int(94, data, 'fd32')
+           lwh.mk_optional_int(87, data, 'fd7') + \
+           lwh.mk_optional_int(88, data, 'fd8') + \
+           lwh.mk_optional_int(89, data, 'fd14') + \
+           lwh.mk_optional_int(90, data, 'fd15') + \
+           lwh.mk_optional_int(91, data, 'fd26') + \
+           lwh.mk_optional_int(92, data, 'fd29') + \
+           lwh.mk_optional_int(93, data, 'fd30') + \
+           lwh.mk_optional_int(94, data, 'fd32')
 
 
 def mk_rabinovich(data_id, data):  # measurement group 5
@@ -419,7 +419,7 @@ def mk_crs(data_id, data):  # measurement group 7
             lwh.mk_bounded_int(47, data, 'cq6')]
 
 
-def mk_consent(data_id, data): # measurement group 6
+def mk_consent(data_id, data):  # measurement group 6
     """
     transforms a a-consent.json form into the triples used by insertMeasurementGroup to
         store each measurement that is in the form
@@ -441,22 +441,22 @@ def fn_mapper():
     :return: the dictionary
     """
     return {
-            "e-screening-chf"       : {"fn": mk_e_screening_chf,        "mg": 24},
-            "e-screening-ha"        : {"fn": mk_e_screening_ha,         "mg": 25},
-            "e-screening-copd"      : {"fn": mk_e_screening_copd,       "mg": 28},
-            "e-screening-ms"        : {"fn": mk_e_screening_ms,         "mg": 29},
-            "e-screening-pd"        : {"fn": mk_e_screening_pd,         "mg": 30},
-            "e-screening-pff"       : {"fn": mk_e_screening_pff,        "mg": 31},
-            "j-walking-aids"        : {"fn": mk_walking_aids,           "mg":  4},
-            "h-falls-description"   : {"fn": mk_falls_description,      "mg":  8},
-            "i-medication-usage"    : {"fn": mk_i_medication_usage,     "mg": 13},
-            "c-comorbidity"         : {"fn": mk_comorbidity,            "mg": 26},
-            "b-descriptives"        : {"fn": mk_descriptives,           "mg":  9},
-            "d-moca"                : {"fn": mk_moca,                   "mg": 14},
-            "f-living-arrangements" : {"fn": mk_living_arrangements,    "mg": 11},
-            "g-falls"               : {"fn": mk_falls,                  "mg": 12},
-            "k-llfdi"               : {"fn": mk_llfdi,                  "mg": 10},
-            "l-rabinovich"          : {"fn": mk_rabinovich,             "mg":  5},
-            "m-crs"                 : {"fn": mk_crs,                    "mg":  7},
-            "a-consent"             : {"fn": mk_consent,                "mg":  6}
+        "e-screening-chf": {"fn": mk_e_screening_chf, "mg": 24},
+        "e-screening-ha": {"fn": mk_e_screening_ha, "mg": 25},
+        "e-screening-copd": {"fn": mk_e_screening_copd, "mg": 28},
+        "e-screening-ms": {"fn": mk_e_screening_ms, "mg": 29},
+        "e-screening-pd": {"fn": mk_e_screening_pd, "mg": 30},
+        "e-screening-pff": {"fn": mk_e_screening_pff, "mg": 31},
+        "j-walking-aids": {"fn": mk_walking_aids, "mg": 4},
+        "h-falls-description": {"fn": mk_falls_description, "mg": 8},
+        "i-medication-usage": {"fn": mk_i_medication_usage, "mg": 13},
+        "c-comorbidity": {"fn": mk_comorbidity, "mg": 26},
+        "b-descriptives": {"fn": mk_descriptives, "mg": 9},
+        "d-moca": {"fn": mk_moca, "mg": 14},
+        "f-living-arrangements": {"fn": mk_living_arrangements, "mg": 11},
+        "g-falls": {"fn": mk_falls, "mg": 12},
+        "k-llfdi": {"fn": mk_llfdi, "mg": 10},
+        "l-rabinovich": {"fn": mk_rabinovich, "mg": 5},
+        "m-crs": {"fn": mk_crs, "mg": 7},
+        "a-consent": {"fn": mk_consent, "mg": 6}
     }

@@ -20,7 +20,7 @@ data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawareho
 
 # example 1
 source_study_id = 4
-dest_study_id   = 11
+dest_study_id = 11
 
 print("Copy Metadata Table rows from one study to another\n")
 n_rows_inserted = clone_study_metadata.clone_study_metadata(data_warehouse, source_study_id, dest_study_id)

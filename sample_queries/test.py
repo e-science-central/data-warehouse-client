@@ -1,4 +1,4 @@
-from mobiliseclient import *
+from sample_queries.mobiliseclient import *
 
 hostname = "mobilised.di-projects.net"
 port = 443
@@ -6,10 +6,10 @@ ssl = True
 
 # Log onto the system and obtain a JWT
 mc = EscClient(hostname, port, ssl)
-#print('Issuing')
-#jwt = tc.issueToken("username", "password", "Python Test")
+# print('Issuing')
+# jwt = tc.issueToken("username", "password", "Python Test")
 # The actual token is a field of the returned jwt object
-#token = jwt.token
+# token = jwt.token
 
 # Use an existing JWT
 token = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI1NSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNjI2MzQ5ODU4LCJpYXQiOjE1OTQ4MTM4NTgsImp0aSI6IjJjOWZhZmU1NzMwZjZkZGMwMTczNTI1MDQwZmYzYjBhIn0.YLOQhgHrcKuGBiCLUEiDHNA74666-dDwgNSD6FHdD03UkW2tUoMwJAsgAaYKa6PBZfBy95vHB4XrPcXDhyfCtA'
@@ -32,7 +32,7 @@ print("Number of people in study: " + str(personCount))
 people = mc.getPeople(project.id, 0, personCount)
 for i in range(0, len(people)):
     print(people[i].externalId)
-    
+
 dataFolder = mc.getFolder(project.dataFolderId)
 print("Project data folder: " + dataFolder.name)
 
@@ -44,13 +44,11 @@ for i in range(0, len(events)):
     evt = events[i]
     print("ID: " + evt.metadata['_id'] + ": schema: " + evt.metadata['_eventType'] + ": data: " + str(evt.data))
 
-   
-    
 projects = mc.listProjects()
 for i in range(0, len(projects)):
     p = projects[i]
     print(p.externalId)
 
 # If you obtained you own token, release it here so that we don't get loads of tokens hanging around
-#print('Releasing')
-#mc.releaseToken(jwt.id)
+# print('Releasing')
+# mc.releaseToken(jwt.id)

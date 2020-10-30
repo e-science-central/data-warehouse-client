@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mobiliseclient import *
 import data_warehouse
-import mobilise_load_fns
-import clone_and_load_new_study
-import study_summary
 import delete_study_contents
+import study_summary
+from sample_queries import clone_and_load_new_study, mobilise_load_fns
+from sample_queries.mobiliseclient import *
 
 print(f'Clone and Load New Study\n')
 
@@ -45,10 +44,9 @@ print(mc.validateToken(token))
 # Create a connection to the Data Warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
-
 # Example:
 old_study = 4
-new_study = 27 # NB this must have already been created
+new_study = 27  # NB this must have already been created
 esc_project = "HA01"
 unique_id_measurement_type = 220
 

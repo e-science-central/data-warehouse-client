@@ -2,7 +2,9 @@
 # All client code in a single file for event data access
 #
 import json
+
 import requests
+
 
 #
 # Subset of the e-SC datatypes necessary to fetch event data
@@ -20,6 +22,7 @@ class EscEvent:
         self.data = dict['data']
         self.metadata = dict['metadata']
 
+
 # Study object
 class EscStudyObject:
     def __init__(self):
@@ -28,7 +31,7 @@ class EscStudyObject:
         self.folderId = ''
         self.externalId = ''
         self.name = ''
-        self.additionalProperties = {}       
+        self.additionalProperties = {}
 
     def parseDict(self, dict):
         self.id = dict['id']
@@ -48,11 +51,13 @@ class EscStudyObject:
             'additionalProperties': self.additionalProperties
         }
 
+
 # Person in a study
 class EscPerson(EscStudyObject):
     def __init__(self):
-        EscStudyObject.__init__(self)    
+        EscStudyObject.__init__(self)
         self.objectType = "EscPerson"
+
 
 # JWT Token object
 class EscJWT:
@@ -68,7 +73,7 @@ class EscJWT:
         self.token = dict['token']
         self.id = dict['id']
         self.refreshToken = dict['refreshToken']
-        
+
     # Write to JSON
     def toDict(self):
         return {
@@ -77,6 +82,7 @@ class EscJWT:
             "id": self.id,
             "refreshToken": self.refreshToken
         }
+
 
 # Project / Study object
 class EscProject:
@@ -88,7 +94,7 @@ class EscProject:
         self.dataFolderId = ''
         self.creatorId = ''
         self.externalId = ''
-        self.projectType = 'HEIRARCHICAL'  
+        self.projectType = 'HEIRARCHICAL'
 
     def parseDict(self, dict):
         self.id = dict['id']
@@ -111,6 +117,7 @@ class EscProject:
             "externalId": self.externalId,
             "projectType": self.projectType
         }
+
 
 # Base class for ServerObjects
 class EscObject:
@@ -145,13 +152,16 @@ class EscObject:
             "internalClassName": self.internalClassName,
             "creationTime": self.creationTime
         }
-        
+
+
 # Folder object
 class EscFolder(EscObject):
     def __init__(self):
-        EscObject.__init__(self)     
+        EscObject.__init__(self)
 
-# Document object
+    #  Document object
+
+
 class EscDocument(EscObject):
     def __init__(self):
         EscObject.__init__(self)
@@ -177,7 +187,7 @@ class EscDocument(EscObject):
         dict['downloadPath'] = self.downloadPath
         dict['uploadPath'] = self.uploadPath
 
-    
+
 #
 # Combined client object
 #
@@ -190,11 +200,10 @@ class EscClient:
 
     # Create a url
     def __create_url(self, url):
-        if self.ssl==True:
+        if self.ssl == True:
             return 'https://' + self.hostname + ':' + str(self.port) + url
         else:
             return 'http://' + self.hostname + ':' + str(self.port) + url
-
 
     # Create a form body that can be POSTed using a dict of name:value pairs
     def __create_form_body(self, body_dict):
@@ -205,19 +214,19 @@ class EscClient:
                 body = body + '&'
 
             body = body + key + '=' + body_dict[key]
-            count=count+1;
+            count = count + 1;
 
         return body
 
     # Create the request headers
     def __create_headers(self):
         return {
-            'Authorization' : 'Bearer ' + self.jwt
+            'Authorization': 'Bearer ' + self.jwt
         }
-        
+
     # Send a Form using the POST method
     def __post_form_retrieve_json(self, url, form_data, send_auth):
-        if send_auth==True:
+        if send_auth == True:
             r = requests.post(self.__create_url(url), form_data, headers=self.__create_headers())
             return r.json()
 
@@ -225,7 +234,6 @@ class EscClient:
             r = requests.post(self.__create_url(url), form_data)
             return r.json()
 
-        
     # Delete a resource
     def __delete_resource(self, url):
         requests.delete(self.__create_url(url), headers=self.__create_headers())
@@ -253,7 +261,6 @@ class EscClient:
         r = requests.get(self.__create_url(url), headers=headers)
         return r.text
 
-
     # =======================================================================================
     #
     # Implementation of standard e-SC client methods
@@ -270,7 +277,7 @@ class EscClient:
             "label": label
         }
 
-        result = self._EscClient__post_form_retrieve_json("/api/public/rest/v1/tokens/issue", auth_details, False)        
+        result = self._EscClient__post_form_retrieve_json("/api/public/rest/v1/tokens/issue", auth_details, False)
         jwt = EscJWT()
         jwt.parseDict(result)
         return jwt
@@ -304,7 +311,7 @@ class EscClient:
     # Return a folder object given its database id
     #
     def getFolder(self, id):
-        jsonData = self._EscClient__retrieve_json("/api/public/rest/v1/storage/folders/" + id)    
+        jsonData = self._EscClient__retrieve_json("/api/public/rest/v1/storage/folders/" + id)
         folder = EscFolder();
         folder.parseDict(jsonData)
         return folder
@@ -331,13 +338,16 @@ class EscClient:
     # Return the number of event objects contained in a study
     #
     def getEventCount(self, studyCode):
-        return int(self._EscClient__retrieve_text("/api/public/rest/v1/catalog/studiesbyid/" + studyCode + "/allevents/count"))
+        return int(
+            self._EscClient__retrieve_text("/api/public/rest/v1/catalog/studiesbyid/" + studyCode + "/allevents/count"))
 
     #
     # Get a set of events
     #
     def queryEventsFromStudy(self, studyCode, startIndex, pageSize):
-        jsonData = self._EscClient__retrieve_json("/api/public/rest/v1/catalog/studiesbyid/" + studyCode + "/allevents/" + str(startIndex) + "/" + str(pageSize))
+        jsonData = self._EscClient__retrieve_json(
+            "/api/public/rest/v1/catalog/studiesbyid/" + studyCode + "/allevents/" + str(startIndex) + "/" + str(
+                pageSize))
         results = {}
         for i in range(0, len(jsonData)):
             evt = EscEvent()
@@ -350,19 +360,20 @@ class EscClient:
     # Get the number of people in a study
     #
     def getNumberOfPeopleInStudy(self, projectId):
-        return int(self._EscClient__retrieve_text("/api/public/rest/v1/catalog/studiesbyid/" + str(projectId) + "/people/count"))
+        return int(self._EscClient__retrieve_text(
+            "/api/public/rest/v1/catalog/studiesbyid/" + str(projectId) + "/people/count"))
 
     #
     # Get a set of people from a study
     #
     def getPeople(self, projectId, startIndex, count):
-        jsonData = self._EscClient__retrieve_json("/api/public/rest/v1/catalog/studiesbyid/" + str(projectId) + "/people/list/" + str(startIndex) + "/" + str(count))
+        jsonData = self._EscClient__retrieve_json(
+            "/api/public/rest/v1/catalog/studiesbyid/" + str(projectId) + "/people/list/" + str(startIndex) + "/" + str(
+                count))
         results = {}
         for i in range(0, len(jsonData)):
             person = EscPerson()
             person.parseDict(jsonData[i])
             results[i] = person
-        
-        return results
 
-                
+        return results

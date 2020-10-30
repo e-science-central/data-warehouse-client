@@ -23,13 +23,13 @@ def insert_new_participants_in_warehouse(mc, dw, esc_project, study_id):
     """
 
     participants_in_esc = get_all_participants_in_esc_study(mc, esc_project)
-    participants_in_dw  = get_all_participants_in_dw_study(dw, study_id)
-    new_participants    = list_difference(participants_in_esc,participants_in_dw)
-    new_entries         = insert_participants_by_local_id(dw, study_id, new_participants)
+    participants_in_dw = get_all_participants_in_dw_study(dw, study_id)
+    new_participants = list_difference(participants_in_esc, participants_in_dw)
+    new_entries = insert_participants_by_local_id(dw, study_id, new_participants)
     return new_entries
 
 
-def list_difference(l1,l2):
+def list_difference(l1, l2):
     """
     return the difference between 2 lists
     :param l1:
@@ -37,6 +37,7 @@ def list_difference(l1,l2):
     :return: list l1 - list l2
     """
     return list(set(l1) - set(l2))
+
 
 def get_all_participants_in_esc_study(mc, esc_project):
     """
