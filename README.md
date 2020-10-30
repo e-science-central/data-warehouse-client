@@ -35,9 +35,11 @@ can interpret the data stored there.
 4.	It must support a security regime to restrict each user’s access 
 to the data collected in studies.
 
-To run:
-1. use pip to install the package
-1. In dir in which your executable is run, create a `db-credentials.json` file containing database 
+To install from PyPi, run:
+
+pip install data-warehouse-client
+
+In directory in which your executable is run, create a `db-credentials.json` file containing database 
 credentials (substituting all `<VARS>`):
    ```
    {"user": "<USER>", "pass": "<PASSWORD>", "IP": "<IP>", "port": <PORT>}
