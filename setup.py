@@ -7,7 +7,7 @@ setuptools.setup(
     name="data-warehouse-client",
     version="1.0.0",
     author="Paul Watson",
-    author_email="benwatson528@gmail.com",
+    author_email="paul.watson@ncl.ac.uk",
     description="An example of uploading to PyPi",
     long_description=long_description,
     long_description_content_type="text/markdown",
