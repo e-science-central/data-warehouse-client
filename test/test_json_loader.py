@@ -21,7 +21,3 @@ class TestJsonLoader(TestCase):
     def test_mk_01s(self):
         self.assertEqual(0, json_loader.mk_01("N"))
         self.assertEqual(1, json_loader.mk_01("Y"))
-
-    def test_other_method(self):
-        self.assertEqual(0, json_loader.mk_01("N"))
-        self.assertEqual(1, json_loader.mk_01("Y"))
