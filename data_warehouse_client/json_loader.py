@@ -15,7 +15,7 @@
 import json
 import sys
 
-import data_warehouse
+from data_warehouse_client import data_warehouse
 
 
 def load_json_file(fname: str):
