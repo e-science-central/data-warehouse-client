@@ -535,21 +535,9 @@ class DataWarehouse:
         :param measurementTypeId: the id of a measurement type
         :return: a list containing the elements: id, description, value type, name
         """
-        q = ""
-        q += " SELECT "
-        q += "    measurementtype.id,measurementtype.description,measurementtype.valtype,units.name "
-        q += " FROM "
-        q += "    measurementtype LEFT OUTER JOIN units ON  measurementtype.units = units.id "
-        q += "                                          AND measurementtype.study = units.study "
-        q += " WHERE "
-        q += "    measurementtype.id = "
-        q += str(measurementTypeId)
-        q += " AND "
-        q += "    measurementtype.study = "
-        q += str(study)
-        q += ";"
-        mtinfo = self.returnQueryResult(q)
-        return mtinfo
+        mappings = {"measurement_type_id": str(measurementTypeId), "study": str(study)}
+        query = file_utils.process_sql_template("sql/get_measurement_type_info.sql", mappings)
+        return self.returnQueryResult(query)
 
     def plotMeasurementType(self, rows, measurementTypeId, study, plotFile):
         """
@@ -583,8 +571,7 @@ class DataWarehouse:
         """
         cur = self.dbConnection.cursor()
         cur.execute(queryText)
-        rowsq = cur.fetchall()
-        return rowsq
+        return cur.fetchall()
 
     def execInsertWithReturn(self, queryText):
         """
@@ -606,25 +593,17 @@ class DataWarehouse:
         cur.execute(queryText)
         self.dbConnection.commit()
 
-    def get_all_measurement_groups(self, study_id):
+    def get_all_measurement_groups(self, study):
         """
         A helper function that returns information on all the measurement groups in a study
         :param study_id: the study id
         :return: a list of [measurement group id, measurement group description]
         """
-        q = ""
-        q += " SELECT"
-        q += "    measurementgroup.id,"
-        q += "    measurementgroup.description "
-        q += " FROM "
-        q += "    measurementgroup "
-        q += " WHERE "
-        q += "    measurementgroup.study = "
-        q += str(study_id)
-        q += " ORDER BY measurementgroup.id; "
-        return self.returnQueryResult(q)
+        mappings = {"study": str(study)}
+        query = file_utils.process_sql_template("sql/get_all_measurement_groups.sql", mappings)
+        return self.returnQueryResult(query)
 
-    def getAllMeasurementGroupsAndTypesInAStudy(self, studyId):
+    def getAllMeasurementGroupsAndTypesInAStudy(self, study):
         """
         A helper function that returns information on all the measurement groups and types in a study
         :param studyId: the study id
@@ -632,18 +611,9 @@ class DataWarehouse:
                    and the name of the measurement type
         """
         # Return all measurement groups and measurement types in a study
-        q = ""
-        q += " SELECT"
-        q += "    measurementtypetogroup.measurementgroup,"
-        q += "    measurementtypetogroup.measurementtype, "
-        q += "    measurementtypetogroup.name            "
-        q += " FROM "
-        q += "    measurementtypetogroup "
-        q += " WHERE "
-        q += "    measurementtypetogroup.study = "
-        q += str(studyId)
-        q += " ORDER BY measurementtypetogroup.measurementgroup, measurementtypetogroup.measurementtype; "
-        return self.returnQueryResult(q)
+        mappings = {"study": str(study)}
+        query = file_utils.process_sql_template("sql/get_all_measurement_groups_and_types_in_a_study.sql", mappings)
+        return self.returnQueryResult(query)
 
     def insertOneMeasurement(self, study, measurementGroup, measurementType, valType, value,
                              time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL
