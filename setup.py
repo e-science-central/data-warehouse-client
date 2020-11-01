@@ -19,6 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        "more_itertools",
+        "matplotlib",
+        "psycopg2",
         "tabulate"
     ],
     python_requires='>=3.6',
