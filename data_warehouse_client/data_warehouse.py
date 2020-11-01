@@ -562,7 +562,6 @@ class DataWarehouse:
             outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outerQuery += " ORDER BY groupinstance, measurementtype"
         outerQuery += ";"
-        #  print(outerQuery)
         rawResults = self.returnQueryResult(outerQuery)
         return self.formMeasurements(rawResults)
 
@@ -600,7 +599,6 @@ class DataWarehouse:
             outerQuery += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outerQuery += " ORDER BY groupinstance, measurementtype"
         outerQuery += ";"
-        #  print(outerQuery)
         rawResults = self.returnQueryResult(outerQuery)
         return self.formMeasurements(rawResults)
 

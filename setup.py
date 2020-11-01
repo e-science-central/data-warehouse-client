@@ -5,20 +5,24 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="data-warehouse-client",
-    version="1.0.0",
+    version="0.0.1",
     author="Paul Watson",
     author_email="paul.watson@ncl.ac.uk",
-    description="An example of uploading to PyPi",
+    description="This package provides access to the e-Science Central data warehouse that can be used to store, "
+                "access and analyse data collected in scientific studies, including for healthcare applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        "more_itertools",
+        "matplotlib",
+        "psycopg2",
         "tabulate"
     ],
     python_requires='>=3.6',
