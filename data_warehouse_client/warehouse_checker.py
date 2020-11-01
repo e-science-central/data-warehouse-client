@@ -20,6 +20,7 @@
 # the measurement group is valid for the study
 # there are no missing measurement types in a measurement group instance
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
+from string import Template
 
 
 def check_category_exists(dw, study):
@@ -108,17 +109,21 @@ def check_bounded_reals(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN boundsreal ON "
-    q += "        (measurement.measurementtype = boundsreal.measurementtype AND "
-    q += "        measurement.study = boundsreal.study) "
-    q += " WHERE  measurement.valtype = 8 AND"
-    q += "        measurement.study =" + str(study) + " AND "
-    q += "        (measurement.valreal < boundsreal.minval OR "
-    q += "         measurement.valreal > boundsreal.maxval) "
-    q += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study)}
+    query = process_sql_template("sql/bounded_reals.sql", mappings)
+    return dw.returnQueryResult(query)
 
+
+def process_sql_template(filename, mappings):
+    """
+    Reads a templated SQL file and substitutes any variables
+    :param filename: the SQL file
+    :param mappings: the variables to be substituted
+    :return: the SQL file with any variables substituted
+    """
+    with open(filename, 'r') as file:
+        data = ' '.join(file.read().replace('\n', ' ').split())
+    return Template(data).substitute(mappings)
 
 def print_check_warhouse(dw, study):
     """
