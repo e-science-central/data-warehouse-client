@@ -32,18 +32,9 @@ def check_category_exists(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT measurementtype.id "
-    q += " FROM measurementtype INNER JOIN category ON "
-    q += "      (measurementtype.id = category.measurementtype AND "
-    q += "      measurementtype.study = category.study) "
-
-    outerq = " SELECT measurementtype.id, measurementtype.description "
-    outerq += " FROM   measurementtype "
-    outerq += " WHERE  measurementtype.valtype IN (5,6) AND "
-    outerq += "        measurementtype.study = " + str(study) + " AND "
-    outerq += "        measurementtype.id NOT IN (" + q + ")"
-    outerq += " ORDER BY measurementtype.id;"
-    return dw.returnQueryResult(outerq)
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("sql/ordinal_types_not_matching_category.sql", mappings)
+    return dw.returnQueryResult(query)
 
 
 def check_valtype_matches_values(dw, study):
@@ -65,20 +56,9 @@ def check_category_in_range(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN category ON "
-    q += "        (measurement.measurementtype = category.measurementtype AND "
-    q += "        measurement.study = category.study AND "
-    q += "        measurement.valinteger = category.categoryid)"
-    q += " WHERE  measurement.valtype IN (5,6)"
-
-    q1 = " SELECT measurement.id "
-    q1 += " FROM   measurement "
-    q1 += " WHERE  measurement.study = " + str(study) + " AND "
-    q1 += "        measurement.valtype IN (5,6) AND "
-    q1 += "        measurement.id NOT IN (" + q + ")"
-    q1 += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q1)
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    return dw.returnQueryResult(query)
 
 
 def check_bounded_integers(dw, study):
