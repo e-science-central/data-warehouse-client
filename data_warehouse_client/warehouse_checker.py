@@ -22,7 +22,7 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 from string import Template
 
-import load_warehouse_helpers
+import file_utils
 
 
 def check_category_exists(dw, study):
@@ -54,7 +54,7 @@ def check_valtype_matches_values(dw, study):
     :return: the measurements in the study that fail the test
     """
     mappings = {"study": str(study), "core_sql": dw.coreSQLforMeasurements()}
-    query = load_warehouse_helpers.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
     return dw.returnQueryResult(query)
 
 
@@ -89,7 +89,7 @@ def check_bounded_integers(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = load_warehouse_helpers.process_sql_template("sql/bounded_integers.sql", mappings)
+    query = file_utils.process_sql_template("sql/bounded_integers.sql", mappings)
     return dw.returnQueryResult(query)
 
 
@@ -101,7 +101,7 @@ def check_bounded_reals(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = load_warehouse_helpers.process_sql_template("sql/bounded_reals.sql", mappings)
+    query = file_utils.process_sql_template("sql/bounded_reals.sql", mappings)
     return dw.returnQueryResult(query)
 
 

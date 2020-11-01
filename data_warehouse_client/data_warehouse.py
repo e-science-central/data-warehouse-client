@@ -23,7 +23,7 @@ import psycopg2
 from more_itertools import intersperse
 from tabulate import tabulate
 
-import load_warehouse_helpers
+import file_utils
 
 
 class DataWarehouse:
@@ -179,14 +179,14 @@ class DataWarehouse:
          Creates the select clause used by many of the functions that query the data warehouse
          :return: the select clause used by several of the functions that query the data warehouse
          """
-        return load_warehouse_helpers.process_sql_template("sql/core_sql_select_for_measurements.sql")
+        return file_utils.process_sql_template("sql/core_sql_select_for_measurements.sql")
 
     def coreSQLFromForMeasurements(self):
         """
         Creates the from clause used by many of the functions that query the data warehouse
         :return: the from clause used by several of the functions that query the data warehouse
         """
-        return load_warehouse_helpers.process_sql_template("sql/core_sql_from_for_measurements.sql")
+        return file_utils.process_sql_template("sql/core_sql_from_for_measurements.sql")
 
     def mk_where_condition(self, first_condition, column, test, value):
         """
