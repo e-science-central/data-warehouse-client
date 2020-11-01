@@ -41,9 +41,9 @@ class DataWarehouse:
 
         print("Connecting to the database..")
         # establish connection
-        conn_string = f"dbname={self.dbName} user={creds['user']} host={creds['IP']} password={creds['pass']}"
         try:
-            self.dbConnection = psycopg2.connect(conn_string)
+            self.dbConnection = psycopg2.connect(database={self.dbName}, host=creds['IP'], user=creds['user'],
+                                                 password=creds['pass'])
         except Exception as e:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
@@ -90,16 +90,10 @@ class DataWarehouse:
         nCols: int = 11
         rowOut = [[None] * nCols for i in range(nRows)]
         for r in range(nRows):
-            rowOut[r][0] = rows[r][0]  # id
-            rowOut[r][1] = rows[r][1]  # time
-            rowOut[r][2] = rows[r][2]  # study
-            rowOut[r][3] = rows[r][3]  # participant
-            rowOut[r][4] = rows[r][4]  # measurementType
-            rowOut[r][5] = rows[r][5]  # measurementTypeName
-            rowOut[r][6] = rows[r][6]  # measurementGroup
-            rowOut[r][7] = rows[r][7]  # measurementGroupInstance
-            rowOut[r][8] = rows[r][8]  # trial
-            rowOut[r][9] = rows[r][9]  # valType
+            # Keys: 0 = id, 1 = time, 2 = study, 3 = participant, 4 = measurementType, 5 = measurementTypeName,
+            # 6 = measurementGroup, 7 = measurementGroupInstance, 8 = trial, 9 = valType
+            for x in range(10):
+                rowOut[r][x] = rows[r][x]
             if (rows[r][9] == 0):  # integer
                 rowOut[r][10] = rows[r][10]
             elif (rows[r][9] == 1):  # real
@@ -285,43 +279,29 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        q = self.coreSQLforMeasurements()
-        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
-                                                               groupInstance, trial, startTime, endTime)
-        q += w
-        q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
-        rawResults = self.returnQueryResult(q)
+        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType,
+                                                                          measurementGroup,
+                                                                          groupInstance, trial, startTime, endTime)
+        mappings = {"core_sql": self.coreSQLforMeasurements(), "where_clause": where_clause}
+        query = file_utils.process_sql_template("sql/get_measurements.sql", mappings)
+        rawResults = self.returnQueryResult(query)
         return self.formMeasurements(rawResults)
 
-    def fieldHoldingValue(self, valType):
+    def fieldHoldingValue(self, val_type):
         """
         A helper function that returns the data warehouse field that holds measurement values of the type
         specified in the parameter
-        :param valType: the type of measurement
+        :param val_type: the type of measurement
         :return: the database field holding the measurement value
         """
-        # Use the valType to return the field that holds the value in the measurement
-        if valType == 0:  # integer
-            field = "measurement.valinteger"
-        elif valType == 1:  # real
-            field = "measurement.valreal"
-        elif valType == 2:  # text
-            field = "textvalue.textval"
-        elif valType == 3:  # datetime
-            field = "datetimevalue.datetimeval"
-        elif valType == 4:  # boolean
-            field = "measurement.valinteger"  # note we use 0 & 1 for booleans
-        elif valType == 5:  # nominal
-            field = "measurement.valinteger"  # note we use the integer encoding for nominals
-        elif valType == 6:  # ordinal
-            field = "measurement.valinteger"  # note we use the integer encoding for ordinals
-        elif valType == 7:  # bounded integer
-            field = "measurement.valinteger"
-        elif valType == 8:  # bounded real
-            field = "measurement.valreal"
-        else:
-            print("Error: valType out of range: ", valType)
-        return field
+        val_types = {0: "measurement.valinteger", 1: "measurement.valreal", 2: "textvalue.textval",
+                     3: "datetimevalue.datetimeval", 4: "measurement.valinteger", 5: "measurement.valinteger",
+                     6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal"}
+        try:
+            return val_types[val_type]
+        except KeyError:
+            print("Error: valType out of range: ", val_type)
+            return None
 
     def aggregateMeasurements(self, measurementType, study, aggregation, participant=-1, measurementGroup=-1,
                               groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
@@ -341,12 +321,10 @@ class DataWarehouse:
         """
         mtInfo = self.getMeasurementTypeInfo(study, measurementType)
         valType = mtInfo[0][2]
-        q = "SELECT " + aggregation + "(" + self.fieldHoldingValue(valType) + ") "
-        q += self.coreSQLFromForMeasurements()
         (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
                                                                groupInstance, trial, startTime, endTime)
-        q += w
-        rawResult = self.returnQueryResult(q)
+        query = f'SELECT {aggregation} ( {self.fieldHoldingValue(valType)} ) {self.coreSQLFromForMeasurements()} {w}'
+        rawResult = self.returnQueryResult(query)
         return rawResult[0][0]
 
     def makeValueTest(self, valType, valueTestCondition):
@@ -356,8 +334,7 @@ class DataWarehouse:
         :param valueTestCondition: the test of that field
         :return: a fragment of SQL that can be included in the where clause of a query
         """
-        cond = " (" + self.fieldHoldingValue(valType) + valueTestCondition + ") "
-        return cond
+        return f' ({self.fieldHoldingValue(valType)}{valueTestCondition}) '
 
     def getMeasurementsWithValueTest(self, measurementType, study, valueTestCondition, participant=-1,
                                      measurementGroup=-1, groupInstance=-1, trial=-1, startTime=-1, endTime=-1):
@@ -376,22 +353,18 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        q = self.coreSQLforMeasurements()
-        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
-                                                               groupInstance, trial, startTime, endTime)
-        q += w
-
+        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType,
+                                                                          measurementGroup,
+                                                                          groupInstance, trial, startTime, endTime)
         mtInfo = self.getMeasurementTypeInfo(study, measurementType)
         valType = mtInfo[0][2]  # find the value type of the measurement
         # Add a clause to test the field that is relevant to the type of the measurement
-        if first_condition:
-            q += " WHERE "  # if this is the first condition in the where clause
-        else:
-            q += " AND "  # if there have already been conditions
+        condition = " WHERE " if first_condition else " AND "
         cond = self.makeValueTest(valType, valueTestCondition)
-        q += cond
-        q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
-        rawResults = self.returnQueryResult(q)
+        mappings = {"core_sql": self.coreSQLforMeasurements(), "where_clause": where_clause, "condition": condition,
+                    "cond": cond}
+        query = file_utils.process_sql_template("sql/get_measurements_with_value.sql", mappings)
+        rawResults = self.returnQueryResult(query)
         return self.formMeasurements(rawResults)
 
     def getMeasurementsByCohort(self, cohortId, study, participant=-1, measurementType=-1,
@@ -409,25 +382,14 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        c: str
-        c = ""  # get all participants in a cohort
-        c += " SELECT measurement.participant "
-        c += " FROM   measurement "
-        c += " WHERE  measurement.measurementtype = 181 "  # the measurementType holding the condition
-        c += " AND    measurement.valinteger      = " + str(cohortId)
-        c += " AND    measurement.study           = " + str(study)
-
-        q: str = self.coreSQLforMeasurements()
-        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType, measurementGroup,
-                                                               groupInstance, trial, startTime, endTime)
-        q += w
-        if first_condition:
-            q += " WHERE "  # if this is the first condition in the where clause
-        else:
-            q += " AND "  # if there have already been conditions
-        q += " measurement.participant IN (" + c + ") "
-        q += " ORDER BY measurement.time, measurement.groupinstance, measurement.measurementtype;"
-        rawResults = self.returnQueryResult(q)
+        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurementType,
+                                                                          measurementGroup,
+                                                                          groupInstance, trial, startTime, endTime)
+        condition = " WHERE " if first_condition else " AND "
+        mappings = {"core_sql": self.coreSQLforMeasurements(), "where_clause": where_clause, "condition": condition,
+                    "cohort_id": str(cohortId), "study": str(study)}
+        query = file_utils.process_sql_template("sql/get_measurements_by_cohort.sql", mappings)
+        rawResults = self.returnQueryResult(query)
         return self.formMeasurements(rawResults)
 
     def numTypesInAMeasurementGroup(self, study, measurementGroup):
@@ -436,19 +398,9 @@ class DataWarehouse:
         :param measurementGroup: measurement group id
         :return: number of measurement types in the measurement group
         """
-        q = ""
-        q += " SELECT "
-        q += "    COUNT(*)  "
-        q += " FROM "
-        q += "    measurementtypetogroup "
-        q += " WHERE "
-        q += "    measurementtypetogroup.measurementgroup = "
-        q += str(measurementGroup)
-        q += " AND "
-        q += "    measurementtypetogroup.study = "
-        q += str(study)
-        q += ";"
-        numTypes = self.returnQueryResult(q)
+        mappings = {"measurement_group": str(measurementGroup), "study": str(study)}
+        query = file_utils.process_sql_template("sql/num_types_in_a_measurement_group.sql", mappings)
+        numTypes = self.returnQueryResult(query)
         return numTypes[0][0]
 
     def getTypesInAMeasurementGroup(self, study, measurementGroup):
@@ -457,20 +409,9 @@ class DataWarehouse:
         :param measurementGroup: measurement group id
         :return: list of names of the measurement types in the measurement group
         """
-        q = ""
-        q += " SELECT "
-        q += "    measurementtypetogroup.name  "
-        q += " FROM "
-        q += "    measurementtypetogroup "
-        q += " WHERE "
-        q += "    measurementtypetogroup.measurementgroup = "
-        q += str(measurementGroup)
-        q += " AND "
-        q += "    measurementtypetogroup.study = "
-        q += str(study)
-        q += " ORDER BY measurementtypetogroup.measurementtype"
-        q += ";"
-        type_names = self.returnQueryResult(q)
+        mappings = {"measurement_group": str(measurementGroup), "study": str(study)}
+        query = file_utils.process_sql_template("sql/types_in_a_measurement_group.sql", mappings)
+        type_names = self.returnQueryResult(query)
         return type_names
 
     def mk_value_tests(self, value_test_conditions, study):
@@ -487,11 +428,10 @@ class DataWarehouse:
         for (measurement_type, condition) in value_test_conditions:
             mt_info = self.getMeasurementTypeInfo(study, measurement_type)
             val_type = mt_info[0][2]
-            cond = "((measurement.measurementtype = " + str(measurement_type) + ") AND NOT " + \
-                   self.makeValueTest(val_type, condition) + ")"
+            cond = f'((measurement.measurementtype = {str(measurement_type)}) AND NOT ' \
+                   f'{self.makeValueTest(val_type, condition)}")'
             all_conditions = all_conditions + [cond]
-        result = ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
-        return result
+        return ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
 
     def get_participants_in_result(self, results):
         """
