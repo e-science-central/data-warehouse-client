@@ -23,6 +23,8 @@ import psycopg2
 from more_itertools import intersperse
 from tabulate import tabulate
 
+import load_warehouse_helpers
+
 
 class DataWarehouse:
     def __init__(self, credentialsFile, dbName):
@@ -177,37 +179,14 @@ class DataWarehouse:
          Creates the select clause used by many of the functions that query the data warehouse
          :return: the select clause used by several of the functions that query the data warehouse
          """
-        q: str
-        q = ""
-        q += " SELECT "
-        q += "    measurement.id,measurement.time, measurement.study,measurement.participant,"
-        q += "    measurement.measurementtype, measurementtypetogroup.name,"
-        q += "    measurement.measurementgroup,measurement.groupinstance,measurement.trial,"
-        q += "    measurement.valtype, measurement.valinteger,"
-        q += "    measurement.valreal , textvalue.textval, datetimevalue.datetimeval,category.categoryname "
-        return q
+        return load_warehouse_helpers.process_sql_template("sql/core_sql_select_for_measurements.sql")
 
     def coreSQLFromForMeasurements(self):
         """
         Creates the from clause used by many of the functions that query the data warehouse
         :return: the from clause used by several of the functions that query the data warehouse
         """
-        q: str
-        q = ""
-        q += " FROM "
-        q += "    measurement INNER JOIN measurementtype ON  measurement.measurementtype = measurementtype.id "
-        q += "                                           AND measurement.study           = measurementtype.study "
-        q += "    INNER JOIN measurementtypetogroup ON measurement.measurementgroup  = measurementtypetogroup.measurementgroup "
-        q += "                                         AND measurement.measurementtype   = measurementtypetogroup.measurementtype "
-        q += "                                         AND measurement.study             = measurementtypetogroup.study "
-        q += "    LEFT OUTER JOIN textvalue ON  textvalue.measurement = measurement.id "
-        q += "                              AND textvalue.study       = measurement.study "
-        q += "    LEFT OUTER JOIN datetimevalue ON  datetimevalue.measurement = measurement.id "
-        q += "                                  AND datetimevalue.study       = measurement.study "
-        q += "    LEFT OUTER JOIN category  ON  measurement.valinteger      = category.categoryid "
-        q += "                              AND measurement.measurementtype = category.measurementtype "
-        q += "                              AND measurement.study           = category.study "
-        return q
+        return load_warehouse_helpers.process_sql_template("sql/core_sql_from_for_measurements.sql")
 
     def mk_where_condition(self, first_condition, column, test, value):
         """
@@ -218,11 +197,8 @@ class DataWarehouse:
         :return: (where clause, first_condition)
         """
         if value != -1:
-            if first_condition:
-                q = " WHERE "
-            else:
-                q = " AND "
-            q += "   measurement." + column + test + str(value)
+            condition = " WHERE " if first_condition else " AND "
+            q = f'{condition} measurement.{column}{test}{str(value)}'
             first_condition = False
         else:
             q = ""
@@ -253,7 +229,7 @@ class DataWarehouse:
         (qst, first_condition) = self.mk_where_condition(first_condition, "trial", "=", trial)
         (qet, first_condition) = self.mk_where_condition(first_condition, "time", ">=", start_time)
         (qt, first_condition) = self.mk_where_condition(first_condition, "time", "<=", end_time)
-        return (" " + qs + qp + qmt + qmg + qgi + qst + qet + qt + " ", first_condition)
+        return f' {qs}{qp}{qmt}{qmg}{qgi}{qst}{qet}{qt} ', first_condition
 
     def core_sql_for_where_clauses_for_cohort(self, study, participants, measurementType: int,
                                               measurementGroup: int, groupInstance: int, trial: int, startTime,

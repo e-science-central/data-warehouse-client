@@ -22,6 +22,8 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 from string import Template
 
+import load_warehouse_helpers
+
 
 def check_category_exists(dw, study):
     """
@@ -51,13 +53,9 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    q = dw.coreSQLforMeasurements()
-    q += " WHERE measurement.study = " + str(study)
-    q += " AND ((measurement.valtype IN (0,4,5,6,7)) AND (measurement.valinteger    = NULL)) OR "
-    q += "     ((measurement.valtype IN (1,8))       AND (measurement.valreal       = NULL)) OR "
-    q += "     ((measurement.valtype =  2)           AND (textvalue.textval         = NULL)) OR "
-    q += "     ((measurement.valtype =  3)           AND (datetimevalue.datetimeval = NULL));   "
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study), "core_sql": dw.coreSQLforMeasurements()}
+    query = load_warehouse_helpers.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    return dw.returnQueryResult(query)
 
 
 def check_category_in_range(dw, study):
@@ -90,16 +88,9 @@ def check_bounded_integers(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN boundsint ON "
-    q += "        (measurement.measurementtype = boundsint.measurementtype AND "
-    q += "        measurement.study = boundsint.study) "
-    q += " WHERE  measurement.valtype = 7 AND "
-    q += "        measurement.study =" + str(study) + " AND "
-    q += "        (measurement.valinteger < boundsint.minval OR "
-    q += "         measurement.valinteger > boundsint.maxval) "
-    q += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study)}
+    query = load_warehouse_helpers.process_sql_template("sql/bounded_integers.sql", mappings)
+    return dw.returnQueryResult(query)
 
 
 def check_bounded_reals(dw, study):
@@ -110,20 +101,9 @@ def check_bounded_reals(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = process_sql_template("sql/bounded_reals.sql", mappings)
+    query = load_warehouse_helpers.process_sql_template("sql/bounded_reals.sql", mappings)
     return dw.returnQueryResult(query)
 
-
-def process_sql_template(filename, mappings):
-    """
-    Reads a templated SQL file and substitutes any variables
-    :param filename: the SQL file
-    :param mappings: the variables to be substituted
-    :return: the SQL file with any variables substituted
-    """
-    with open(filename, 'r') as file:
-        data = ' '.join(file.read().replace('\n', ' ').split())
-    return Template(data).substitute(mappings)
 
 def print_check_warhouse(dw, study):
     """

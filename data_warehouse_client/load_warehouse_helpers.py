@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+from string import Template
 
 
 def mk_boolean(measurement_type, data, jfield):
@@ -292,3 +293,15 @@ def get_converter_fn(event_type, mapper_dict):
     else:
         res = (found, None, None)
     return res
+
+
+def process_sql_template(filename, mappings=None):
+    """
+    Reads a templated SQL file and substitutes any variables
+    :param filename: the SQL file
+    :param mappings: the variables to be substituted
+    :return: the SQL query with any variables substituted
+    """
+    with open(filename, 'r') as file:
+        data = ' '.join(file.read().replace('\n', ' ').split())
+    return Template(data).substitute(mappings)

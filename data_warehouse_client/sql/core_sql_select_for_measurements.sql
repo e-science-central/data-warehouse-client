@@ -1,0 +1,16 @@
+SELECT
+   measurement.id,
+   measurement.time,
+   measurement.study,
+   measurement.participant,
+   measurement.measurementtype,
+   measurementtypetogroup.name,
+   measurement.measurementgroup,
+   measurement.groupinstance,
+   measurement.trial,
+   measurement.valtype,
+   measurement.valinteger,
+   measurement.valreal,
+   textvalue.textval,
+   datetimevalue.datetimeval,
+   category.categoryname
