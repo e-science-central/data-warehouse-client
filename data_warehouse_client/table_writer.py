@@ -115,9 +115,7 @@ def insert_rows_in_dw_from_dictionary(dw, table, rows):
     for row in rows:
         placeholders = ', '.join(['%s'] * len(row))
         columns = ', '.join(row.keys())
-        # values  = ', '.join("'" + str(x).replace('/', '_') + "'''" for x in rows.values())
         sql = "INSERT INTO %s ( %s ) VALUES ( %s );" % (table, columns, placeholders)
-        # print("SQL:", sql, ":", list(row.values()))
         cur.execute(sql, list(row.values()))
         dw.dbConnection.commit()
         n_rows_inserted += 1

@@ -167,11 +167,3 @@ def print_check_warhouse(dw, study):
     n_errors = len(r5)
     print(f'({n_errors} measurements)')
     print()
-
-# Test
-# Create a connection to the data warehouse
-
-# data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
-# study_id = 11
-# study_summary.print_study_summary(data_warehouse, study_id)
-# print_check_warhouse(data_warehouse, study_id)
