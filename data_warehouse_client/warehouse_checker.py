@@ -22,7 +22,7 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 from string import Template
 
-import file_utils
+from data_warehouse_client import file_utils
 
 
 def check_category_exists(dw, study):

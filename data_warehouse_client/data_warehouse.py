@@ -23,7 +23,7 @@ import psycopg2
 from more_itertools import intersperse
 from tabulate import tabulate
 
-import file_utils
+from data_warehouse_client import file_utils
 
 
 class DataWarehouse:
