@@ -1,4 +1,4 @@
-# data-warehouse-client
+# Data Warehouse Client
 
 This package provides access to the e-Science Central data warehouse that can be used to store, access  and analyse 
 data collected in scientific studies, including for healthcare applications. The primary aim of the warehouse
@@ -34,6 +34,8 @@ can interpret the data stored there.
  (duplication of data) to reduce the need for expensive joins.
 4.	It must support a security regime to restrict each user’s access 
 to the data collected in studies.
+
+# Running Instructions
 
 To install from PyPi, run:
 

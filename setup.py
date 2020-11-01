@@ -8,14 +8,15 @@ setuptools.setup(
     version="1.0.0",
     author="Paul Watson",
     author_email="paul.watson@ncl.ac.uk",
-    description="An example of uploading to PyPi",
+    description="This package provides access to the e-Science Central data warehouse that can be used to store, "
+                "access and analyse data collected in scientific studies, including for healthcare applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     install_requires=[

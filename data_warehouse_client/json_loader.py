@@ -201,22 +201,3 @@ def json_load(study, measurement_group, load_fn, fname):
     newdata = data_warehouse.getMeasurements(groupInstance=instanceid)
     dataInTabularForm = data_warehouse.formMeasurementGroup(study, newdata)
     data_warehouse.printMeasurementGroupInstances(dataInTabularForm, measurement_group, study)
-
-
-# Create a connection to the data warehouse
-data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
-
-print("\n Load measurements from e-screening-chf json file\n")
-json_load(4, 24, mk_e_screening_chf, 'input\e-screening-chf.json')
-
-print("\n Load measurements from j-walking-aids json file\n")
-json_load(4, 4, mk_walking_aids_group, 'input\j-walking-aids.json')
-
-print("\n Load measurements from h-falls-description json file\n")
-json_load(4, 8, mk_falls_description, 'input\h-falls-description.json')
-
-print("\n Load measurements from i-medication-usage json file\n")
-json_load(4, 13, mk_i_medication_usage, 'input\i-medication-usage.json')
-
-print("\n Load measurements from e-screening-ha json file\n")
-json_load(4, 25, mk_e_screening_ha, 'input\e-screening-ha.json')
