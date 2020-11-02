@@ -17,9 +17,148 @@ import sys
 import psycopg2
 import json
 from more_itertools import intersperse
-from data_warehouse_client import io_functions
+from data_warehouse_client import transform_result_format
 
 from data_warehouse_client import file_utils
+
+
+def get_participants_in_result(results):
+    """
+    find all participants in a set of results
+    :param results: a list of measurements. Each measurement is held in a list with the following fields:
+                    id,time,study,participant,measurementType,typeName,measurementGroup,
+                    groupInstance,trial,valType,value
+    :return: a list of unique participants from the measurements
+    """
+    participants = map(lambda r: r[3], results)  # pick out participant
+    return list(set(participants))
+
+
+def field_holding_value(val_type):
+    """
+    A helper function that returns the data warehouse field that holds measurement values of the type
+    specified in the parameter
+    :param val_type: the type of measurement
+    :return: the database field holding the measurement value
+    """
+    val_types = {0: "measurement.valinteger", 1: "measurement.valreal", 2: "textvalue.textval",
+                 3: "datetimevalue.datetimeval", 4: "measurement.valinteger", 5: "measurement.valinteger",
+                 6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal"}
+    try:
+        return val_types[val_type]
+    except KeyError:
+        print("Error: valType out of range: ", val_type)
+        return None
+
+
+def mk_where_condition(first_condition, column, test, value):
+    """
+    :param first_condition: true if this is the first condition in a where clause
+    :param column: column name in measurement table
+    :param test: comparator for value
+    :param value: value to be tested in the where clause
+    :return: (where clause, first_condition)
+    """
+    if value != -1:
+        condition = " WHERE " if first_condition else " AND "
+        q = f'{condition} measurement.{column}{test}{str(value)}'
+        first_condition = False
+    else:
+        q = ""
+    return q, first_condition
+
+
+def core_sql_from_for_measurements():
+    """
+    Creates the from clause used by many of the functions that query the data warehouse
+    :return: the from clause used by several of the functions that query the data warehouse
+    """
+    return file_utils.process_sql_template("sql/core_sql_from_for_measurements.sql")
+
+
+def core_sql_for_where_clauses(study: int, participant: int, measurement_type: int, measurement_group: int,
+                               group_instance: int, trial: int, start_time, end_time):
+    """
+    Returns the where clauses used by many of the functions that query the data warehouse to filter out rows
+    according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
+    created for it
+    :param study: a study id
+    :param participant: a participant id
+    :param measurement_type: a measurementType
+    :param measurement_group: a measurementGroup
+    :param group_instance: a groupInstance
+    :param trial: a trial id
+    :param start_time: the start of a time period of interest
+    :param end_time: the end of a time period of interest
+    :return: a tuple containing the SQL for the where clauses, and a boolean that is true if there are >0 clauses
+    """
+    first_condition = True
+    (qs, first_condition) = mk_where_condition(first_condition, "study", "=", study)
+    (qp, first_condition) = mk_where_condition(first_condition, "participant", "=", participant)
+    (qmt, first_condition) = mk_where_condition(first_condition, "measurementtype", "=", measurement_type)
+    (qmg, first_condition) = mk_where_condition(first_condition, "measurementgroup", "=", measurement_group)
+    (qgi, first_condition) = mk_where_condition(first_condition, "groupinstance", "=", group_instance)
+    (qst, first_condition) = mk_where_condition(first_condition, "trial", "=", trial)
+    (qet, first_condition) = mk_where_condition(first_condition, "time", ">=", start_time)
+    (qt, first_condition) = mk_where_condition(first_condition, "time", "<=", end_time)
+    return f' {qs}{qp}{qmt}{qmg}{qgi}{qst}{qet}{qt} ', first_condition
+
+
+def core_sql_for_where_clauses_for_cohort(study, participants, measurement_type: int,
+                                          measurement_group: int, group_instance: int, trial: int, start_time,
+                                          end_time):
+    """
+    Returns the where clauses used by functions that query the data warehouse to filter out rows
+    according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
+    created for it
+    :param study: a study id
+    :param participants: a list of participant ids
+    :param measurement_type: a measurementType
+    :param measurement_group: a measurementGroup
+    :param group_instance: a groupInstance
+    :param trial: a trial id
+    :param start_time: the start of a time period of interest
+    :param end_time: the end of a time period of interest
+    :return: the SQL for the where clauses
+    """
+    participants_str = map(lambda p: str(p), participants)
+    q = " WHERE measurement.participant IN (" + ' '.join(
+        [elem for elem in intersperse(",", participants_str)]) + ") "
+    first_condition = False
+    (qs, first_condition) = mk_where_condition(first_condition, "study", "=", study)
+    (qmt, first_condition) = mk_where_condition(first_condition, "measurementtype", "=", measurement_type)
+    (qmg, first_condition) = mk_where_condition(first_condition, "measurementgroup", "=", measurement_group)
+    (qgi, first_condition) = mk_where_condition(first_condition, "groupinstance", "=", group_instance)
+    (qst, first_condition) = mk_where_condition(first_condition, "trial", "=", trial)
+    (qet, first_condition) = mk_where_condition(first_condition, "time", ">=", start_time)
+    (qt, first_condition) = mk_where_condition(first_condition, "time", "<=", end_time)
+    return f' {q}{qs}{qmt}{qmg}{qgi}{qst}{qet}{qt} '
+
+
+def make_value_test(val_type, value_test_condition):
+    """
+    creates a condition for the where clause of a query
+    :param val_type: the type of the field being tested
+    :param value_test_condition: the test of that field
+    :return: a fragment of SQL that can be included in the where clause of a query
+    """
+    return f' ({field_holding_value(val_type)}{value_test_condition}) '
+
+
+def core_sql_select_for_measurements():
+    """
+     Creates the select clause used by many of the functions that query the data warehouse
+     :return: the select clause used by several of the functions that query the data warehouse
+     """
+    return file_utils.process_sql_template("sql/core_sql_select_for_measurements.sql")
+
+
+def core_sql_for_measurements():
+    """
+    Creates the select and from clauses used by many of the functions that query the data warehouse
+    :return: the select and from clauses used by several of the functions that query the data warehouse
+    """
+    return f'{core_sql_select_for_measurements()} {core_sql_from_for_measurements()}'
 
 
 class DataWarehouse:
@@ -44,100 +183,6 @@ class DataWarehouse:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
 
-    def core_sql_for_measurements(self):
-        """
-        Creates the select and from clauses used by many of the functions that query the data warehouse
-        :return: the select and from clauses used by several of the functions that query the data warehouse
-        """
-        return f'{self.core_sql_select_for_measurements()} {self.core_sql_from_for_measurements()}'
-
-    def core_sql_select_for_measurements(self):
-        """
-         Creates the select clause used by many of the functions that query the data warehouse
-         :return: the select clause used by several of the functions that query the data warehouse
-         """
-        return file_utils.process_sql_template("sql/core_sql_select_for_measurements.sql")
-
-    def core_sql_from_for_measurements(self):
-        """
-        Creates the from clause used by many of the functions that query the data warehouse
-        :return: the from clause used by several of the functions that query the data warehouse
-        """
-        return file_utils.process_sql_template("sql/core_sql_from_for_measurements.sql")
-
-    def mk_where_condition(self, first_condition, column, test, value):
-        """
-        :param first_condition: true if this is the first condition in a where clause
-        :param column: column name in measurement table
-        :param test: comparator for value
-        :param value: value to be tested in the where clause
-        :return: (where clause, first_condition)
-        """
-        if value != -1:
-            condition = " WHERE " if first_condition else " AND "
-            q = f'{condition} measurement.{column}{test}{str(value)}'
-            first_condition = False
-        else:
-            q = ""
-        return (q, first_condition)
-
-    def core_sql_for_where_clauses(self, study: int, participant: int, measurement_type: int, measurement_group: int,
-                                   group_instance: int, trial: int, start_time, end_time):
-        """
-        Returns the where clauses used by many of the functions that query the data warehouse to filter out rows
-        according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
-        created for it
-        :param study: a study id
-        :param participant: a participant id
-        :param measurement_type: a measurementType
-        :param measurement_group: a measurementGroup
-        :param group_instance: a groupInstance
-        :param trial: a trial id
-        :param start_time: the start of a time period of interest
-        :param end_time: the end of a time period of interest
-        :return: a tuple containing the SQL for the where clauses, and a boolean that is true if there are >0 clauses
-        """
-        first_condition = True
-        (qs, first_condition) = self.mk_where_condition(first_condition, "study", "=", study)
-        (qp, first_condition) = self.mk_where_condition(first_condition, "participant", "=", participant)
-        (qmt, first_condition) = self.mk_where_condition(first_condition, "measurementtype", "=", measurement_type)
-        (qmg, first_condition) = self.mk_where_condition(first_condition, "measurementgroup", "=", measurement_group)
-        (qgi, first_condition) = self.mk_where_condition(first_condition, "groupinstance", "=", group_instance)
-        (qst, first_condition) = self.mk_where_condition(first_condition, "trial", "=", trial)
-        (qet, first_condition) = self.mk_where_condition(first_condition, "time", ">=", start_time)
-        (qt, first_condition) = self.mk_where_condition(first_condition, "time", "<=", end_time)
-        return f' {qs}{qp}{qmt}{qmg}{qgi}{qst}{qet}{qt} ', first_condition
-
-    def core_sql_for_where_clauses_for_cohort(self, study, participants, measurement_type: int,
-                                              measurement_group: int, group_instance: int, trial: int, start_time,
-                                              end_time):
-        """
-        Returns the where clauses used by functions that query the data warehouse to filter out rows
-        according to the criteria passed as parameters. A value of -1 for any parameter means that no filter is
-        created for it
-        :param study: a study id
-        :param participants: a list of participant ids
-        :param measurement_type: a measurementType
-        :param measurement_group: a measurementGroup
-        :param group_instance: a groupInstance
-        :param trial: a trial id
-        :param start_time: the start of a time period of interest
-        :param end_time: the end of a time period of interest
-        :return: the SQL for the where clauses
-        """
-        participants_str = map(lambda p: str(p), participants)
-        q = " WHERE measurement.participant IN (" + ' '.join(
-            [elem for elem in intersperse(",", participants_str)]) + ") "
-        first_condition = False
-        (qs, first_condition) = self.mk_where_condition(first_condition, "study", "=", study)
-        (qmt, first_condition) = self.mk_where_condition(first_condition, "measurementtype", "=", measurement_type)
-        (qmg, first_condition) = self.mk_where_condition(first_condition, "measurementgroup", "=", measurement_group)
-        (qgi, first_condition) = self.mk_where_condition(first_condition, "groupinstance", "=", group_instance)
-        (qst, first_condition) = self.mk_where_condition(first_condition, "trial", "=", trial)
-        (qet, first_condition) = self.mk_where_condition(first_condition, "time", ">=", start_time)
-        (qt, first_condition) = self.mk_where_condition(first_condition, "time", "<=", end_time)
-        return f' {q}{qs}{qmt}{qmg}{qgi}{qst}{qet}{qt} '
-
     def get_measurements(self, study=-1, participant=-1, measurement_type=-1, measurement_group=-1, group_instance=-1,
                          trial=-1, start_time=-1, end_time=-1):
         """
@@ -156,29 +201,13 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurement_type,
-                                                                          measurement_group,
-                                                                          group_instance, trial, start_time, end_time)
-        mappings = {"core_sql": self.core_sql_for_measurements(), "where_clause": where_clause}
+        (where_clause, first_condition) = core_sql_for_where_clauses(study, participant, measurement_type,
+                                                                     measurement_group,
+                                                                     group_instance, trial, start_time, end_time)
+        mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause}
         query = file_utils.process_sql_template("sql/get_measurements.sql", mappings)
         raw_results = self.return_query_result(query)
-        return io_functions.form_measurements(raw_results)
-
-    def field_holding_value(self, val_type):
-        """
-        A helper function that returns the data warehouse field that holds measurement values of the type
-        specified in the parameter
-        :param val_type: the type of measurement
-        :return: the database field holding the measurement value
-        """
-        val_types = {0: "measurement.valinteger", 1: "measurement.valreal", 2: "textvalue.textval",
-                     3: "datetimevalue.datetimeval", 4: "measurement.valinteger", 5: "measurement.valinteger",
-                     6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal"}
-        try:
-            return val_types[val_type]
-        except KeyError:
-            print("Error: valType out of range: ", val_type)
-            return None
+        return transform_result_format.form_measurements(raw_results)
 
     def aggregate_measurements(self, measurement_type, study, aggregation, participant=-1, measurement_group=-1,
                                group_instance=-1, trial=-1, start_time=-1, end_time=-1):
@@ -198,20 +227,11 @@ class DataWarehouse:
         """
         mt_info = self.get_measurement_type_info(study, measurement_type)
         val_type = mt_info[0][2]
-        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, measurement_type, measurement_group,
-                                                               group_instance, trial, start_time, end_time)
-        q = f'SELECT {aggregation} ( {self.field_holding_value(val_type)} ) {self.core_sql_from_for_measurements()} {w}'
+        (w, first_condition) = core_sql_for_where_clauses(study, participant, measurement_type, measurement_group,
+                                                          group_instance, trial, start_time, end_time)
+        q = f'SELECT {aggregation} ( {field_holding_value(val_type)} ) {core_sql_from_for_measurements()} {w}'
         raw_result = self.return_query_result(q)
         return raw_result[0][0]
-
-    def make_value_test(self, val_type, value_test_condition):
-        """
-        creates a condition for the where clause of a query
-        :param val_type: the type of the field being tested
-        :param value_test_condition: the test of that field
-        :return: a fragment of SQL that can be included in the where clause of a query
-        """
-        return f' ({self.field_holding_value(val_type)}{value_test_condition}) '
 
     def get_measurements_with_value_test(self, measurement_type, study, value_test_condition, participant=-1,
                                          measurement_group=-1, group_instance=-1, trial=-1, start_time=-1, end_time=-1):
@@ -230,19 +250,19 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurement_type,
-                                                                          measurement_group,
-                                                                          group_instance, trial, start_time, end_time)
+        (where_clause, first_condition) = core_sql_for_where_clauses(study, participant, measurement_type,
+                                                                     measurement_group,
+                                                                     group_instance, trial, start_time, end_time)
         mt_info = self.get_measurement_type_info(study, measurement_type)
         val_type = mt_info[0][2]  # find the value type of the measurement
         # Add a clause to test the field that is relevant to the type of the measurement
         condition = " WHERE " if first_condition else " AND "
-        cond = self.make_value_test(val_type, value_test_condition)
-        mappings = {"core_sql": self.core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
+        cond = make_value_test(val_type, value_test_condition)
+        mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cond": cond}
         query = file_utils.process_sql_template("sql/get_measurements_with_value.sql", mappings)
         raw_results = self.return_query_result(query)
-        return io_functions.form_measurements(raw_results)
+        return transform_result_format.form_measurements(raw_results)
 
     def get_measurements_by_cohort(self, cohort_id, study, participant=-1, measurement_type=-1,
                                    measurement_group=-1, group_instance=-1, trial=-1, start_time=-1, end_time=-1):
@@ -260,15 +280,15 @@ class DataWarehouse:
         :return: a list of measurements. Each measurement is held in a list with the following fields:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
         """
-        (where_clause, first_condition) = self.core_sql_for_where_clauses(study, participant, measurement_type,
-                                                                          measurement_group,
-                                                                          group_instance, trial, start_time, end_time)
+        (where_clause, first_condition) = core_sql_for_where_clauses(study, participant, measurement_type,
+                                                                     measurement_group,
+                                                                     group_instance, trial, start_time, end_time)
         condition = " WHERE " if first_condition else " AND "
-        mappings = {"core_sql": self.core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
+        mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cohort_id": str(cohort_id), "study": str(study)}
         query = file_utils.process_sql_template("sql/get_measurements_by_cohort.sql", mappings)
         raw_results = self.return_query_result(query)
-        return io_functions.form_measurements(raw_results)
+        return transform_result_format.form_measurements(raw_results)
 
     def num_types_in_a_measurement_group(self, study, measurement_group):
         """
@@ -309,20 +329,9 @@ class DataWarehouse:
             mt_info = self.get_measurement_type_info(study, measurement_type)
             val_type = mt_info[0][2]
             cond = f'((measurement.measurementtype = {str(measurement_type)}) AND NOT ' \
-                   f'{self.make_value_test(val_type, condition)})'
+                   f'{make_value_test(val_type, condition)})'
             all_conditions = all_conditions + [cond]
         return ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
-
-    def get_participants_in_result(self, results):
-        """
-        find all participants in a set of results
-        :param results: a list of measurements. Each measurement is held in a list with the following fields:
-                        id,time,study,participant,measurementType,typeName,measurementGroup,
-                        groupInstance,trial,valType,value
-        :return: a list of unique participants from the measurements
-        """
-        participants = map(lambda r: r[3], results)  # pick out participant
-        return list(set(participants))
 
     def get_measurement_group_instances_with_value_tests(self, measurement_group, study, value_test_conditions,
                                                          participant=-1, trial=-1, start_time=-1, end_time=-1):
@@ -345,21 +354,21 @@ class DataWarehouse:
         """
         problem_q = ""  # returns the instance ids of all instances that fail the criteria
         problem_q += " SELECT measurement.groupinstance "
-        problem_q += self.core_sql_from_for_measurements()
-        (w, first_condition) = self.core_sql_for_where_clauses(study, participant, -1, measurement_group, -1, trial,
-                                                               start_time, end_time)
+        problem_q += core_sql_from_for_measurements()
+        (w, first_condition) = core_sql_for_where_clauses(study, participant, -1, measurement_group, -1, trial,
+                                                          start_time, end_time)
         problem_q += w
         if len(value_test_conditions) > 0:
             problem_q += " AND (" + self.mk_value_tests(value_test_conditions, study) + ")"
 
-        outer_query = self.core_sql_for_measurements()
+        outer_query = core_sql_for_measurements()
         outer_query += " " + w
         if len(value_test_conditions) > 0:
             outer_query += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        return io_functions.form_measurements(raw_results)
+        return transform_result_format.form_measurements(raw_results)
 
     def get_measurement_group_instances_for_cohort(self, measurement_group, study, participants, value_test_conditions,
                                                    trial=-1, start_time=-1, end_time=-1):
@@ -382,21 +391,21 @@ class DataWarehouse:
         """
         problem_q = ""  # returns the instance ids of all instances that fail the criteria
         problem_q += " SELECT measurement.groupinstance "
-        problem_q += self.core_sql_from_for_measurements()
-        where_clause = self.core_sql_for_where_clauses_for_cohort(study, participants, -1, measurement_group,
-                                                                  -1, trial, start_time, end_time)
+        problem_q += core_sql_from_for_measurements()
+        where_clause = core_sql_for_where_clauses_for_cohort(study, participants, -1, measurement_group,
+                                                             -1, trial, start_time, end_time)
         problem_q += where_clause
         if len(value_test_conditions) > 0:
             problem_q += " AND (" + self.mk_value_tests(value_test_conditions, study) + ")"
 
-        outer_query = self.core_sql_for_measurements()
+        outer_query = core_sql_for_measurements()
         outer_query += where_clause
         if len(value_test_conditions) > 0:
             outer_query += " AND measurement.groupinstance NOT IN (" + problem_q + ")"
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        return io_functions.form_measurements(raw_results)
+        return transform_result_format.form_measurements(raw_results)
 
     def get_measurement_type_info(self, study, measurement_type_id):
         """
@@ -608,10 +617,10 @@ class DataWarehouse:
         res = self.return_query_result(q)
         found = len(res) == 1
         if found:
-            return (found, res[0][0])
+            return found, res[0][0]
         else:
             print("Participant", participant, " not found in participant.id")
-            return (found, res)
+            return found, res
 
     def get_participant(self, study_id, local_participant_id):
         """
@@ -626,10 +635,10 @@ class DataWarehouse:
         res = self.return_query_result(q)
         found = len(res) == 1
         if found:
-            return (found, res[0][0])
+            return found, res[0][0]
         else:
             print("Participant", local_participant_id, " not found in participant.particpantid")
-            return (found, res)
+            return found, res
 
     def get_measurement_group(self, study_id, measurementgroup_description):
         """
@@ -645,10 +654,10 @@ class DataWarehouse:
         res = self.return_query_result(q)
         found = len(res) == 1
         if found:
-            return (found, res[0][0])
+            return found, res[0][0]
         else:
             print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
-            return (found, res)
+            return found, res
 
     def get_participants(self, study_id):
         """
@@ -701,7 +710,7 @@ class DataWarehouse:
         res = self.return_query_result(q)
         participant_already_exists = len(res) > 0
         if participant_already_exists:
-            return (False, participant_id)
+            return False, participant_id
         else:
             cur.execute("""
                         INSERT INTO participant(id,participantid,study)
@@ -709,7 +718,7 @@ class DataWarehouse:
                         """,
                         (participant_id, local_participant_id, study_id))  # insert the new entry
             self.dbConnection.commit()
-            return (True, participant_id)
+            return True, participant_id
 
     def n_mg_instances(self, mg_id, study):
         """
