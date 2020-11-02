@@ -34,7 +34,7 @@ def check_category_exists(dw, study):
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("sql/ordinal_types_not_matching_category.sql", mappings)
-    return dw.returnQueryResult(query)
+    return dw.return_query_result(query)
 
 
 def check_valtype_matches_values(dw, study):
@@ -44,9 +44,9 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    mappings = {"study": str(study), "core_sql": dw.coreSQLforMeasurements()}
+    mappings = {"study": str(study), "core_sql": dw.core_sql_for_measurements()}
     query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
-    return dw.returnQueryResult(query)
+    return dw.return_query_result(query)
 
 
 def check_category_in_range(dw, study):
@@ -58,7 +58,7 @@ def check_category_in_range(dw, study):
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
-    return dw.returnQueryResult(query)
+    return dw.return_query_result(query)
 
 
 def check_bounded_integers(dw, study):
@@ -70,7 +70,7 @@ def check_bounded_integers(dw, study):
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("sql/bounded_integers.sql", mappings)
-    return dw.returnQueryResult(query)
+    return dw.return_query_result(query)
 
 
 def check_bounded_reals(dw, study):
@@ -82,7 +82,7 @@ def check_bounded_reals(dw, study):
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("sql/bounded_reals.sql", mappings)
-    return dw.returnQueryResult(query)
+    return dw.return_query_result(query)
 
 
 def print_check_warhouse(dw, study):
@@ -96,7 +96,7 @@ def print_check_warhouse(dw, study):
     print()
     print(f'Check for invalid entries in the measurement table')
     r1 = check_valtype_matches_values(dw, study)
-    dw.printMeasurements(r1)
+    dw.print_measurements(r1)
     n_invalid_entries = len(r1)
     print(f'({n_invalid_entries} invalid entries)')
 

@@ -1,5 +1,5 @@
 SELECT
-  measurementgroup.id measurementgroup.description
+  measurementgroup.id, measurementgroup.description
 FROM
   measurementgroup
 WHERE
