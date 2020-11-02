@@ -473,7 +473,7 @@ class DataWarehouse:
     def insert_one_measurement(self, study, measurement_group, measurement_type, val_type, value,
                                time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL
         """
-        Insert one measurement
+        Insert one measurement *unused?*
         :param study: the study id
         :param measurement_group: the measurement group
         :param measurement_type: the measurement type
@@ -510,29 +510,29 @@ class DataWarehouse:
                     """,
                     (time, study, trial, measurement_group, group_instance, measurement_type, participant,
                      source, val_type, val_integer, val_real))
-        gid = cur.fetchone()[0]
-        group_instance = gid
+        new_row_id = cur.fetchone()[0]
+        group_instance = new_row_id
         # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
         cur.execute("""
                     UPDATE measurement SET groupinstance = %s
                     WHERE id = %s;
                     """,
-                    (group_instance, gid))
+                    (group_instance, new_row_id))
 
         if val_type == 2:  # it's a Text Value so make entry in textvalue table
             cur.execute("""
                         INSERT INTO textvalue(measurement,textval,study)
                         VALUES (%s, %s, %s);
                         """,
-                        (gid, value, study))
+                        (new_row_id, value, study))
         if val_type == 3:  # it's a DateTime value so make entry in datetimevalue table
             cur.execute("""
                         INSERT INTO datetimevalue(measurement,datetimeval,study)
                         VALUES (%s, %s, %s);
                         """,
-                        (gid, value, study))
+                        (new_row_id, value, study))
         self.dbConnection.commit()
-        return gid
+        return new_row_id
 
     def insert_measurement_group(self, study, measurement_group, values,
                                  time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL
@@ -613,7 +613,7 @@ class DataWarehouse:
          """
         q = " SELECT participantid FROM participant " \
             " WHERE participant.study       = " + str(study) + \
-            " AND participant.id = '" + participant + "';"
+            " AND participant.id = '" + participant + "';"  # error? should be turned into a string?
         res = self.return_query_result(q)
         found = len(res) == 1
         if found:

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import datetime
-from string import Template
 
 
 def mk_boolean(measurement_type, data, jfield):
@@ -29,7 +28,7 @@ def mk_boolean(measurement_type, data, jfield):
         val01 = 0
     else:
         val01 = 1
-    return (measurement_type, 4, val01)
+    return measurement_type, 4, val01
 
 
 def mk_string(measurement_type, data, jfield):
@@ -87,7 +86,7 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
-    return (measurement_type, val_type, val)
+    return measurement_type, val_type, val
 
 
 def mk_int(measurement_type, data, jfield):
@@ -195,7 +194,7 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
-    return (measurement_type, val_type, mk_category_from_dict(val, cat_dict))
+    return measurement_type, val_type, mk_category_from_dict(val, cat_dict)
 
 
 def mk_nominal(measurement_type, data, jfield, cat_dict):

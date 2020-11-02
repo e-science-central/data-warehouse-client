@@ -20,7 +20,7 @@
 # the measurement group is valid for the study
 # there are no missing measurement types in a measurement group instance
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
-from string import Template
+
 
 from data_warehouse_client import file_utils
 

@@ -17,10 +17,10 @@ from data_warehouse_client import print_functions
 from data_warehouse_client import study_summary
 from data_warehouse_client import transform_result_format
 from data_warehouse_client import plot_measurements
-
-
+from data_warehouse_client import csv_io
 # from data_warehouse_client import mobilise_cohort_selection
 # import warehouse_checker
+
 
 # Create a connection to the data warehouse
 dw = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
@@ -59,7 +59,7 @@ mts = dw.get_measurements(measurement_type=155, study=3)  # these are continuous
 plot_measurements.plot_measurement_type(dw, mts, 155, 3, 'output/example155.png')
 
 print("\nQ9: Create a CSV file for all results of type 155 in study 3\n")
-print_functions.export_measurements_as_csv(mts, 'output/example155.csv')
+csv_io.export_measurements_as_csv(mts, 'output/example155.csv')
 
 print("\nQ10: All measurements with type = 152\n")
 ms2 = dw.get_measurements(measurement_type=152)
@@ -75,7 +75,7 @@ print_functions.print_measurements(ms4)
 plot_measurements.plot_measurement_type(dw, ms4, 155, 3, 'output/example2.png')
 
 print("\nQ13: Create a CSV file for all measurements in study 3 with type = 155 where the value is greater that 9\n")
-print_functions.export_measurements_as_csv(ms4, 'output/example2.csv')
+csv_io.export_measurements_as_csv(ms4, 'output/example2.csv')
 
 print("\nQ14: All measurements in group 15")
 ms5 = dw.get_measurements(measurement_group=15)
@@ -105,7 +105,7 @@ print(ms7)
 print("\nQ17: The output of Q15 with one Measurement Group instance per row\n")
 ms8 = transform_result_format.form_measurement_group(dw, 2, ms6)
 print_functions.print_measurement_group_instances(dw, ms8, 15, 2)
-print_functions.export_measurement_groups_as_csv(dw, ms8, 15, 2, 'output/example17.csv')
+csv_io.export_measurement_groups_as_csv(dw, ms8, 15, 2, 'output/example17.csv')
 
 print("\nQ18: All measurements for Study 5\n")
 ms18 = dw.get_measurements(study=5)
@@ -117,7 +117,7 @@ mgs19 = transform_result_format.form_measurement_group(dw, 5, ms19)
 print_functions.print_measurement_group_instances(dw, mgs19, 20, 5)
 
 print("\n   : store in CSV file\n")
-print_functions.export_measurement_groups_as_csv(dw, mgs19, 20, 5, 'output/example19.csv')
+csv_io.export_measurement_groups_as_csv(dw, mgs19, 20, 5, 'output/example19.csv')
 
 print("\nQ20: All measurements for Study 5, trial 2, measurement group 20 in tabular form\n")
 ms20 = dw.get_measurements(study=5, trial=2, measurement_group=20)
@@ -157,15 +157,15 @@ print_functions.print_measurements(ms23)
 # mgs25 = data_warehouse.formMeasurementGroup(5,ms25)
 # data_warehouse.printMeasurementGroupInstances(mgs25,22)
 
-print("\nQ26: All measurements in group 6 for Study 10")
-ms26 = dw.get_measurements(measurement_group=6, study=10)
+print("\nQ26: All measurements in group 6 for Study 27")
+ms26 = dw.get_measurements(measurement_group=6, study=27)
 print_functions.print_measurements(ms26)
 print("\n")
-mgs26 = transform_result_format.form_measurement_group(dw, 10, ms26)
-print_functions.print_measurement_group_instances(dw, mgs26, 6, 10)
+mgs26 = transform_result_format.form_measurement_group(dw, 27, ms26)
+print_functions.print_measurement_group_instances(dw, mgs26, 6, 27)
 
-print("\nQ27: All measurements in Study 14")
-study_summary.print_all_instances_in_a_study(dw, 14)
+print("\nQ27: All measurements in Study 5")
+study_summary.print_all_instances_in_a_study(dw, 5)
 
 print("\nQ28: All measurement group 14 measurements for all participants in UNEW and USFD with HA or CHF in study 26")
 # Retrieve the cohort
