@@ -44,7 +44,7 @@ def print_all_instances_in_a_study(dw, study):
     measurement_groups = dw.get_all_measurement_groups(study)
     print()
     for [mg_id, mg_name] in measurement_groups:
-        ms = dw.get_measurements(study=study, measurementGroup=mg_id)
+        ms = dw.get_measurements(study=study, measurement_group=mg_id)
         if len(ms) > 0:
             print(f'All measurements in group {mg_id} ({mg_name}) for Study {study} \n')
             mgs = dw.form_measurement_group(study, ms)

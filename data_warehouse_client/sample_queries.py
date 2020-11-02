@@ -22,7 +22,7 @@ data_warehouse = data_warehouse.DataWarehouse("db-credentials-read-only.json", "
 
 # Sample queries...
 print("\nQ1: All measurements in group instance 1\n")
-q1res = data_warehouse.get_measurements(groupInstance=1)
+q1res = data_warehouse.get_measurements(group_instance=1)
 data_warehouse.print_measurements(q1res)
 
 print("\nQ2: All measurements for participant 1\n")
@@ -30,11 +30,11 @@ q2res = data_warehouse.get_measurements(participant=1)
 data_warehouse.print_measurements(q2res)
 
 print("\nQ3: All the measurements of type 1\n")
-q3res = data_warehouse.get_measurements(measurementType=1)
+q3res = data_warehouse.get_measurements(measurement_type=1)
 data_warehouse.print_measurements(q3res)
 
 print("\nQ4: All measurements in Measurement Group 1, within Study 1\n")
-q4res = data_warehouse.get_measurements(measurementGroup=1, study=1)
+q4res = data_warehouse.get_measurements(measurement_group=1, study=1)
 data_warehouse.print_measurements(q4res)
 
 print("\nQ5: All results for participant 1\n")
@@ -46,22 +46,22 @@ data_warehouse.print_rows(data_warehouse.get_all_measurement_groups_and_types_in
                           ["Measurement Group","Measurement Type","Type Name"])
 
 print("\nQ7: All results in measurement group 16 for study 3\n")
-mgis = data_warehouse.get_measurements(measurementGroup=16, study=3)
+mgis = data_warehouse.get_measurements(measurement_group=16, study=3)
 data_warehouse.print_measurements(mgis)
 
 print("\nQ8: Plot all results of type 155 in study 3\n")
-mts = data_warehouse.get_measurements(measurementType=155, study=3)  # these are continuous glucose monitor measurements
+mts = data_warehouse.get_measurements(measurement_type=155, study=3)  # these are continuous glucose monitor measurements
 data_warehouse.plot_measurement_type(mts, 155, 3, 'output/example155.png')
 
 print("\nQ9: Create a CSV file for all results of type 155 in study 3\n")
 data_warehouse.export_measurements_as_csv(mts, 'output/example155.csv')
 
 print("\nQ10: All measurements with type = 152\n")
-ms2 = data_warehouse.get_measurements(measurementType=152)
+ms2 = data_warehouse.get_measurements(measurement_type=152)
 data_warehouse.print_measurements(ms2)
 
 print("\nQ11: All measurements with measurementgroup = 15\n")
-ms3 = data_warehouse.get_measurements(measurementGroup=15)
+ms3 = data_warehouse.get_measurements(measurement_group=15)
 data_warehouse.print_measurements(ms3)
 
 print("\nQ12: Plot all measurements in study 3 with type = 155 where the value is greater that 9\n")
@@ -73,7 +73,7 @@ print("\nQ13: Create a CSV file for all measurements in study 3 with type = 155 
 data_warehouse.export_measurements_as_csv(ms4, 'output/example2.csv')
 
 print("\nQ14: All measurements in group 15")
-ms5 = data_warehouse.get_measurements(measurementGroup=15)
+ms5 = data_warehouse.get_measurements(measurement_group=15)
 data_warehouse.print_measurements(ms5)
 
 print("\nQ15: All instances of measurement group 15 where the participant's age is greater than 22")
@@ -107,7 +107,7 @@ ms18 = data_warehouse.get_measurements(study=5)
 data_warehouse.print_measurements(ms18)
 
 print("\nQ19: All measurements in group 20 for Study 5 measurement group 20 in tabular form\n")
-ms19 = data_warehouse.get_measurements(study=5, measurementGroup=20)
+ms19 = data_warehouse.get_measurements(study=5, measurement_group=20)
 mgs19 = data_warehouse.form_measurement_group(5, ms19)
 data_warehouse.print_measurement_group_instances(mgs19, 20, 5)
 
@@ -115,12 +115,12 @@ print("\n   : store in CSV file\n")
 data_warehouse.export_measurement_groups_as_csv(mgs19, 20, 5, 'output/example19.csv')
 
 print("\nQ20: All measurements for Study 5, trial 2, measurement group 20 in tabular form\n")
-ms20 = data_warehouse.get_measurements(study=5, trial=2, measurementGroup=20)
+ms20 = data_warehouse.get_measurements(study=5, trial=2, measurement_group=20)
 mgs20 = data_warehouse.form_measurement_group(5, ms20)
 data_warehouse.print_measurement_group_instances(mgs20, 20, 5)
 
 print("\nQ21: All measurements for Study 5, trial 4 in tabular form\n")
-ms21 = data_warehouse.get_measurements(study=5, trial=4, measurementGroup=20)
+ms21 = data_warehouse.get_measurements(study=5, trial=4, measurement_group=20)
 mgs21 = data_warehouse.form_measurement_group(5, ms21)
 data_warehouse.print_measurement_group_instances(mgs21, 20, 5)
 
@@ -153,7 +153,7 @@ data_warehouse.print_measurements(ms23)
 # data_warehouse.printMeasurementGroupInstances(mgs25,22)
 
 print("\nQ26: All measurements in group 6 for Study 10")
-ms26 = data_warehouse.get_measurements(measurementGroup=6, study=10)
+ms26 = data_warehouse.get_measurements(measurement_group=6, study=10)
 data_warehouse.print_measurements(ms26)
 print("\n")
 mgs26 = data_warehouse.form_measurement_group(10, ms26)
