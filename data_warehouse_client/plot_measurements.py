@@ -27,15 +27,18 @@ def plot_measurement_type(dw, rows, measurement_type_id, study, plot_file):
     :param plot_file: the name of the file into which the plot will be written
     """
     # https://matplotlib.org/api/pyplot_api.html
-    trans = [list(i) for i in zip(*rows)]  # transpose the list of lists
-    x = trans[1]  # the data and time
-    y = trans[10]  # the measurement value
+    if len(rows)>0:
+        trans = [list(i) for i in zip(*rows)]  # transpose the list of lists
+        x = trans[1]  # the data and time
+        y = trans[10]  # the measurement value
 
-    mt_info = dw.get_measurement_type_info(study, measurement_type_id)
-    units = mt_info[0][3]  # get the units name
-    pyplot.title(rows[0][5])
-    pyplot.xlabel("Time")  # Set the x-axis label
-    pyplot.ylabel(units)  # Set the y-axis label to be the units of the measurement type
-    pyplot.plot(x, y)
-    pyplot.savefig(plot_file)
-    pyplot.close()
+        mt_info = dw.get_measurement_type_info(study, measurement_type_id)
+        units = mt_info[0][3]  # get the units name
+        pyplot.title(rows[0][5])
+        pyplot.xlabel("Time")  # Set the x-axis label
+        pyplot.ylabel(units)  # Set the y-axis label to be the units of the measurement type
+        pyplot.plot(x, y)
+        pyplot.savefig(plot_file)
+        pyplot.close()
+    else:
+        print("No values to plot\n")

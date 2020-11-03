@@ -36,7 +36,7 @@ def export_measurements_as_csv(rows, fname):
         writer.writerows(rows)
 
 
-def export_measurement_groups_as_csv(dw, rows, group_id, study, fname):
+def export_measurement_groups_as_csv(header, instances, fname):
     """
     Stores measurements returned by formMeasurementGroups in a CSV file
     The input rows must be in the format produced by formMeasurementGroups
@@ -44,18 +44,11 @@ def export_measurement_groups_as_csv(dw, rows, group_id, study, fname):
         groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
                 value1, value2....
             where value n is the value for the nth measurement in the instance (ordered by measurement type)
-    :param dw: data warehouse handle
-    :param rows: a list of rows returned by formatMeasurementGroup
-    :param group_id: the measurementGroupId
-    :param study: study id
+    :param header: a list of column names
+    :param instances: a list of instances returned by formatMeasurementGroup
     :param fname: the filename of the output CSV file
     """
-    type_names: List[str] = dw.get_types_in_a_measurement_group(study, group_id)
     with open(fname, "w", newline="") as f:
         writer = csv.writer(f)
-        header_row: List[str] = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group",
-                                 "Trial"]
-        for t in range(len(type_names)):
-            header_row.append(type_names[t][0])
-        writer.writerow(header_row)
-        writer.writerows(rows)
+        writer.writerow(header)
+        writer.writerows(instances)

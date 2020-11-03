@@ -26,26 +26,17 @@ def print_rows(rows, header: List[str]):
     print(tabulate(rows, headers=header))
 
 
-def print_measurement_group_instances(dw, rows, group_id, study):
+def print_measurement_group_instances(header, instances):
     """
     Prints a list of measurement group instances, converting the datetime to strings
-    The input rows must be in the format produced by formMeasurementGroups
     The output file has a row for each measurement group instance. The fields are:
         groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
                 value1, value2....
             where value n is the value for the nth measurement in the instance (ordered by measurement type)
-    :param dw: data warehouse handle
-    :param rows: a list of measurement group instances in the format produced by formatMeasurementGroup
-    :param group_id: the measurementGroupId
-    :param study: study id
+    :param header: a list of column names
+    :param instances: a list of measurement group instances in the format produced by formatMeasurementGroup
     """
-    type_names: List[str] = dw.get_types_in_a_measurement_group(study, group_id)
-    n_types: int = len(type_names)
-    header_row: List[str] = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group",
-                             "Trial"]
-    for t in range(n_types):
-        header_row.append(type_names[t][0])
-    print(tabulate(rows, headers=header_row))
+    print(tabulate(instances, headers=header))
 
 
 def print_measurements(rows):

@@ -183,7 +183,7 @@ class DataWarehouse:
             sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
 
-    def get_measurements(self, study=-1, participant=-1, measurement_type=-1, measurement_group=-1, group_instance=-1,
+    def get_measurements(self, study, participant=-1, measurement_type=-1, measurement_group=-1, group_instance=-1,
                          trial=-1, start_time=-1, end_time=-1):
         """
         This function returns all measurements in the data warehouse that meet the optional criteria specified
@@ -264,7 +264,7 @@ class DataWarehouse:
         raw_results = self.return_query_result(query)
         return transform_result_format.form_measurements(raw_results)
 
-    def get_measurements_by_cohort(self, cohort_id, study, participant=-1, measurement_type=-1,
+    def get_measurements_by_cohort(self, study, cohort_id, participant=-1, measurement_type=-1,
                                    measurement_group=-1, group_instance=-1, trial=-1, start_time=-1, end_time=-1):
         """
         Find all measurements in a cohort that meet the criteria.
@@ -333,8 +333,8 @@ class DataWarehouse:
             all_conditions = all_conditions + [cond]
         return ' '.join([elem for elem in intersperse(" OR ", all_conditions)])
 
-    def get_measurement_group_instances_with_value_tests(self, measurement_group, study, value_test_conditions,
-                                                         participant=-1, trial=-1, start_time=-1, end_time=-1):
+    def get_measurement_group_instances(self, study, measurement_group, value_test_conditions,
+                                        participant=-1, trial=-1, start_time=-1, end_time=-1):
         """
         Return all instances of a measurement group in which one or more of the measurements within the
             instance meet some specified criteria
@@ -368,9 +368,10 @@ class DataWarehouse:
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        return transform_result_format.form_measurements(raw_results)
+        formed_measurements = transform_result_format.form_measurements(raw_results)
+        return transform_result_format.form_measurement_group(self, study, measurement_group, formed_measurements)
 
-    def get_measurement_group_instances_for_cohort(self, measurement_group, study, participants, value_test_conditions,
+    def get_measurement_group_instances_for_cohort(self, study, measurement_group, participants, value_test_conditions,
                                                    trial=-1, start_time=-1, end_time=-1):
         """
         Return all instances of a measurement group in which one or more of the measurements within the
@@ -405,7 +406,8 @@ class DataWarehouse:
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        return transform_result_format.form_measurements(raw_results)
+        formed_measurements = transform_result_format.form_measurements(raw_results)
+        return transform_result_format.form_measurement_group(self, study, measurement_group, formed_measurements)
 
     def get_measurement_type_info(self, study, measurement_type_id):
         """
@@ -469,70 +471,6 @@ class DataWarehouse:
         mappings = {"study": str(study)}
         query = file_utils.process_sql_template("sql/get_all_measurement_groups_and_types_in_a_study.sql", mappings)
         return self.return_query_result(query)
-
-    def insert_one_measurement(self, study, measurement_group, measurement_type, val_type, value,
-                               time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL
-        """
-        Insert one measurement *unused?*
-        :param study: the study id
-        :param measurement_group: the measurement group
-        :param measurement_type: the measurement type
-        :param val_type: the value type
-        :param value: the measurement value
-        :param time: the time the measurement was taken. It defaults to the current time
-        :param trial: optional trial id
-        :param participant: optional participant id
-        :param source: optional source
-        :return the id of the measurement
-        """
-        if time == -1:  # use the current date and time if none is specified
-            time = datetime.datetime.now()  # use the current date and time if none is specified
-
-        if val_type in [0, 4, 5, 6, 7]:  # the value must be stored in valInteger
-            val_integer = value
-            val_real = None
-        elif val_type in [1, 8]:  # the value must be stored in valReal
-            val_integer = None
-            val_real = value
-        elif val_type in [2, 3]:  # the value must be stored in the text or datetime tables
-            val_integer = None
-            val_real = None
-        else:
-            print("Error in valType in insertOneMeasurement")
-            val_integer = None
-            val_real = None
-        group_instance = 0
-        cur = self.dbConnection.cursor()
-        cur.execute("""
-                    INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
-                                             measurementtype,participant,source,valtype,valinteger,valreal)
-                    VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                    """,
-                    (time, study, trial, measurement_group, group_instance, measurement_type, participant,
-                     source, val_type, val_integer, val_real))
-        new_row_id = cur.fetchone()[0]
-        group_instance = new_row_id
-        # Now we know the id of the new measurement we can set the groupinstance field to be the same value.
-        cur.execute("""
-                    UPDATE measurement SET groupinstance = %s
-                    WHERE id = %s;
-                    """,
-                    (group_instance, new_row_id))
-
-        if val_type == 2:  # it's a Text Value so make entry in textvalue table
-            cur.execute("""
-                        INSERT INTO textvalue(measurement,textval,study)
-                        VALUES (%s, %s, %s);
-                        """,
-                        (new_row_id, value, study))
-        if val_type == 3:  # it's a DateTime value so make entry in datetimevalue table
-            cur.execute("""
-                        INSERT INTO datetimevalue(measurement,datetimeval,study)
-                        VALUES (%s, %s, %s);
-                        """,
-                        (new_row_id, value, study))
-        self.dbConnection.commit()
-        return new_row_id
 
     def insert_measurement_group(self, study, measurement_group, values,
                                  time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL

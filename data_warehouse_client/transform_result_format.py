@@ -58,40 +58,48 @@ def form_measurements(rows):
     return row_out
 
 
-def form_measurement_group(dw, study, rows):
+def form_measurement_group(dw, study, measurement_group, rows):
     """
     Creates a result where each measurement group instance occupies one row.
     :param dw: data warehouse handle
     :param study: study id
+    :param measurement_group: measurement group id
     :param rows: list of rows returned by getMeasurementGroupInstancesWithValueTests or
                     getMeasurements (where it returns whole measurement group instances - i.e. where
                                     measurementType is not specified, but measurement group or
                                     measurement group instance is specified)
-    :return: list of rows, each representing one measurement group instance, held in a list with elements:
+    :return: (header, list of rows, each representing one measurement group instance, held in a list with elements:
             groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
                 value1, value2....
             where value n is the value for the nth measurement in the instance (ordered by measurement type)
-            Null is used if a value is missing
+            "None" is used if a value is missing)
     """
+    result_rows = []
     if len(rows) > 0:
-        measurement_group: int = rows[0][6]
-        mts = dw.get_type_ids_in_measurement_group(study, measurement_group)
+        measurement_group: int = rows[0][6]   # get the measurement group from the first measurement
+        mts = dw.get_type_ids_in_measurement_group(study, measurement_group)  # get all the measurement type ids
+        # Create a dictionary entry for each instance hoding the common values and the measurement values
         result_values = {}  # the measurement values
-        result_common = {}  # the common values returned for each instance:
-        # instance,time of first measurement,study,participant,measurementGroup,trial
+        result_common = {}  # the common values returned for each instance: instance, time of 1st measurement,
+                            #                                               study, participant, measurementGroup, trial
         for (row_id, time, study_id, participant, mt, tn, mg, mgi, trial, val_type, value) in rows:
-            if not (mgi in result_common):
-                result_common.update({mgi: [mgi, time, study, participant, mg, trial]})
-                result_values.update({mgi: {}})
-            result_values[mgi][mt] = value  # add values to the dictionary
-        result = []
-        for instance in result_values:
-            val_dict = result_values[instance]
+            if not (mgi in result_common):           # it's a new instance
+                result_common.update({mgi: [mgi, time, study, participant, mg, trial]})  # store the common values
+                result_values.update({mgi: {}})                                          # create empty values for inst
+            result_values[mgi][mt] = value  # add values to the dictionary               # add the value
+        # Write out the list of measurement groups
+        for instance in result_values:               # for each instance
+            val_dict = result_values[instance]       # get the values for that instance
             values = []
-            for mt in mts:
-                val = val_dict.get(mt, None)
-                values = values + [val]
-            result = result + [(result_common[instance] + values)]
-    else:
-        result = []
-    return result
+            for mt in mts:                           # for each measurement type in the measurement group
+                val = val_dict.get(mt, None)         # get the value - the default is None if no value exists
+                values = values + [val]              # add the value to the list of values
+            result_rows = result_rows + [(result_common[instance] + values)]  # add entry for instance to the result
+
+    # prepare the header
+    type_names = dw.get_types_in_a_measurement_group(study, measurement_group)
+    n_types: int = len(type_names)
+    header = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group", "Trial"]
+    for t in range(n_types):
+        header.append(type_names[t][0])
+    return header, result_rows

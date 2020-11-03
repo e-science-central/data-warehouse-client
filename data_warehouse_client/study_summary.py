@@ -16,7 +16,6 @@
 # Summarise a study
 
 from tabulate import tabulate
-from data_warehouse_client import transform_result_format
 from data_warehouse_client import print_functions
 
 
@@ -45,11 +44,10 @@ def print_all_instances_in_a_study(dw, study):
     measurement_groups = dw.get_all_measurement_groups(study)
     print()
     for [mg_id, mg_name] in measurement_groups:
-        ms = dw.get_measurements(study=study, measurement_group=mg_id)
-        if len(ms) > 0:
+        (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+        if len(instances) > 0:
             print(f'All measurements in group {mg_id} ({mg_name}) for Study {study} \n')
-            mgs = transform_result_format.form_measurement_group(dw, study, ms)
-            print_functions.print_measurement_group_instances(dw, mgs, mg_id, study)
+            print_functions.print_measurement_group_instances(header, instances)
             print()
 
 
