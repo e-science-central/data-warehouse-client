@@ -1,5 +1,5 @@
 SELECT
-  DISTINCT measurement.id
+  DISTINCT measurement.id, measurement.valreal
 FROM
   measurement
   JOIN boundsreal ON (

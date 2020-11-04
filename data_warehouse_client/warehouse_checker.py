@@ -25,6 +25,7 @@
 from data_warehouse_client import file_utils
 from data_warehouse_client import data_warehouse
 from data_warehouse_client import print_io
+from tabulate import tabulate
 
 
 def check_category_exists(dw, study):
@@ -98,39 +99,40 @@ def print_check_warhouse(dw, study):
     print()
     print(f'Check for invalid entries in the measurement table')
     r1 = check_valtype_matches_values(dw, study)
-    print_io.print_measurements(r1)
     n_invalid_entries = len(r1)
+    if n_invalid_entries>0:
+        print_io.print_measurements(r1)
     print(f'({n_invalid_entries} invalid entries)')
 
     print()
     print(f'Check for measurement types declared as ordinal or nominal but without entries in the category table')
     r2 = check_category_exists(dw, study)
-    print(*r2, sep="\n")
-
     n_errors = len(r2)
+    if n_errors>0:
+        print(tabulate(r2, headers=['Measurement Type','Category Name']))
     print(f'({n_errors} invalid entries)')
 
     print()
     print(f'Check for measurements declared as ordinal or nominal but without a matching entry in the category table')
     r3 = check_category_in_range(dw, study)
-    for r in r3:
-        print(r[0])
     n_errors = len(r3)
+    if n_errors>0:
+        print(tabulate(r3, headers=['Measurement Id']))
     print(f'({n_errors} measurements)')
 
     print()
     print(f'Check for measurements declared as bounded integers whose value is outside of the bounds')
     r4 = check_bounded_integers(dw, study)
-    for r in r4:
-        print(r[0])
     n_errors = len(r4)
+    if n_errors>0:
+        print(tabulate(r4, headers=['Id', 'Value']))
     print(f'({n_errors} measurements)')
 
     print()
     print(f'Check for measurements declared as bounded reals whose value is outside of the bounds')
     r5 = check_bounded_reals(dw, study)
-    for r in r5:
-        print(r[0])
     n_errors = len(r5)
+    if n_errors>0:
+        print(tabulate(r5, headers=['Id','Value']))
     print(f'({n_errors} measurements)')
     print()
