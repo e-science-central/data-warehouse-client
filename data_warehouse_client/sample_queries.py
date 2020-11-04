@@ -23,8 +23,8 @@ from data_warehouse_client import warehouse_checker
 dw = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
 
 # Sample queries...
-print("\nQ1: All measurements in group instance 1 in study 4\n")
-q1res = dw.get_measurements(4, group_instance=1)
+print("\nQ1: All measurements in measurement group 6 in study 4\n")
+q1res = dw.get_measurements(4, measurement_group=6)
 print_io.print_measurements(q1res)
 
 print("\nQ2: All measurements for participant 1 in study 4\n")
@@ -32,7 +32,7 @@ q2res = dw.get_measurements(4, participant=1)
 print_io.print_measurements(q2res)
 
 print("\nQ3: All the measurements of type 1 in study 4\n")
-q3res = dw.get_measurements(4, measurement_type=1)
+q3res = dw.get_measurements(4, measurement_type=220)
 print_io.print_measurements(q3res)
 
 print("\nQ4: All measurements in Measurement Group 1, in Study 1\n")
@@ -157,6 +157,6 @@ print("          and body mass is less than 55kgs in study 2")
 # data_warehouse.printMeasurements(ms6)
 print_io.print_measurement_group_instances(header, instances)
 
-
+print()
 print("Run Warehouse Checker\n")
 warehouse_checker.print_check_warhouse(dw, 4)
