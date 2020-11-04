@@ -16,7 +16,7 @@
 # Summarise a study
 
 from tabulate import tabulate
-from data_warehouse_client import print_functions
+from data_warehouse_client import print_io
 
 
 def get_instances_per_measurement_group(dw, study):
@@ -47,7 +47,7 @@ def print_all_instances_in_a_study(dw, study):
         (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
         if len(instances) > 0:
             print(f'All measurements in group {mg_id} ({mg_name}) for Study {study} \n')
-            print_functions.print_measurement_group_instances(header, instances)
+            print_io.print_measurement_group_instances(header, instances)
             print()
 
 

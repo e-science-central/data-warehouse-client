@@ -21,7 +21,7 @@ def export_measurements_as_csv(rows, fname):
     """
     Stores measurements returned by queries in a CSV file
     The input rows must be in the format produced by:
-        getMeasurements, getMeasurementsWithValueTest or getMeasurementGroupInstancesWithValueTests
+        getMeasurements or getMeasurementsWithValueTest
         The output file has a header row, followed by a row for each measurement. This has the columns:
             id,time,study,participant,measurementType,typeName,measurementGroup, groupInstance,trial,valType,value
     :param rows: a list of rows returned by getMeasurements, getMeasurementsWithValueTest or

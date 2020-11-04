@@ -24,7 +24,7 @@
 
 from data_warehouse_client import file_utils
 from data_warehouse_client import data_warehouse
-from data_warehouse_client import print_functions
+from data_warehouse_client import print_io
 
 
 def check_category_exists(dw, study):
@@ -98,7 +98,7 @@ def print_check_warhouse(dw, study):
     print()
     print(f'Check for invalid entries in the measurement table')
     r1 = check_valtype_matches_values(dw, study)
-    print_functions.print_measurements(r1)
+    print_io.print_measurements(r1)
     n_invalid_entries = len(r1)
     print(f'({n_invalid_entries} invalid entries)')
 

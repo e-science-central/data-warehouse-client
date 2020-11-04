@@ -209,7 +209,7 @@ class DataWarehouse:
         raw_results = self.return_query_result(query)
         return transform_result_format.form_measurements(raw_results)
 
-    def aggregate_measurements(self, measurement_type, study, aggregation, participant=-1, measurement_group=-1,
+    def aggregate_measurements(self, study, measurement_type, aggregation, participant=-1, measurement_group=-1,
                                group_instance=-1, trial=-1, start_time=-1, end_time=-1):
         """
 
@@ -233,7 +233,7 @@ class DataWarehouse:
         raw_result = self.return_query_result(q)
         return raw_result[0][0]
 
-    def get_measurements_with_value_test(self, measurement_type, study, value_test_condition, participant=-1,
+    def get_measurements_with_value_test(self, study, measurement_type, value_test_condition, participant=-1,
                                          measurement_group=-1, group_instance=-1, trial=-1, start_time=-1, end_time=-1):
         """
         Find all measurement of a particular type whose value meets some criteria.
