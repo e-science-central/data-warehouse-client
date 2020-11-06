@@ -15,7 +15,7 @@
 def form_measurements(rows):
     """
     The raw query results within getMeasurements, getMeasurementsWithValueTest and
-        getMeasurementGroupInstancesWithValueTests contain a column for each possible type of value:
+        contain a column for each possible type of value:
             integer, real, datatime, string. Each is set to null apart from the one that holds the value appropriate
             for the type of measurement. This function replaces those columns with a single field holding the actual
             value
