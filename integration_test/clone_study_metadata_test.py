@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import clone_study_metadata
-import data_warehouse
+from data_warehouse_client import clone_study_metadata
+from data_warehouse_client import data_warehouse
 
 # Create a connection to the data warehouse
 data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawarehouse")
 
 # example 1
 source_study_id = 4
-dest_study_id   = 11
+dest_study_id = 11
 
 print("Copy Metadata Table rows from one study to another\n")
 n_rows_inserted = clone_study_metadata.clone_study_metadata(data_warehouse, source_study_id, dest_study_id)

@@ -23,11 +23,10 @@ data_warehouse = data_warehouse.DataWarehouse("db-credentials.json", "datawareho
 study = 86
 file_name = "output/metadatatables" + str(study) + ".json"
 # store everything important just in case!
-#table_writer_json.data_warehouse_metadata_tables_to_file(data_warehouse, study, file_name)
+# table_writer_json.data_warehouse_metadata_tables_to_file(data_warehouse, study, file_name)
 
 
 # delete_study_contents.delete_study_contents(data_warehouse, study)
 
 # for study in range(8,26):
 # delete_study_contents.delete_study_completely(data_warehouse, ???)
-
