@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="data-warehouse-client",
-    version="0.0.2",
+    version="0.0.3",
     author="Paul Watson",
     author_email="paul.watson@ncl.ac.uk",
     description="This package provides access to the e-Science Central data warehouse that can be used to store, "
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
-    packages="data_warehouse_client",
+    packages=["data_warehouse_client"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
