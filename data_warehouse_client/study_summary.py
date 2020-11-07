@@ -16,15 +16,15 @@
 # Summarise a study
 
 from tabulate import tabulate
+from data_warehouse_client import print_io
 
 
 def get_instances_per_measurement_group(dw, study):
     """
-    Returns the number of instances in all measurement groups in a study,
-    and the number of instances that don't have every measurement
+    Returns the number of instances in all measurement groups in a study
     :param dw: data warehouse handle
     :param study: study id
-    :return: number of instances in each measurement group, and the number of instances that don't have every measurement
+    :return: number of instances in each measurement group
     """
     measurement_groups = dw.get_all_measurement_groups(study)
     summary_table = []
@@ -44,11 +44,10 @@ def print_all_instances_in_a_study(dw, study):
     measurement_groups = dw.get_all_measurement_groups(study)
     print()
     for [mg_id, mg_name] in measurement_groups:
-        ms = dw.getMeasurements(study=study, measurementGroup=mg_id)
-        if len(ms) > 0:
+        (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+        if len(instances) > 0:
             print(f'All measurements in group {mg_id} ({mg_name}) for Study {study} \n')
-            mgs = dw.formMeasurementGroup(study, ms)
-            dw.printMeasurementGroupInstances(mgs, mg_id, study)
+            print_io.print_measurement_group_instances(header, instances)
             print()
 
 

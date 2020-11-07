@@ -13,14 +13,14 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
-    packages=setuptools.find_packages(),
+    packages="data_warehouse_client",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "more_itertools",
+        "more-itertools",
         "matplotlib",
         "psycopg2",
         "tabulate"

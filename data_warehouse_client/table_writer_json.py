@@ -88,16 +88,16 @@ def data_warehouse_metadata_tables_to_file(dw, study_id, file_name):
     dictionary_to_json_file(d, file_name)
 
 
-def write_tables_in_dw_from_dictionary(dw, dict):
+def write_tables_in_dw_from_dictionary(dw, input_dict):
     """
     writes a set of tables (in a dictionary) into the data warehouse
     :param dw: data warehouse handle
-    :param dict: the dictionary containing the tables
+    :param input_dict: the dictionary containing the tables
     :return the total number of rows inserted
     """
     total_rows_inserted = 0
-    for table in dict.keys():
-        total_rows_inserted += insert_rows_in_dw_from_dictionary(dw, table, dict[table])
+    for table in input_dict.keys():
+        total_rows_inserted += insert_rows_in_dw_from_dictionary(dw, table, input_dict[table])
     return total_rows_inserted
 
 

@@ -22,6 +22,12 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 
 
+from data_warehouse_client import file_utils
+from data_warehouse_client import data_warehouse
+from data_warehouse_client import print_io
+from tabulate import tabulate
+
+
 def check_category_exists(dw, study):
     """
     Find measurements of nominal or ordinal type whose value does not equal that of a category
@@ -29,18 +35,9 @@ def check_category_exists(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT measurementtype.id "
-    q += " FROM measurementtype INNER JOIN category ON "
-    q += "      (measurementtype.id = category.measurementtype AND "
-    q += "      measurementtype.study = category.study) "
-
-    outerq = " SELECT measurementtype.id, measurementtype.description "
-    outerq += " FROM   measurementtype "
-    outerq += " WHERE  measurementtype.valtype IN (5,6) AND "
-    outerq += "        measurementtype.study = " + str(study) + " AND "
-    outerq += "        measurementtype.id NOT IN (" + q + ")"
-    outerq += " ORDER BY measurementtype.id;"
-    return dw.returnQueryResult(outerq)
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("sql/ordinal_types_not_matching_category.sql", mappings)
+    return dw.return_query_result(query)
 
 
 def check_valtype_matches_values(dw, study):
@@ -50,13 +47,9 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    q = dw.coreSQLforMeasurements()
-    q += " WHERE measurement.study = " + str(study)
-    q += " AND ((measurement.valtype IN (0,4,5,6,7)) AND (measurement.valinteger    = NULL)) OR "
-    q += "     ((measurement.valtype IN (1,8))       AND (measurement.valreal       = NULL)) OR "
-    q += "     ((measurement.valtype =  2)           AND (textvalue.textval         = NULL)) OR "
-    q += "     ((measurement.valtype =  3)           AND (datetimevalue.datetimeval = NULL));   "
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
+    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    return dw.return_query_result(query)
 
 
 def check_category_in_range(dw, study):
@@ -66,20 +59,9 @@ def check_category_in_range(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN category ON "
-    q += "        (measurement.measurementtype = category.measurementtype AND "
-    q += "        measurement.study = category.study AND "
-    q += "        measurement.valinteger = category.categoryid)"
-    q += " WHERE  measurement.valtype IN (5,6)"
-
-    q1 = " SELECT measurement.id "
-    q1 += " FROM   measurement "
-    q1 += " WHERE  measurement.study = " + str(study) + " AND "
-    q1 += "        measurement.valtype IN (5,6) AND "
-    q1 += "        measurement.id NOT IN (" + q + ")"
-    q1 += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q1)
+    mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
+    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    return dw.return_query_result(query)
 
 
 def check_bounded_integers(dw, study):
@@ -89,16 +71,9 @@ def check_bounded_integers(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN boundsint ON "
-    q += "        (measurement.measurementtype = boundsint.measurementtype AND "
-    q += "        measurement.study = boundsint.study) "
-    q += " WHERE  measurement.valtype = 7 AND "
-    q += "        measurement.study =" + str(study) + " AND "
-    q += "        (measurement.valinteger < boundsint.minval OR "
-    q += "         measurement.valinteger > boundsint.maxval) "
-    q += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("sql/bounded_integers.sql", mappings)
+    return dw.return_query_result(query)
 
 
 def check_bounded_reals(dw, study):
@@ -108,16 +83,9 @@ def check_bounded_reals(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    q = " SELECT DISTINCT measurement.id "
-    q += " FROM   measurement JOIN boundsreal ON "
-    q += "        (measurement.measurementtype = boundsreal.measurementtype AND "
-    q += "        measurement.study = boundsreal.study) "
-    q += " WHERE  measurement.valtype = 8 AND"
-    q += "        measurement.study =" + str(study) + " AND "
-    q += "        (measurement.valreal < boundsreal.minval OR "
-    q += "         measurement.valreal > boundsreal.maxval) "
-    q += " ORDER BY measurement.id;"
-    return dw.returnQueryResult(q)
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("sql/bounded_reals.sql", mappings)
+    return dw.return_query_result(query)
 
 
 def print_check_warhouse(dw, study):
@@ -131,39 +99,40 @@ def print_check_warhouse(dw, study):
     print()
     print(f'Check for invalid entries in the measurement table')
     r1 = check_valtype_matches_values(dw, study)
-    dw.printMeasurements(r1)
     n_invalid_entries = len(r1)
+    if n_invalid_entries>0:
+        print_io.print_measurements(r1)
     print(f'({n_invalid_entries} invalid entries)')
 
     print()
     print(f'Check for measurement types declared as ordinal or nominal but without entries in the category table')
     r2 = check_category_exists(dw, study)
-    print(*r2, sep="\n")
-
     n_errors = len(r2)
+    if n_errors>0:
+        print(tabulate(r2, headers=['Measurement Type','Category Name']))
     print(f'({n_errors} invalid entries)')
 
     print()
     print(f'Check for measurements declared as ordinal or nominal but without a matching entry in the category table')
     r3 = check_category_in_range(dw, study)
-    for r in r3:
-        print(r[0])
     n_errors = len(r3)
+    if n_errors>0:
+        print(tabulate(r3, headers=['Measurement Id']))
     print(f'({n_errors} measurements)')
 
     print()
     print(f'Check for measurements declared as bounded integers whose value is outside of the bounds')
     r4 = check_bounded_integers(dw, study)
-    for r in r4:
-        print(r[0])
     n_errors = len(r4)
+    if n_errors>0:
+        print(tabulate(r4, headers=['Id', 'Value']))
     print(f'({n_errors} measurements)')
 
     print()
     print(f'Check for measurements declared as bounded reals whose value is outside of the bounds')
     r5 = check_bounded_reals(dw, study)
-    for r in r5:
-        print(r[0])
     n_errors = len(r5)
+    if n_errors>0:
+        print(tabulate(r5, headers=['Id','Value']))
     print(f'({n_errors} measurements)')
     print()

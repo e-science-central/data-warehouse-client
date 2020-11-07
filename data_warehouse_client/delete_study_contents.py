@@ -23,7 +23,7 @@ def delete_study_contents(dw, study):
     :param study: study id
     """
     for tab in table_names_to_delete():
-        dw.execSQLWithNoReturn("DELETE FROM " + tab + " WHERE study = " + str(study))
+        dw.exec_sql_with_no_return("DELETE FROM " + tab + " WHERE study = " + str(study))
 
 
 def delete_study_measurements(dw, study):
@@ -34,7 +34,7 @@ def delete_study_measurements(dw, study):
     :param study: study id
     """
     for tab in measurement_table_names():
-        dw.execSQLWithNoReturn("DELETE FROM " + tab + " WHERE study = " + str(study))
+        dw.exec_sql_with_no_return("DELETE FROM " + tab + " WHERE study = " + str(study))
 
 
 def table_names_to_delete():
@@ -66,4 +66,4 @@ def delete_study_completely(dw, study):
     :param study: study id
     """
     delete_study_contents(dw, study)
-    dw.execSQLWithNoReturn("DELETE FROM study WHERE study.id = " + str(study))
+    dw.exec_sql_with_no_return("DELETE FROM study WHERE study.id = " + str(study))

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from data_warehouse_client import table_writer
+from data_warehouse_client import table_writer_json
 
 
 def clone_study_metadata(dw, source_study_id, dest_study_id):
@@ -25,8 +25,8 @@ def clone_study_metadata(dw, source_study_id, dest_study_id):
     :return total rows inserted
     """
     # extract existing metadata
-    tbls = table_writer.data_warehouse_metadata_tables_to_dictionary(dw, source_study_id)
+    tbls = table_writer_json.data_warehouse_metadata_tables_to_dictionary(dw, source_study_id)
     for table in tbls:  # for each table
         for row in tbls[table]:  # for each row
             row.update({'study': dest_study_id})  # update all occurrences of study to the destination study
-    return table_writer.write_tables_in_dw_from_dictionary(dw, tbls)  # write the result to the warehouse
+    return table_writer_json.write_tables_in_dw_from_dictionary(dw, tbls)  # write the result to the warehouse
