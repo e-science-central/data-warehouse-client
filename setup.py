@@ -14,6 +14,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
     packages=["data_warehouse_client"],
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
