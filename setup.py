@@ -14,6 +14,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/e-science-central/data-warehouse-client",
     packages=["data_warehouse_client"],
+    package_dir={'data_warehouse_client': 'data_warehouse_client'},
+    package_data={'data_warehouse_client':['sql/*.sql']},
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     classifiers=[
