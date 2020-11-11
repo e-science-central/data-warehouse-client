@@ -73,7 +73,7 @@ def core_sql_from_for_measurements():
     Creates the from clause used by many of the functions that query the data warehouse
     :return: the from clause used by several of the functions that query the data warehouse
     """
-    return file_utils.process_sql_template("sql/core_sql_from_for_measurements.sql")
+    return file_utils.process_sql_template("core_sql_from_for_measurements.sql")
 
 
 def core_sql_for_where_clauses(study: int, participant: int, measurement_type: int, measurement_group: int,
@@ -150,7 +150,7 @@ def core_sql_select_for_measurements():
      Creates the select clause used by many of the functions that query the data warehouse
      :return: the select clause used by several of the functions that query the data warehouse
      """
-    return file_utils.process_sql_template("sql/core_sql_select_for_measurements.sql")
+    return file_utils.process_sql_template("core_sql_select_for_measurements.sql")
 
 
 def core_sql_for_measurements():
@@ -205,7 +205,7 @@ class DataWarehouse:
                                                                      measurement_group,
                                                                      group_instance, trial, start_time, end_time)
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause}
-        query = file_utils.process_sql_template("sql/get_measurements.sql", mappings)
+        query = file_utils.process_sql_template("get_measurements.sql", mappings)
         raw_results = self.return_query_result(query)
         return transform_result_format.form_measurements(raw_results)
 
@@ -260,7 +260,7 @@ class DataWarehouse:
         cond = make_value_test(val_type, value_test_condition)
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cond": cond}
-        query = file_utils.process_sql_template("sql/get_measurements_with_value.sql", mappings)
+        query = file_utils.process_sql_template("get_measurements_with_value.sql", mappings)
         raw_results = self.return_query_result(query)
         return transform_result_format.form_measurements(raw_results)
 
@@ -286,7 +286,7 @@ class DataWarehouse:
         condition = " WHERE " if first_condition else " AND "
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cohort_id": str(cohort_id), "study": str(study)}
-        query = file_utils.process_sql_template("sql/get_measurements_by_cohort.sql", mappings)
+        query = file_utils.process_sql_template("get_measurements_by_cohort.sql", mappings)
         raw_results = self.return_query_result(query)
         return transform_result_format.form_measurements(raw_results)
 
@@ -298,7 +298,7 @@ class DataWarehouse:
         :return: number of measurement types in the measurement group
         """
         mappings = {"measurement_group": str(measurement_group), "study": str(study)}
-        query = file_utils.process_sql_template("sql/num_types_in_a_measurement_group.sql", mappings)
+        query = file_utils.process_sql_template("num_types_in_a_measurement_group.sql", mappings)
         num_types = self.return_query_result(query)
         return num_types[0][0]
 
@@ -310,7 +310,7 @@ class DataWarehouse:
         :return: list of names of the measurement types in the measurement group
         """
         mappings = {"measurement_group": str(measurement_group), "study": str(study)}
-        query = file_utils.process_sql_template("sql/types_in_a_measurement_group.sql", mappings)
+        query = file_utils.process_sql_template("types_in_a_measurement_group.sql", mappings)
         type_names = self.return_query_result(query)
         return type_names
 
@@ -417,7 +417,7 @@ class DataWarehouse:
         :return: a list containing the elements: id, description, value type, name
         """
         mappings = {"measurement_type_id": str(measurement_type_id), "study": str(study)}
-        query = file_utils.process_sql_template("sql/get_measurement_type_info.sql", mappings)
+        query = file_utils.process_sql_template("get_measurement_type_info.sql", mappings)
         return self.return_query_result(query)
 
     def return_query_result(self, query_text):
@@ -457,7 +457,7 @@ class DataWarehouse:
         :return: a list of [measurement group id, measurement group description]
         """
         mappings = {"study": str(study)}
-        query = file_utils.process_sql_template("sql/get_all_measurement_groups.sql", mappings)
+        query = file_utils.process_sql_template("get_all_measurement_groups.sql", mappings)
         return self.return_query_result(query)
 
     def get_all_measurement_groups_and_types_in_a_study(self, study):
@@ -469,7 +469,7 @@ class DataWarehouse:
         """
         # Return all measurement groups and measurement types in a study
         mappings = {"study": str(study)}
-        query = file_utils.process_sql_template("sql/get_all_measurement_groups_and_types_in_a_study.sql", mappings)
+        query = file_utils.process_sql_template("get_all_measurement_groups_and_types_in_a_study.sql", mappings)
         return self.return_query_result(query)
 
     def insert_measurement_group(self, study, measurement_group, values,
