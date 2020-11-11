@@ -36,7 +36,7 @@ def check_category_exists(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("sql/ordinal_types_not_matching_category.sql", mappings)
+    query = file_utils.process_sql_template("ordinal_types_not_matching_category.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -48,7 +48,7 @@ def check_valtype_matches_values(dw, study):
     :return: the measurements in the study that fail the test
     """
     mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
-    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    query = file_utils.process_sql_template("measurements_lacking_value.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -60,7 +60,7 @@ def check_category_in_range(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
-    query = file_utils.process_sql_template("sql/measurements_lacking_value.sql", mappings)
+    query = file_utils.process_sql_template("measurements_lacking_value.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -72,7 +72,7 @@ def check_bounded_integers(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("sql/bounded_integers.sql", mappings)
+    query = file_utils.process_sql_template("bounded_integers.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -84,7 +84,7 @@ def check_bounded_reals(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("sql/bounded_reals.sql", mappings)
+    query = file_utils.process_sql_template("bounded_reals.sql", mappings)
     return dw.return_query_result(query)
 
 
