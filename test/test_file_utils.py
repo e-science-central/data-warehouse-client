@@ -20,5 +20,5 @@ class TestFileUtils(TestCase):
     def test_process_sql_template(self):
         mappings = {"measurement_group": str(16), "study": str(4)}
         expected_result = "SELECT COUNT(*) FROM measurementtypetogroup WHERE measurementtypetogroup.measurementgroup = 16 AND measurementtypetogroup.study = 4;"
-        self.assertEqual(expected_result, file_utils.process_sql_template("../data_warehouse_client/sql/num_types_in_a_measurement_group.sql",
+        self.assertEqual(expected_result, file_utils.process_sql_template("num_types_in_a_measurement_group.sql",
                                                                           mappings))
