@@ -17,7 +17,9 @@ from data_warehouse_client import print_io
 from data_warehouse_client import study_summary
 from data_warehouse_client import plot
 from data_warehouse_client import csv_io
+import datetime
 from data_warehouse_client import warehouse_checker
+from data_warehouse_client import table_writer_json
 
 # Create a connection to the data warehouse
 dw = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
@@ -157,6 +159,16 @@ print("          and body mass is less than 55kgs in study 2")
 # data_warehouse.printMeasurements(ms6)
 print_io.print_measurement_group_instances(header, instances)
 
-print()
-print("Run Warehouse Checker\n")
-warehouse_checker.print_check_warhouse(dw, 4)
+# print()
+# print("Run Warehouse Checker\n")
+# warehouse_checker.print_check_warhouse(dw, 4)
+
+print("\nQ30: All instances of the x_accelerometer in measurement group 85 between 10:00 and 11:00 on 16-6-2020")
+ms = dw.get_measurements(85, measurement_group=0, measurement_type=2,
+                         start_time=datetime.datetime(2009, 6, 16, hour=10),
+                         end_time=datetime.datetime(2009, 6, 16, hour=11))
+plot.plot_measurements(dw, ms, 85, 2, 'output/example85.png')
+# study_to_save = 4
+# file_name = "c:/Temp/study4metadata.json"
+# print(f'Save Metadata from Study {study_to_save}')
+# table_writer_json.data_warehouse_metadata_tables_to_file(dw, study_to_save, file_name)

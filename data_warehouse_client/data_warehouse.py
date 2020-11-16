@@ -61,7 +61,10 @@ def mk_where_condition(first_condition, column, test, value):
     """
     if value != -1:
         condition = " WHERE " if first_condition else " AND "
-        q = f'{condition} measurement.{column}{test}{str(value)}'
+        if column == "time":
+            q = f'{condition} measurement.{column}{test}\'{str(value)}\''
+        else:
+            q = f'{condition} measurement.{column}{test}{str(value)}'
         first_condition = False
     else:
         q = ""
