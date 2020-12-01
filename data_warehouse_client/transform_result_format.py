@@ -99,7 +99,7 @@ def form_measurement_group(dw, study, measurement_group, rows):
     # prepare the header
     type_names = dw.get_types_in_a_measurement_group(study, measurement_group)
     n_types: int = len(type_names)
-    header = ["Measurement Group Instance", "Time", "Study", "Participant", "Measurement Group", "Trial"]
+    header = ["Instance", "Time", "Study", "Participant", "Measurement Group", "Trial"]
     for t in range(n_types):
         header.append(type_names[t][0])
     return header, result_rows
