@@ -65,6 +65,23 @@ def mk_bounded_int(measurement_type, data, jfield):
     return mk_basic_field(measurement_type, 7, data, jfield)
 
 
+def mk_optional_bounded_int(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     if the field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned
+        """
+    val = data.get(jfield)
+    if val is None:
+        return []  # jfield is not present in the json
+    else:
+        return [(measurement_type, 7, val)]  # jfield is present in the json
+
+
 def mk_real(measurement_type, data, jfield):
     """
     create a (measurement_type, valtype, value for the jfield in the data) triple for a real
@@ -102,6 +119,23 @@ def mk_bounded_real(measurement_type, data, jfield):
     :return: (measurement_type, valtype, value for the jfield in the data) triple
     """
     return mk_basic_field(measurement_type, 8, data, jfield)
+
+
+def mk_optional_bounded_real(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     if the field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned
+        """
+    val = data.get(jfield)
+    if val is None:
+        return []  # jfield is not present in the json
+    else:
+        return [(measurement_type, 8, val)]  # jfield is present in the json
 
 
 def mk_string(measurement_type, data, jfield):
