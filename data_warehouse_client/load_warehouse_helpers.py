@@ -309,6 +309,28 @@ def mk_ordinal(measurement_type, data, jfield, cat_dict):
     return mk_category_field(measurement_type, 6, data, jfield, cat_dict)
 
 
+def mk_nominal_from_id(measurement_type, data, jfield):
+    """
+    make a nominal triple (measurement_type, 5, value) where the id is stored in the field
+    :param measurement_type: the id of the measurementtype that will holds the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    """
+    return mk_basic_field(measurement_type, 5, data, jfield)
+
+
+def mk_ordinal_from_id(measurement_type, data, jfield):
+    """
+    make an ordinal triple (measurement_type, 6, value) where the id is stored in the field
+    :param measurement_type: the id of the measurementtype that will holds the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    """
+    return mk_basic_field(measurement_type, 6, data, jfield)
+
+
 def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
     """
     If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
@@ -337,24 +359,6 @@ def mk_optional_ordinal_from_dict(measurement_type, data, jfield, cat_dict):
     return mk_optional_category_from_dict(measurement_type, 6, data, jfield, cat_dict)
 
 
-# def split_enum(jfields, measurement_types, valuelist):
-#    """
-#    ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
-#    measurementtype per value. This function takes a json list of values and creates the list of measurements from it -
-#    one for each type.
-#    :param jfields: the list of possible values in the ENUM (in the order in which they are to be added into the
-#                    measurement types
-#    :param measurement_types: the list of measurement_types of the measurements into which the booleans are to be stored
-#    :param valuelist: the list of values that are to be stored as measurements
-#    :return The list of (measurement_type,valType,value) triples that are used by
-#                    insertMeasurementGroup to add the measurements
-#    """
-#    res = []
-#    for (measurement_type, value) in zip(measurement_types, valuelist):
-#        res = res + [(measurement_type, 4, int(value in jfields))]  # the 4 is because the type is boolean
-#    return res
-
-
 def split_enum(measurement_types, data, jfield, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
@@ -372,17 +376,6 @@ def split_enum(measurement_types, data, jfield, valuelist):
     for (measurement_type, value) in zip(measurement_types, valuelist):
         res = res + [(measurement_type, 4, int(value in data.get(jfield)))]  # the 4 is because the type is boolean
     return res
-
-
-# def get_timestamp(ts):
-#    """
-#    transforms a Posix timestamp field held in a string to a date/time format for inserting into
-#    the data warehouse tables
-#    :param ts: the json form
-#    :return: string formatted in year-month-day hrs:mins:sec
-#    """
-#    timestamp = datetime.datetime.fromtimestamp(int(ts) / 1000)
-#    return timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_converter_fn(event_type, mapper_dict):
