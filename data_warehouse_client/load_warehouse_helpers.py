@@ -17,13 +17,31 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     """
     Make triple (measurement_ttpe, valtype, value for the jfield in the data)
     :param measurement_type: measurement type of jfield in the data warehouse
-    :param val_type: the type of the value to be stored: it is either 5 (nominal) or 6 (ordinal)
+    :param val_type: the type of the value to be stored
     :param data: json that contains the jfield
     :param jfield: the name of the field
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
-    return measurement_type, val_type, val
+    return [(measurement_type, val_type, val)]
+
+
+def mk_optional_basic_field(measurement_type, val_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+    :param measurement_type:    measurement type of jfield in the data warehouse
+    :param val_type: the type of the value to be stored
+    :param data:                json that may contain the jfield
+    :param jfield:              the name of the field
+    :return                     if the field exists then a list is returned holding the appropriate entry
+                                if the field doesn't exist then an empty list is returned
+    """
+    val = data.get(jfield)
+    if (val is None) or (val == ""):
+        return []  # jfield is not present in the json
+    else:
+        return [(measurement_type, val_type, val)]  # jfield is present in the json
 
 
 def mk_int(measurement_type, data, jfield):
@@ -47,11 +65,7 @@ def mk_optional_int(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    val = data.get(jfield)
-    if val is None:
-        return []  # jfield is not present in the json
-    else:
-        return [(measurement_type, 0, val)]  # jfield is present in the json
+    mk_optional_basic_field(measurement_type, 0, data, jfield)
 
 
 def mk_bounded_int(measurement_type, data, jfield):
@@ -75,11 +89,7 @@ def mk_optional_bounded_int(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    val = data.get(jfield)
-    if val is None:
-        return []  # jfield is not present in the json
-    else:
-        return [(measurement_type, 7, val)]  # jfield is present in the json
+    return mk_optional_basic_field(measurement_type, 7, data, jfield)
 
 
 def mk_real(measurement_type, data, jfield):
@@ -103,11 +113,7 @@ def mk_optional_real(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    val = data.get(jfield)
-    if val is None:
-        return []  # jfield is not present in the json
-    else:
-        return [(measurement_type, 1, val)]  # jfield is present in the json
+    return mk_optional_basic_field(measurement_type, 1, data, jfield)
 
 
 def mk_bounded_real(measurement_type, data, jfield):
@@ -131,11 +137,7 @@ def mk_optional_bounded_real(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    val = data.get(jfield)
-    if val is None:
-        return []  # jfield is not present in the json
-    else:
-        return [(measurement_type, 8, val)]  # jfield is present in the json
+    return mk_optional_basic_field(measurement_type, 8, data, jfield)
 
 
 def mk_string(measurement_type, data, jfield):
@@ -159,11 +161,7 @@ def mk_optional_string(measurement_type, data, jfield):
     :return if the field exists then a list is returned holding the appropriate entry
             if the field doesn't exist then an empty list is returned
     """
-    val = data.get(jfield)
-    if val is None:
-        return []
-    else:
-        return [(measurement_type, 2, val)]
+    return mk_optional_basic_field(measurement_type, 2, data, jfield)
 
 
 def mk_datetime(measurement_type, data, jfield):
@@ -187,11 +185,7 @@ def mk_optional_datetime(measurement_type, data, jfield):
     :return if the field exists then a list is returned holding the appropriate entry
             if the field doesn't exist then an empty list is returned
     """
-    val = data.get(jfield)
-    if val is None:
-        return []
-    else:
-        return [(measurement_type, 3, val)]
+    return mk_optional_basic_field(measurement_type, 3, data, jfield)
 
 
 def mk_boolean(measurement_type, data, jfield):
@@ -207,7 +201,7 @@ def mk_boolean(measurement_type, data, jfield):
         val01 = 0
     else:
         val01 = 1
-    return measurement_type, 4, val01
+    return [(measurement_type, 4, val01)]
 
 
 def mk_optional_boolean(measurement_type, data, jfield):
@@ -221,10 +215,10 @@ def mk_optional_boolean(measurement_type, data, jfield):
                                     if the field doesn't exist then an empty list is returned
         """
     val = data.get(jfield)
-    if val is None:
+    if (val is None) or (val == ""):
         return []  # jfield is not present in the json
     else:
-        return [mk_boolean(measurement_type, data, jfield)]  # jfield is present in the json
+        return mk_boolean(measurement_type, data, jfield)  # jfield is present in the json
 
 
 def mk_category(cat_name, cat_list):
@@ -265,7 +259,7 @@ def mk_optional_category_from_dict(measurement_type, val_type, data, jfield, cat
     """
     val = data.get(jfield)
     # print(f'category: {val}, {val_type}, {data},{jfield}, {cat_dict}')
-    if val is None:
+    if (val is None) or (val == ""):
         return []
     else:
         return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict))]
@@ -282,13 +276,13 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
-    return measurement_type, val_type, mk_category_from_dict(val, cat_dict)
+    return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict))]
 
 
 def mk_nominal(measurement_type, data, jfield, cat_dict):
     """
     make a nominal triple (measurement_type, 5, value)
-    :param measurement_type: the id of the measurementtype that will holds the value
+    :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
     :param cat_dict: the dictionary for this category
@@ -300,7 +294,7 @@ def mk_nominal(measurement_type, data, jfield, cat_dict):
 def mk_ordinal(measurement_type, data, jfield, cat_dict):
     """
     make an ordinal triple (measurement_type, 6, value)
-    :param measurement_type: the id of the measurementtype that will holds the value
+    :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
     :param cat_dict: the dictionary for this category
@@ -312,7 +306,7 @@ def mk_ordinal(measurement_type, data, jfield, cat_dict):
 def mk_nominal_from_id(measurement_type, data, jfield):
     """
     make a nominal triple (measurement_type, 5, value) where the id is stored in the field
-    :param measurement_type: the id of the measurementtype that will holds the value
+    :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
@@ -323,7 +317,7 @@ def mk_nominal_from_id(measurement_type, data, jfield):
 def mk_ordinal_from_id(measurement_type, data, jfield):
     """
     make an ordinal triple (measurement_type, 6, value) where the id is stored in the field
-    :param measurement_type: the id of the measurementtype that will holds the value
+    :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
@@ -335,7 +329,7 @@ def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
     """
     If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
     If not then return an empty list.
-    :param measurement_type: the id of the measurementtype that holds the value if it exists
+    :param measurement_type: the id of the measurementtype that hold the value if it exists
     :param data: the json structure
     :param jfield: the name of the optional field
     :param cat_dict: the dictionary for this category
@@ -343,6 +337,18 @@ def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
              if the field doesn't exist then an empty list is returned
     """
     return mk_optional_category_from_dict(measurement_type, 5, data, jfield, cat_dict)
+
+
+def mk_optional_nominal_from_id(measurement_type, data, jfield):
+    """
+    make an ordinal triple (measurement_type, 6, value) where the id is stored in the field if the field isn't empty
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :return: if the field isn't "" then a list is returned holding the appropriate entry;
+             if the field doesn't exist then an empty list is returned
+    """
+    return mk_optional_basic_field(measurement_type, 5, data, jfield)
 
 
 def mk_optional_ordinal_from_dict(measurement_type, data, jfield, cat_dict):
