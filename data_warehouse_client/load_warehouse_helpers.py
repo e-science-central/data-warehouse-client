@@ -13,6 +13,102 @@
 # limitations under the License.
 
 
+def type_names(val_type):
+    """
+    return the name of a type represented by a number
+    :param val_type: int representing a type in the warehouse
+    :return: name
+    """
+    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
+        return "integer"
+    elif val_type in [1, 8]:
+        return "real"
+    elif val_type == 3:  # datetime
+        return "datetime"
+    else:
+        return "string"
+
+
+def check_int(string):
+    """
+    Check if a string represents an integer
+    :param string: string
+    :return: True if the string represents an integer
+    """
+    try:
+        val = int(string)
+        return True
+    except ValueError:
+        return False
+
+
+def check_real(string):
+    """
+    Check if a string represents a real
+    :param string: string
+    :return: True if the string represents a real
+    """
+    try:
+        val = float(string)
+        return True
+    except ValueError:
+        return False
+
+
+def check_datetime(string):
+    """
+    Check if a string represents a datetime
+    :param string: string
+    :return: True if the string represents a datetime
+    """
+    return True  # need to add checking later
+
+
+def type_check(val, val_type):
+    """
+    Check the type of a value retrieved from a field
+    :param val: value
+    :param val_type: the type is should be
+    :return: True if the value has the right type, False otherwise
+    """
+    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
+        well_typed = check_int(val)
+    elif val_type in [1, 8]:
+        well_typed = check_real(val)
+    elif val_type == 3:
+        well_typed = check_datetime(val)
+    else:
+        well_typed = True  # everything else is a string
+    return well_typed
+
+
+def get_and_check_value(measurement_type, val_type, data, jfield, optional):
+    """
+    check if a value exists, and if so its type
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param val_type: the type of the value to be stored
+    :param data: json that contains the jfield
+    :param jfield: the name of the field
+    :param optional: if the field is optional
+    :return: (field exists,well typed, value)
+    """
+    val = data.get(jfield)
+    if val is None:
+        exists = False
+        well_typed = False  # default
+    elif val == "":
+        exists = False
+        well_typed = False  # default
+    else:
+        exists = True
+        well_typed = type_check(val, val_type)
+    if (not optional) and (not exists):
+        print(f'Missing mandatory Field {jfield} in measurement_type {measurement_type} in data: {data}')
+    if not well_typed:
+        print(f'Wrong type for {jfield} in measurement_type {measurement_type}: it should be a {type_names(val_type)} (value type {val_type})')
+    return exists, well_typed, val
+
+
 def mk_basic_field(measurement_type, val_type, data, jfield):
     """
     Make triple (measurement_ttpe, valtype, value for the jfield in the data)
@@ -22,9 +118,7 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     :param jfield: the name of the field
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
-        print(f'Missing Mandatory Field {jfield} in measurement_type {measurement_type}')
+    (exists, well_formed, val) = get_and_check_value(measurement_type, val_type, data, jfield, False)
     return [(measurement_type, val_type, val)]
 
 
@@ -39,11 +133,11 @@ def mk_optional_basic_field(measurement_type, val_type, data, jfield):
     :return                     if the field exists then a list is returned holding the appropriate entry
                                 if the field doesn't exist then an empty list is returned
     """
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
-        return []  # jfield is not present in the json
-    else:
+    (exists, well_formed, val) = get_and_check_value(measurement_type, val_type, data, jfield, True)
+    if exists:
         return [(measurement_type, val_type, val)]  # jfield is present in the json
+    else:
+        return []  # jfield is not present in the json
 
 
 def mk_int(measurement_type, data, jfield):
@@ -198,9 +292,8 @@ def mk_boolean(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return : the field
     """
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
-        print(f'Missing Mandatory Field {jfield} in measurement_type {measurement_type}')
+    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, False)
+    # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if val == 'N':
         val01 = 0
     else:
@@ -218,11 +311,12 @@ def mk_optional_boolean(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
-        return []  # jfield is not present in the json
-    else:
+    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
+    if exists:
         return mk_boolean(measurement_type, data, jfield)  # jfield is present in the json
+    else:
+        return []  # jfield is not present in the json
 
 
 def mk_category(cat_name, cat_list):
@@ -246,28 +340,8 @@ def mk_category_from_dict(cat_name, cat_dict, measurement_type):
     """
     val = cat_dict.get(cat_name)
     if val is None:
-        print(f'{cat_name} is not in the dictionary for measurement type {measurement_type}')
+        print(f'\"{cat_name}\" is not in the dictionary for measurement type {measurement_type}')
     return val
-
-
-def mk_optional_category_from_dict(measurement_type, val_type, data, jfield, cat_dict):
-    """
-    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
-    If not then return an empty list.
-    :param measurement_type: the id of the measurementtype that holds the value if it exists
-    :param val_type: the type of the value to be stored: it is either 5 (nominal) or 6 (ordinal)
-    :param data: the json structure
-    :param jfield: the name of the optional field
-    :param cat_dict: the dictionary for this category
-    :return: if the field exists then a list is returned holding the appropriate entry
-             if the field doesn't exist then an empty list is returned
-    """
-    val = data.get(jfield)
-    # print(f'category: {val}, {val_type}, {data},{jfield}, {cat_dict}')
-    if (val is None) or (val == ""):
-        return []
-    else:
-        return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict, measurement_type))]
 
 
 def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
@@ -280,10 +354,29 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :param cat_dict: the dictionary for this category
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
-        print(f'Missing Mandatory Category Field {jfield} in measurement_type {measurement_type}')
+    #  use val_type of 2 as string expected
+    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, False)
     return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict, measurement_type))]
+
+
+def mk_optional_category_field(measurement_type, val_type, data, jfield, cat_dict):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+    :param measurement_type: the id of the measurementtype that holds the value if it exists
+    :param val_type: the type of the value to be stored: it is either 5 (nominal) or 6 (ordinal)
+    :param data: the json structure
+    :param jfield: the name of the optional field
+    :param cat_dict: the dictionary for this category
+    :return: if the field exists then a list is returned holding the appropriate entry
+             if the field doesn't exist then an empty list is returned
+    """
+    #  use val_type of 2 as string expected
+    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    if exists:
+        return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict, measurement_type))]
+    else:
+        return []
 
 
 def mk_nominal(measurement_type, data, jfield, cat_dict):
@@ -343,7 +436,7 @@ def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
     :return: if the field exists then a list is returned holding the appropriate entry
              if the field doesn't exist then an empty list is returned
     """
-    return mk_optional_category_from_dict(measurement_type, 5, data, jfield, cat_dict)
+    return mk_optional_category_field(measurement_type, 5, data, jfield, cat_dict)
 
 
 def mk_optional_nominal_from_id(measurement_type, data, jfield):
@@ -369,7 +462,7 @@ def mk_optional_ordinal_from_dict(measurement_type, data, jfield, cat_dict):
     :return: if the field exists then a list is returned holding the appropriate entry
              if the field doesn't exist then an empty list is returned
     """
-    return mk_optional_category_from_dict(measurement_type, 6, data, jfield, cat_dict)
+    return mk_optional_category_field(measurement_type, 6, data, jfield, cat_dict)
 
 
 def split_enum(measurement_types, data, jfield, valuelist):
@@ -386,11 +479,18 @@ def split_enum(measurement_types, data, jfield, valuelist):
                     insertMeasurementGroup to add the measurements
     """
     res = []
-    val = data.get(jfield)
-    if (val is None) or (val == ""):
+    values = data.get(jfield)  # try to read the the list of values
+    if values is None:
+        exists = False
+    elif values == "":
+        exists = False
+    else:
+        exists = True
+
+    if not exists:
         print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types}')
     for (measurement_type, value) in zip(measurement_types, valuelist):
-        res = res + [(measurement_type, 4, int(value in val))]  # the 4 is because the type is boolean
+        res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
     return res
 
 
