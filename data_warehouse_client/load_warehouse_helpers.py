@@ -23,6 +23,8 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
+    if (val is None) or (val == ""):
+        print(f'Missing Mandatory Field {jfield} in measurement_type {measurement_type}')
     return [(measurement_type, val_type, val)]
 
 
@@ -197,6 +199,8 @@ def mk_boolean(measurement_type, data, jfield):
     :return : the field
     """
     val = data.get(jfield)
+    if (val is None) or (val == ""):
+        print(f'Missing Mandatory Field {jfield} in measurement_type {measurement_type}')
     if val == 'N':
         val01 = 0
     else:
@@ -232,16 +236,17 @@ def mk_category(cat_name, cat_list):
     return cat_list.index(cat_name)
 
 
-def mk_category_from_dict(cat_name, cat_dict):
+def mk_category_from_dict(cat_name, cat_dict, measurement_type):
     """
     Returns the category id from the category name.
     :param cat_name: the category name from the category table
     :param cat_dict: a directory with the category names as keys, and the categoryid as the values
+    :param measurement_type: the measurement type (only used for debugging)
     :return the categoryid of the category
     """
     val = cat_dict.get(cat_name)
     if val is None:
-        print(f'{cat_name} is not in dictionary')
+        print(f'{cat_name} is not in the dictionary for measurement type {measurement_type}')
     return val
 
 
@@ -262,7 +267,7 @@ def mk_optional_category_from_dict(measurement_type, val_type, data, jfield, cat
     if (val is None) or (val == ""):
         return []
     else:
-        return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict))]
+        return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict, measurement_type))]
 
 
 def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
@@ -276,7 +281,9 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     val = data.get(jfield)
-    return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict))]
+    if (val is None) or (val == ""):
+        print(f'Missing Mandatory Category Field {jfield} in measurement_type {measurement_type}')
+    return [(measurement_type, val_type, mk_category_from_dict(val, cat_dict, measurement_type))]
 
 
 def mk_nominal(measurement_type, data, jfield, cat_dict):
@@ -379,14 +386,17 @@ def split_enum(measurement_types, data, jfield, valuelist):
                     insertMeasurementGroup to add the measurements
     """
     res = []
+    val = data.get(jfield)
+    if (val is None) or (val == ""):
+        print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types}')
     for (measurement_type, value) in zip(measurement_types, valuelist):
-        res = res + [(measurement_type, 4, int(value in data.get(jfield)))]  # the 4 is because the type is boolean
+        res = res + [(measurement_type, 4, int(value in val))]  # the 4 is because the type is boolean
     return res
 
 
 def get_converter_fn(event_type, mapper_dict):
     """
-     map from the event_type to the mapper function and message group
+    map from the event_type to the mapper function and message group
     :param event_type: the e-Science Central event type
     :param mapper_dict: the dictionary that maps from the event_type to the mapper function and message group
     :return: (boolean indicating if the event_type is found, mapper function, measurement group
