@@ -23,8 +23,10 @@ def type_names(val_type):
         return "integer"
     elif val_type in [1, 8]:
         return "real"
-    elif val_type == 3:  # datetime
+    elif val_type == 3:
         return "datetime"
+    elif val_type == 4:
+        return "boolean"
     else:
         return "string"
 
@@ -64,6 +66,15 @@ def check_datetime(string):
     return True  # need to add checking later
 
 
+def check_boolean(string):
+    """
+    Check if a string represents a boolean
+    :param string: 
+    :return: True if the string represents a boolean
+    """
+    return string in ['T', 'Y', 'F', 'N']
+
+
 def type_check(val, val_type):
     """
     Check the type of a value retrieved from a field
@@ -77,6 +88,8 @@ def type_check(val, val_type):
         well_typed = check_real(val)
     elif val_type == 3:
         well_typed = check_datetime(val)
+    elif val_type == 4:
+        well_typed = check_boolean(val)
     else:
         well_typed = True  # everything else is a string
     return well_typed
@@ -104,7 +117,7 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
         well_typed = type_check(val, val_type)
     if (not optional) and (not exists):
         print(f'Missing mandatory Field {jfield} in measurement_type {measurement_type} in data: {data}')
-    if not well_typed:
+    elif exists and (not well_typed):
         print(f'Wrong type for {jfield} in measurement_type {measurement_type}: it should be a {type_names(val_type)} (value type {val_type})')
     return exists, well_typed, val
 
@@ -292,12 +305,12 @@ def mk_boolean(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return : the field
     """
-    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, False)
-    # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
-    if val == 'N':
-        val01 = 0
+    (exists, well_formed, val) = get_and_check_value(measurement_type, 4, data, jfield, False)
+    # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
+    if (val == 'N') or (val == 'F'):
+        val01 = '0'
     else:
-        val01 = 1
+        val01 = '1'  # must be Y or T
     return [(measurement_type, 4, val01)]
 
 
