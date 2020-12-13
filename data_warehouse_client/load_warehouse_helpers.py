@@ -11,6 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
+
+
+def process_message_group(mg_triples):
+    oks = list(map(lambda r: r[0], mg_triples))
+    triples = list(map(lambda r: r[1], mg_triples))
+    if functools.reduce(lambda x, y: x and y, oks):
+        return True, sum(triples, [])
+    else:
+        return False, []
 
 
 def type_names(val_type):
