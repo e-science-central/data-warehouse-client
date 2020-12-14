@@ -189,7 +189,7 @@ def mk_optional_int(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    mk_optional_basic_field(measurement_type, 0, data, jfield)
+    return mk_optional_basic_field(measurement_type, 0, data, jfield)
 
 
 def mk_bounded_int(measurement_type, data, jfield):
