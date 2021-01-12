@@ -126,9 +126,9 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
         exists = True
         well_typed = type_check(val, val_type)
     if (not optional) and (not exists):
-        print(f'Missing mandatory Field {jfield} in measurement_type {measurement_type} in data: {data}')
+        print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
     elif exists and (not well_typed):
-        print(f'Wrong type for {jfield} in measurement_type {measurement_type}: it should be a {type_names(val_type)} (value type {val_type})')
+        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(val_type)} (value type {val_type})')
     return exists, well_typed, val
 
 
@@ -482,11 +482,11 @@ def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
 
 def mk_optional_nominal_from_id(measurement_type, data, jfield):
     """
-    make an ordinal triple (measurement_type, 6, value) where the id is stored in the field if the field isn't empty
+    make a nominal triple (measurement_type, 6, value) where the id is stored in the field if the field isn't empty
     :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
-    :return: if the field isn't "" then a list is returned holding the appropriate entry;
+    :return: if the field exists then a list is returned holding the appropriate entry;
              if the field doesn't exist then an empty list is returned
     """
     return mk_optional_basic_field(measurement_type, 5, data, jfield)
@@ -504,6 +504,18 @@ def mk_optional_ordinal_from_dict(measurement_type, data, jfield, cat_dict):
              if the field doesn't exist then an empty list is returned
     """
     return mk_optional_category_field(measurement_type, 6, data, jfield, cat_dict)
+
+
+def mk_optional_ordinal_from_id(measurement_type, data, jfield):
+    """
+    make an ordinal triple (measurement_type, 5, value) where the id is stored in the field if the field isn't empty
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :return: if the field exists then a list is returned holding the appropriate entry;
+             if the field doesn't exist then an empty list is returned
+    """
+    return mk_optional_basic_field(measurement_type, 6, data, jfield)
 
 
 def split_enum(measurement_types, data, jfield, valuelist):
