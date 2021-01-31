@@ -30,13 +30,37 @@ from tabulate import tabulate
 
 def check_category_exists(dw, study):
     """
-    Find measurements of nominal or ordinal type whose value does not equal that of a category
+    Find measurement types of nominal or ordinal value type without entry in category table
     :param dw: handle to data warehouse
     :param study: study id
-    :return: the ids of measurements in the study that fail the test
+    :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("ordinal_types_not_matching_category.sql", mappings)
+    return dw.return_query_result(query)
+
+
+def check_integer_bounds_exist(dw, study):
+    """
+    Find measurement types of bounded integer value type without entry in boundsinteger table
+    :param dw: handle to data warehouse
+    :param study: study id
+    :return: the ids and names of measurement types in the study that fail the test
+    """
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("bounded_integer_measurement_types_without_bounds.sql", mappings)
+    return dw.return_query_result(query)
+
+
+def check_real_bounds_exist(dw, study):
+    """
+    Find measurement types of bounded real value type without entry in boundsreal table
+    :param dw: handle to data warehouse
+    :param study: study id
+    :return: the ids and names of measurement types in the study that fail the test
+    """
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("bounded_real_measurement_types_without_bounds.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -97,42 +121,63 @@ def print_check_warhouse(dw, study):
     """
     print(f'Check Study {study}')
     print()
-    print(f'Check for invalid entries in the measurement table')
+
+    print(f'- Check Metadata')
+    print()
+
+    print(f'-- Measurement types declared as ordinal or nominal but without entries in the Category Table')
+    r2 = check_category_exists(dw, study)
+    n_errors = len(r2)
+    if n_errors > 0:
+        print(tabulate(r2, headers=['Measurement Type Id', 'Message Type Name']))
+    print(f'({n_errors} invalid entries)')
+
+    print(f'-- Measurement types declared as bounded integer but without entries in the Boundsint Table')
+    rbi = check_integer_bounds_exist(dw, study)
+    n_errors = len(rbi)
+    if n_errors > 0:
+        print(tabulate(rbi, headers=['Measurement Type Id', 'Message Type Name']))
+    print(f'({n_errors} invalid entries)')
+
+    print(f'-- Measurement types declared as bounded real but without entries in the Boundsreal Table')
+    rbr = check_real_bounds_exist(dw, study)
+    n_errors = len(rbr)
+    if n_errors > 0:
+        print(tabulate(rbr, headers=['Measurement Type Id', 'Message Type Name']))
+    print(f'({n_errors} invalid entries)')
+
+
+    print(f'- Check Measurements')
+    print()
+
+    print(f'-- Measurements where the Value Type does not match the values stored in the Measurement Table')
     r1 = check_valtype_matches_values(dw, study)
     n_invalid_entries = len(r1)
-    if n_invalid_entries>0:
+    if n_invalid_entries > 0:
         print_io.print_measurements(r1)
     print(f'({n_invalid_entries} invalid entries)')
 
-    print()
-    print(f'Check for measurement types declared as ordinal or nominal but without entries in the category table')
-    r2 = check_category_exists(dw, study)
-    n_errors = len(r2)
-    if n_errors>0:
-        print(tabulate(r2, headers=['Measurement Type','Category Name']))
-    print(f'({n_errors} invalid entries)')
-
-    print()
-    print(f'Check for measurements declared as ordinal or nominal but without a matching entry in the category table')
+    print(f'-- Measurements declared as ordinal or nominal that refer to a non-existent category')
     r3 = check_category_in_range(dw, study)
     n_errors = len(r3)
-    if n_errors>0:
+    if n_errors > 0:
         print(tabulate(r3, headers=['Measurement Id']))
     print(f'({n_errors} measurements)')
 
     print()
-    print(f'Check for measurements declared as bounded integers whose value is outside of the bounds')
+    print(f'-- Measurements declared as Bounded Integers whose value is outside of the bounds')
     r4 = check_bounded_integers(dw, study)
     n_errors = len(r4)
-    if n_errors>0:
+    if n_errors > 0:
         print(tabulate(r4, headers=['Id', 'Value']))
     print(f'({n_errors} measurements)')
 
     print()
-    print(f'Check for measurements declared as bounded reals whose value is outside of the bounds')
+    print(f'-- Measurements declared as Bounded Reals whose value is outside of the bounds')
     r5 = check_bounded_reals(dw, study)
     n_errors = len(r5)
-    if n_errors>0:
-        print(tabulate(r5, headers=['Id','Value']))
+    if n_errors > 0:
+        print(tabulate(r5, headers=['Id', 'Value']))
     print(f'({n_errors} measurements)')
     print()
+
