@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import file_utils
+from data_warehouse_client import file_utils
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
 
 
