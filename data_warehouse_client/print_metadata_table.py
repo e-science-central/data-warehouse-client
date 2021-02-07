@@ -27,7 +27,7 @@ def print_metadata_tables(dw, study_id):
     print study metadata
     """
     metadata = create_measurement_group_info(dw, study_id)
-    print(f'Message Groups')
+    print(f'Measurement Groups')
     headers = ['Measurement Type', 'Id', 'Value Type', 'Optional?', 'Units', 'Min Value', 'Max Value', 'Categories']
     for mg_id, mg_data in metadata.items():
         mg_info = mg_data['message_types']
@@ -73,35 +73,35 @@ def create_measurement_group_info(dw, study):
     :param study: study id
     :return:
     """
-    q1 = file_utils.process_sql_template("sql\\get_measurement_group_info.sql", {"study": study})
+    q1 = file_utils.process_sql_template("get_measurement_group_info.sql", {"study": study})
     r1 = dw.return_query_result(q1)  # return a list of (measurementgroup, measurementtype, name, valtype, optional)
 
-    q2 = file_utils.process_sql_template("sql\\get_categories_in_study.sql", {"study": study})
+    q2 = file_utils.process_sql_template("get_categories_in_study.sql", {"study": study})
     r2 = dw.return_query_result(q2)
 
     cats = {}
     for mt in set([row[0] for row in r2]):
         cats[mt] = dict(map(lambda t: (t[2], t[1]),  filter(lambda r: r[0] == mt, r2)))
 
-    q3 = file_utils.process_sql_template("sql\\get_boundsint_in_study.sql", {"study": study})
+    q3 = file_utils.process_sql_template("get_boundsint_in_study.sql", {"study": study})
     r3 = dw.return_query_result(q3)
     int_bounds = {}
     for [mt_id, minval, maxval] in r3:
         int_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q4 = file_utils.process_sql_template("sql\\get_boundsreal_in_study.sql", {"study": study})
+    q4 = file_utils.process_sql_template("get_boundsreal_in_study.sql", {"study": study})
     r4 = dw.return_query_result(q4)
     real_bounds = {}
     for [mt_id, minval, maxval] in r4:
         real_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q5 = file_utils.process_sql_template("sql\\get_measurement_groups_in_study.sql", {"study": study})
+    q5 = file_utils.process_sql_template("get_measurement_groups_in_study.sql", {"study": study})
     r5 = dw.return_query_result(q5)
     mg_names = {}
     for [mg_id, mg_name] in r5:
         mg_names[mg_id] = mg_name
 
-    q6 = file_utils.process_sql_template("sql\\get_units_in_study.sql", {"study": study})
+    q6 = file_utils.process_sql_template("get_units_in_study.sql", {"study": study})
     r6 = dw.return_query_result(q6)
     unit_name = {}
     for [mt_id, unit_description] in r6:

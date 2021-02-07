@@ -14,35 +14,7 @@
 
 
 from string import Template
-import importlib.resources
 import pkg_resources
-
-
-def process_sql_template1(filename, mappings=None):
-    """
-    Reads a templated SQL file and substitutes any variables
-    :param filename: the SQL file
-    :param mappings: the variables to be substituted
-    :return: the text of the SQL query with any variables substituted
-    """
-    with open(filename, 'r') as file:
-        data = ' '.join(file.read().replace('\n', ' ').split())
-    return Template(data).substitute(mappings)
-
-
-def process_sql_template2(filename, mappings=None):
-    """
-    Reads a templated SQL file and substitutes any variables
-    :param filename: the SQL file
-    :param mappings: the variables to be substituted
-    :return: the text of the SQL query with any variables substituted
-    """
-    # https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package
-    # https://importlib-resources.readthedocs.io/en/latest/using.html
-    from . import sql     # relative-import the *package* containing the templates
-    sql_template = importlib.resources.read_text(sql, filename)
-    data = ' '.join(sql_template.replace('\n', ' ').split())
-    return Template(data).substitute(mappings)
 
 
 def process_sql_template(filename, mappings=None):
