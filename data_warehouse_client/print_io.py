@@ -48,3 +48,39 @@ def print_measurements(rows):
     header_row: List[str] = ["Id", "Time", "Study", "Participant", "MeasurementType", "Type Name",
                              "Measurement Group", "Group Instance", "Trial", "Val Type", "Value"]
     print(tabulate(rows, headers=header_row))
+
+
+def print_rows_to_file(rows, header: List[str], f_handle):
+    """
+    prints to a file each row returned by a query
+    :param rows: a list of rows. Each row is a list of fields
+    :param header: a list of field names
+    :param f_handle: an open file handle
+    """
+    print(tabulate(rows, headers=header), file=f_handle)
+
+
+def print_measurement_group_instances_to_file(header, instances, f_handle):
+    """
+    Prints to a file a list of measurement group instances, converting the datetime to strings
+    The output file has a row for each measurement group instance. The fields are:
+        groupInstance,time of first measurement in instance,study,participant,measurementGroup,trial,
+                value1, value2....
+            where value n is the value for the nth measurement in the instance (ordered by measurement type)
+    :param header: a list of column names
+    :param instances: a list of measurement group instances in the format produced by formatMeasurementGroup
+    :param f_handle: an open file handle
+    """
+    print(tabulate(instances, headers=header), file=f_handle)
+
+
+def print_measurements_to_file(rows, f_handle):
+    """
+    Prints to a file  a list of measurements, converting the datetimes to strings
+    :param rows: a list of measurements with the elements id,time,study,participant,measurementType,
+                    typeName,measurementGroup,groupInstance,trial,valType,value
+    :param f_handle: an open file handle
+    """
+    header_row: List[str] = ["Id", "Time", "Study", "Participant", "MeasurementType", "Type Name",
+                             "Measurement Group", "Group Instance", "Trial", "Val Type", "Value"]
+    print(tabulate(rows, headers=header_row), file=f_handle)

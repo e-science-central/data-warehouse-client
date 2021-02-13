@@ -26,6 +26,7 @@ from data_warehouse_client import file_utils
 from data_warehouse_client import data_warehouse
 from data_warehouse_client import print_io
 from tabulate import tabulate
+import datetime
 
 
 def check_category_exists(dw, study):
@@ -112,9 +113,9 @@ def check_bounded_reals(dw, study):
     return dw.return_query_result(query)
 
 
-def print_check_warhouse(dw, study):
+def print_check_warehouse(dw, study):
     """
-    Prints the results of all teh tests that check the warehouse for errors
+    Prints on stdout the results of all the tests that check the warehouse for errors
     :param dw: handle to data warehouse
     :param study: study id
     :return:
@@ -145,7 +146,6 @@ def print_check_warhouse(dw, study):
     if n_errors > 0:
         print(tabulate(rbr, headers=['Measurement Type Id', 'Message Type Name']))
     print(f'({n_errors} invalid entries)')
-
 
     print(f'- Check Measurements')
     print()
@@ -181,3 +181,77 @@ def print_check_warhouse(dw, study):
     print(f'({n_errors} measurements)')
     print()
 
+
+def mk_txt_report_file_name(f_dir, report_name, time_string):
+    return f_dir + report_name + time_string + ".txt"
+
+
+def print_check_warehouse_to_file(dw, study):
+    """
+    Prints to a file the results of all the tests that check the warehouse for errors
+    :param dw: handle to data warehouse
+    :param study: study id
+    :return:
+    """
+
+    file_dir = "reports/"
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    fname = mk_txt_report_file_name(file_dir, "warehouse-check", time_fname_str)
+
+    with open(fname, "w") as f:
+        print(f'Check Study {study}\n', file=f)
+
+        print(f'- Check Metadata\n', file=f)
+
+        print(f'-- Measurement types declared as ordinal or nominal but without entries in the Category Table', file=f)
+        r2 = check_category_exists(dw, study)
+        n_errors = len(r2)
+        if n_errors > 0:
+            print(tabulate(r2, headers=['Measurement Type Id', 'Message Type Name']))
+        print(f'({n_errors} invalid entries)', file=f)
+
+        print(f'-- Measurement types declared as bounded integer but without entries in the Boundsint Table', file=f)
+        rbi = check_integer_bounds_exist(dw, study)
+        n_errors = len(rbi)
+        if n_errors > 0:
+            print(tabulate(rbi, headers=['Measurement Type Id', 'Message Type Name']), file=f)
+        print(f'({n_errors} invalid entries)', file=f)
+
+        print(f'-- Measurement types declared as bounded real but without entries in the Boundsreal Table')
+        rbr = check_real_bounds_exist(dw, study)
+        n_errors = len(rbr)
+        if n_errors > 0:
+            print(tabulate(rbr, headers=['Measurement Type Id', 'Message Type Name']), file=f)
+        print(f'({n_errors} invalid entries)', file=f)
+
+        print(f'- Check Measurements\n', file=f)
+
+        print(f'-- Measurements where the Value Type does not match the values stored in the Measurement Table', file=f)
+        r1 = check_valtype_matches_values(dw, study)
+        n_invalid_entries = len(r1)
+        if n_invalid_entries > 0:
+            print_io.print_measurements_to_file(r1, f)
+        print(f'({n_invalid_entries} invalid entries)', file=f)
+
+        print(f'-- Measurements declared as ordinal or nominal that refer to a non-existent category', file=f)
+        r3 = check_category_in_range(dw, study)
+        n_errors = len(r3)
+        if n_errors > 0:
+            print(tabulate(r3, headers=['Measurement Id']), file=f)
+        print(f'({n_errors} measurements)', file=f)
+
+        print()
+        print(f'-- Measurements declared as Bounded Integers whose value is outside of the bounds', file=f)
+        r4 = check_bounded_integers(dw, study)
+        n_errors = len(r4)
+        if n_errors > 0:
+            print(tabulate(r4, headers=['Id', 'Value']), file=f)
+        print(f'({n_errors} measurements)\n', file=f)
+
+        print(f'-- Measurements declared as Bounded Reals whose value is outside of the bounds', file=f)
+        r5 = check_bounded_reals(dw, study)
+        n_errors = len(r5)
+        if n_errors > 0:
+            print(tabulate(r5, headers=['Id', 'Value']), file=f)
+        print(f'({n_errors} measurements)\n', file=f)

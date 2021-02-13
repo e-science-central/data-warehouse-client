@@ -14,11 +14,52 @@
 
 from data_warehouse_client import file_utils
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
-
+import datetime
 
 def valuetype_to_name():
     return {0: 'Integer', 1: 'Real', 2: 'Text', 3: 'Date Time', 4: 'Boolean',
             5: 'Nominal', 6: 'Ordinal', 7: 'Bounded Integer', 8: 'Bounded Real'}
+
+
+def mk_txt_report_file_name(f_dir, report_name, time_string):
+    return f_dir + report_name + time_string + ".txt"
+
+
+def print_metadata_tables_to_file(dw, study_id):
+
+    file_dir = "reports/"
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    fname = mk_txt_report_file_name(file_dir, "metadata-table", time_fname_str)
+
+    metadata = create_measurement_group_info(dw, study_id)
+    headers = ['Measurement Type', 'Id', 'Value Type', 'Optional?', 'Units', 'Min Value', 'Max Value', 'Categories']
+
+    with open(fname, "w") as f:
+        print(f'Measurement Groups for Study {study_id}', file=f)
+        for mg_id, mg_data in metadata.items():
+            mg_info = mg_data['message_types']
+            name = mg_data['name']
+            rows = []
+            for mt_id, mt_info in mg_info.items():
+                cats = '\n'.join(f'{v}:{k}' for k, v in mt_info['categories'].items())
+                lower_bound = ''
+                upper_bound = ''
+                if mt_info['intbounds'] != {}:
+                    lower_bound = mt_info['intbounds']['minval']
+                    upper_bound = mt_info['intbounds']['maxval']
+                elif mt_info['realbounds'] != {}:
+                    lower_bound = mt_info['realbounds']['minval']
+                    upper_bound = mt_info['realbounds']['maxval']
+                if mt_info['units'] is None:
+                    units_prnt = ""
+                else:
+                    units_prnt = mt_info['units']
+                row = [mt_info['name'], mt_id, valuetype_to_name()[mt_info['valtype']],
+                       mt_info['optional'], units_prnt, lower_bound, upper_bound, cats]
+                rows = rows + [row]
+            print(f'\nMeasurement Group {name} (id = {mg_id})\n', file=f)
+            print(tabulate(rows, headers=headers, tablefmt="grid"), file=f)
 
 
 def print_metadata_tables(dw, study_id):
@@ -26,7 +67,7 @@ def print_metadata_tables(dw, study_id):
     print study metadata
     """
     metadata = create_measurement_group_info(dw, study_id)
-    print(f'Measurement Groups')
+    print(f'Measurement Groups for Study {study_id}')
     headers = ['Measurement Type', 'Id', 'Value Type', 'Optional?', 'Units', 'Min Value', 'Max Value', 'Categories']
     for mg_id, mg_data in metadata.items():
         mg_info = mg_data['message_types']

@@ -560,7 +560,7 @@ class DataWarehouse:
         if found:
             return found, res[0][0]
         else:
-            print("Participant", participant, " not found in participant.id")
+            # print("Participant", participant, " not found in participant.id")
             return found, res
 
     def get_participant(self, study_id, local_participant_id):
@@ -578,7 +578,7 @@ class DataWarehouse:
         if found:
             return found, res[0][0]
         else:
-            print("Participant", local_participant_id, " not found in participant.participantid")
+            # print("Participant", local_participant_id, " not found in participant.participantid")
             return found, res
 
     def get_measurement_group(self, study_id, measurementgroup_description):
@@ -597,7 +597,7 @@ class DataWarehouse:
         if found:
             return found, res[0][0]
         else:
-            print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
+            # print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
             return found, res
 
     def get_participants(self, study_id):
