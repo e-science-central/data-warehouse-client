@@ -218,7 +218,7 @@ def print_check_warehouse_to_file(dw, study):
             print(tabulate(rbi, headers=['Measurement Type Id', 'Message Type Name']), file=f)
         print(f'({n_errors} invalid entries)', file=f)
 
-        print(f'-- Measurement types declared as bounded real but without entries in the Boundsreal Table')
+        print(f'-- Measurement types declared as bounded real but without entries in the Boundsreal Table', file=f)
         rbr = check_real_bounds_exist(dw, study)
         n_errors = len(rbr)
         if n_errors > 0:

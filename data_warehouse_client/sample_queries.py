@@ -18,8 +18,7 @@ from data_warehouse_client import study_summary
 from data_warehouse_client import plot
 from data_warehouse_client import csv_io
 import datetime
-from data_warehouse_client import warehouse_checker
-from data_warehouse_client import table_writer_json
+
 
 # Create a connection to the data warehouse
 dw = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")

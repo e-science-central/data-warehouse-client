@@ -16,6 +16,7 @@ from data_warehouse_client import file_utils
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
 import datetime
 
+
 def valuetype_to_name():
     return {0: 'Integer', 1: 'Real', 2: 'Text', 3: 'Date Time', 4: 'Boolean',
             5: 'Nominal', 6: 'Ordinal', 7: 'Bounded Integer', 8: 'Bounded Real'}
