@@ -17,6 +17,7 @@
 
 from tabulate import tabulate
 from data_warehouse_client import print_io
+import datetime
 
 
 def get_instances_per_measurement_group(dw, study):
@@ -78,3 +79,55 @@ def print_study_summary(dw, study):
     print()
     print(f'Total Measurement Group Instances in Study {study}: {n_measurement_group_instances}')
     print()
+
+
+def mk_txt_report_file_name(f_dir, report_name, time_string):
+    return f_dir + report_name + time_string + ".txt"
+
+
+def print_all_instances_in_a_study_to_file(dw, study):
+    """
+    Print to a file all instances in a study - don't print for measurement groups that have no measurements
+    :param dw: data warehouse handle
+    :param study: study id
+    """
+    file_dir = "reports/"
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    fname = mk_txt_report_file_name(file_dir, "study-instances", time_fname_str)
+    with open(fname, "w") as f:
+        print(f'All Measurement Group Instances in Study {study}\n', file=f)
+        measurement_groups = dw.get_all_measurement_groups(study)
+        for [mg_id, mg_name] in measurement_groups:
+            (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+            if len(instances) > 0:
+                print(f'All measurements in group {mg_id} ({mg_name}) for Study {study} \n', file=f)
+                print_io.print_measurement_group_instances_to_file(header, instances, f)
+                print('\n', file=f)
+
+
+def print_study_summary_to_file(dw, study):
+    """
+    Print to a file a summary of the number of participants and the total instances in each measgeurement group in a study
+    :param dw: data warehouse handle
+    :param study: study id
+    :return:
+    """
+    file_dir = "reports/"
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    fname = mk_txt_report_file_name(file_dir, "study-summary", time_fname_str)
+    with open(fname, "w") as f:
+        print(f'Summary of Study {study}', file=f)
+        # Get Number of Participants
+        n_participants = len(dw.get_participants(study))
+        print(f'Number of Participants in Study {study}: {n_participants}', file=f)
+        # Measurement Groups per Measurement Group Type
+        print(f'Total Instances in each Measurement Group in Study {study} that contain measurements:\n', file=f)
+        summary = get_instances_per_measurement_group(dw, study)
+        print(tabulate(summary, headers=['Id', 'Name', '#Instances']), file=f)
+
+        n_measurement_group_instances = 0
+        for (mg_id, mg_name, n_mgi) in summary:
+            n_measurement_group_instances = n_measurement_group_instances + n_mgi
+        print(f'Total Measurement Group Instances in Study {study}: {n_measurement_group_instances}\n', file=f)
