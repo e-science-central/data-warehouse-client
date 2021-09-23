@@ -17,6 +17,7 @@
 
 from tabulate import tabulate
 from data_warehouse_client import print_io
+from data_warehouse_client import csv_io
 import datetime
 
 
@@ -85,6 +86,10 @@ def mk_txt_report_file_name(f_dir, report_name, time_string):
     return f_dir + report_name + time_string + ".txt"
 
 
+def mk_csv_report_file_name(f_dir, report_name, time_string):
+    return f_dir + report_name + time_string + ".csv"
+
+
 def print_all_instances_in_a_study_to_file(dw, study):
     """
     Print to a file all instances in a study - don't print for measurement groups that have no measurements
@@ -106,9 +111,26 @@ def print_all_instances_in_a_study_to_file(dw, study):
                 print('\n', file=f)
 
 
+def print_all_instances_in_a_study_to_csv_files(dw, study):
+    """
+    Print all instances in a study to a set of csvs - one per measurement group
+    :param dw: data warehouse handle
+    :param study: study id
+    """
+    file_dir = "reports/"
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    measurement_groups = dw.get_all_measurement_groups(study)
+    for [mg_id, mg_name] in measurement_groups:
+            (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+            if len(instances) > 0:
+                fname = mk_csv_report_file_name(file_dir, "study-instances-" + mg_name + "-", time_fname_str)
+                csv_io.export_measurement_groups_as_csv(header, instances, fname)
+
+
 def print_study_summary_to_file(dw, study):
     """
-    Print to a file a summary of the number of participants and the total instances in each measgeurement group in a study
+    Print to a file a summary of the number of participants and the total instances in each measurement group in a study
     :param dw: data warehouse handle
     :param study: study id
     :return:
