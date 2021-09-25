@@ -18,7 +18,6 @@
 from tabulate import tabulate
 from data_warehouse_client import print_io
 from data_warehouse_client import csv_io
-from data_warehouse_client import data_warehouse
 import datetime
 
 
@@ -123,10 +122,10 @@ def print_all_instances_in_a_study_to_csv_files(dw, study):
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     measurement_groups = dw.get_all_measurement_groups(study)
     for [mg_id, mg_name] in measurement_groups:
-            (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
-            if len(instances) > 0:
-                fname = mk_csv_report_file_name(file_dir, "study-instances-" + mg_name + "-", time_fname_str)
-                csv_io.export_measurement_groups_as_csv(header, instances, fname)
+        (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+        if len(instances) > 0:
+            fname = mk_csv_report_file_name(file_dir, "study-instances-" + mg_name + "-", time_fname_str)
+            csv_io.export_measurement_groups_as_csv(header, instances, fname)
 
 
 def print_all_instances_in_a_study_with_local_participant_id_to_csv_files(dw, study):
@@ -141,16 +140,16 @@ def print_all_instances_in_a_study_with_local_participant_id_to_csv_files(dw, st
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     measurement_groups = dw.get_all_measurement_groups(study)
     for [mg_id, mg_name] in measurement_groups:
-            (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
-            extended_header = ['Local Participant'] + header
-            if len(instances) > 0:  # if there are some instances in the measurement group
-                fname = mk_csv_report_file_name(file_dir, "study-instances-" + mg_name + "-", time_fname_str)
-                instances_with_local_participant_id = []
-                for instance in instances:  # add the local participant id to the start of each row
-                    participant_id = instance[participant_id_index]  # get unique participant id
-                    part = dw.data_warehouse.get_participant_by_id(study, participant_id)  # get local participant id
-                    instances_with_local_participant_id = instances_with_local_participant_id + [part + instance]
-                csv_io.export_measurement_groups_as_csv(extended_header, instances_with_local_participant_id, fname)
+        (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])
+        extended_header = ['Local Participant'] + header
+        if len(instances) > 0:  # if there are some instances in the measurement group
+            fname = mk_csv_report_file_name(file_dir, "study-instances-" + mg_name + "-", time_fname_str)
+            instances_with_local_participant_id = []
+            for instance in instances:  # add the local participant id to the start of each row
+                participant_id = instance[participant_id_index]  # get unique participant id
+                part = dw.get_participant_by_id(study, participant_id)  # get local participant id
+                instances_with_local_participant_id = instances_with_local_participant_id + [part + instance]
+            csv_io.export_measurement_groups_as_csv(extended_header, instances_with_local_participant_id, fname)
 
 
 def print_study_summary_to_file(dw, study):
