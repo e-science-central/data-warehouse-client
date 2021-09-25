@@ -547,7 +547,7 @@ class DataWarehouse:
 
     def get_participant_by_id(self, study, participant):
         """
-         maps from unique participant.id to the local; id stored with measurements in the warehouse
+         maps from unique participant.id to the local id stored with measurements in the warehouse
          :param study: the study id
          :param participant: the id of the participant in the study
          :return The participantid of the participant
