@@ -554,7 +554,7 @@ class DataWarehouse:
          """
         q = " SELECT participantid FROM participant " \
             " WHERE participant.study       = " + str(study) + \
-            " AND participant.id = '" + participant + "';"  # error? should be turned into a string?
+            " AND participant.id = '" + str(participant) + "';"
         res = self.return_query_result(q)
         found = len(res) == 1
         if found:
