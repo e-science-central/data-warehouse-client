@@ -147,7 +147,7 @@ def print_all_instances_in_a_study_with_local_participant_id_to_csv_files(dw, st
             instances_with_local_participant_id = []
             for instance in instances:  # add the local participant id to the start of each row
                 participant_id = instance[participant_id_index]  # get unique participant id
-                part = dw.get_participant_by_id(study, participant_id)  # get local participant id
+                (success, part) = dw.get_participant_by_id(study, participant_id)  # get local participant id
                 instances_with_local_participant_id = instances_with_local_participant_id + [[part] + instance]
             csv_io.export_measurement_groups_as_csv(extended_header, instances_with_local_participant_id, fname)
 
