@@ -542,7 +542,7 @@ def split_enum(measurement_types, data, jfield, valuelist):
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
             res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
-            return True, res
+        return True, res
     else:
         print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types}')
         return False, []
