@@ -714,3 +714,21 @@ class DataWarehouse:
         for r in type_ids:
             result = result + [r[0]]
         return result
+
+    def get_trial_id_from_description(self, study, trial_description):
+        """
+         maps from the trial description to the trial id
+         :param study: the study id
+         :param trial_description: the description of the trial in the study
+         :return a boolean to say if the description is found, and the trial id
+         """
+        q = " SELECT trial.id FROM trial " \
+            " WHERE trial.study       = " + str(study) + \
+            " AND trial.description = '" + trial_description + "';"
+        res = self.return_query_result(q)
+        found = len(res) == 1
+        if found:
+            return found, res[0][0]
+        else:
+            # print("Trial", trial_description, " not found in trial table")
+            return found, None
