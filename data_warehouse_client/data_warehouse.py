@@ -417,7 +417,7 @@ class DataWarehouse:
         Returns information on a measurement type
         :param study: the study id
         :param measurement_type_id: the id of a measurement type
-        :return: a list containing the elements: id, description, value type, name
+        :return: a list containing the elements: id, description, value type, units name
         """
         mappings = {"measurement_type_id": str(measurement_type_id), "study": str(study)}
         query = file_utils.process_sql_template("get_measurement_type_info.sql", mappings)
@@ -731,4 +731,42 @@ class DataWarehouse:
             return found, res[0][0]
         else:
             # print("Trial", trial_description, " not found in trial table")
+            return found, None
+
+    def get_category_id_from_name(self, study, measurement_type, category_name):
+        """
+        return the category id of a category
+        :param study: the study id
+        :param measurement_type: the measurement type
+        :param category_name: the name of the category
+        :return: exists?, category_id
+        """
+        q = " SELECT category.categoryid FROM category " \
+            " WHERE  category.study       = " + str(study) + \
+            " AND    category.measurementtype = " + str(measurement_type) + \
+            " AND    category.categoryname = '" + category_name + "';"
+        res = self.return_query_result(q)
+        found = len(res) == 1
+        if found:
+            return found, res[0][0]
+        else:
+            return found, None
+
+    def get_category_name_from_id(self, study, measurement_type, category_id):
+        """
+        return the category name of a category
+        :param study: the study id
+        :param measurement_type: the measurement type
+        :param category_id: the id of the category
+        :return: exists?, category_name
+        """
+        q = " SELECT category.categoryname FROM category " \
+            " WHERE  category.study       = " + str(study) + \
+            " AND    category.measurementtype = " + str(measurement_type) + \
+            " AND    category.categoryid = " + str(category_id) + ";"
+        res = self.return_query_result(q)
+        found = len(res) == 1
+        if found:
+            return found, res[0][0]
+        else:
             return found, None
