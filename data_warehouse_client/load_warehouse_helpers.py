@@ -624,7 +624,7 @@ def split_enum(measurement_types, data, jfield, valuelist):
             res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
         return True, res
     else:
-        print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types}')
+        print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}')
         return False, []
 
 
