@@ -324,34 +324,27 @@ def mk_optional_datetime(measurement_type, data, jfield):
     return mk_optional_basic_field(measurement_type, 3, data, jfield)
 
 
-def get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, optional):
+def get_and_check_datetime_from_epoch_ms(data, jfield):
     """
-    check if a value exists, and if so its type
-    :param measurement_type: measurement type of jfield in the data warehouse
+    check if a value exists, and if so that its type is correct
     :param data: json that contains the jfield
     :param jfield: the name of the field
-    :param optional: if the field is optional
-    :return: (field exists,well typed, value)
+    :return: (field exists, well typed, value)
     """
-    val_type = 3
+    date_time_type = 3
     val = data.get(jfield)
     if val is None:
         exists = False
         well_typed = False  # default
+        return exists, well_typed, ""
     elif val == "":
         exists = False
         well_typed = False  # default
+        return exists, well_typed, ""
     else:
         exists = True
         str_val = convert_epoch_in_ms_to_string(val)
-        well_typed = type_check(str_val, val_type)
-    if (not optional) and (not exists):
-        print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
-        return exists, well_typed, ""
-    elif exists and (not well_typed):
-        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(val_type)} (value type {val_type})')
-        return exists, well_typed, ""
-    else:
+        well_typed = type_check(str_val, date_time_type)
         return exists, well_typed, str_val
 
 
@@ -363,11 +356,15 @@ def mk_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return: (measurement_type, valtype, value for the jfield in the data) triple
     """
-    val_type = 3
-    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, False)
+    date_time_type = 3
+    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(data, jfield)
     if exists and well_formed:
-        return True, [(measurement_type, val_type, val)]
+        return True, [(measurement_type, date_time_type, val)]
     else:
+        if not exists:
+            print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+        else:  # must exist but not be well-formed
+            print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type)} (value type {date_time_type})')
         return False, []
 
 
@@ -382,11 +379,12 @@ def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     :return if the field exists then a list is returned holding the appropriate entry
             if the field doesn't exist then an empty list is returned
     """
-    val_type = 3
-    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, True)
+    date_time_type = 3
+    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(data, jfield)
     if exists and well_formed:
-        return True, [(measurement_type, val_type, val)]  # jfield is present in the json and no errors
+        return True, [(measurement_type, date_time_type, val)]  # jfield is present in the json and no errors
     elif exists and not well_formed:  # jfield is present but there are errors
+        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type )} (value type {date_time_type })')
         return False, []
     else:
         return True, []  # Field doesn't exist, which is OK as this is an optional field
