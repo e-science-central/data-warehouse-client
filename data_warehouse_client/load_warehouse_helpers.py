@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import functools
+from datetime import datetime
+
+
+def convert_epoch_in_ms_to_string(timestamp_in_ms):
+    """
+    converts timestamp in ms epoch format to string
+    :param timestamp_in_ms: epoch timestamp in ms
+    :return: date time string
+    """
+    timestamp_in_sec = timestamp_in_ms//1000
+    return str(datetime.fromtimestamp(timestamp_in_sec))
 
 
 def process_message_group(mg_triples):
@@ -290,7 +301,7 @@ def mk_optional_string(measurement_type, data, jfield):
 
 def mk_datetime(measurement_type, data, jfield):
     """
-    create a (measurement_type, valtype, value for the jfield in the data) triple for a string
+    create a (measurement_type, valtype, value for the jfield in the data) triple for a datetime represented as a string
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
@@ -301,6 +312,7 @@ def mk_datetime(measurement_type, data, jfield):
 
 def mk_optional_datetime(measurement_type, data, jfield):
     """
+    Used for an optional datetime represented as a string
     If the jfield exists in the data then return [(measurement_type, valtype, value for the jfield in the data)].
     If not then return an empty list.
     :param measurement_type:    measurement type of jfield in the data warehouse
@@ -310,6 +322,74 @@ def mk_optional_datetime(measurement_type, data, jfield):
             if the field doesn't exist then an empty list is returned
     """
     return mk_optional_basic_field(measurement_type, 3, data, jfield)
+
+
+def get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, optional):
+    """
+    check if a value exists, and if so its type
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that contains the jfield
+    :param jfield: the name of the field
+    :param optional: if the field is optional
+    :return: (field exists,well typed, value)
+    """
+    val_type = 3
+    val = data.get(jfield)
+    if val is None:
+        exists = False
+        well_typed = False  # default
+    elif val == "":
+        exists = False
+        well_typed = False  # default
+    else:
+        exists = True
+        str_val = convert_epoch_in_ms_to_string(val)
+        well_typed = type_check(str_val, val_type)
+    if (not optional) and (not exists):
+        print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+        return exists, well_typed, ""
+    elif exists and (not well_typed):
+        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(val_type)} (value type {val_type})')
+        return exists, well_typed, ""
+    else:
+        return exists, well_typed, str_val
+
+
+def mk_datetime_from_epoch_in_ms(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple from epoch time in ms
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    """
+    val_type = 3
+    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, False)
+    if exists and well_formed:
+        return True, [(measurement_type, val_type, val)]
+    else:
+        return False, []
+
+
+def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
+    """
+    Used when from epoch time in ms
+    If the jfield exists in the data then return [(measurement_type, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+    :param measurement_type:    measurement type of jfield in the data warehouse
+    :param data:   json that may contain the jfield
+    :param jfield: the name of the field
+    :return if the field exists then a list is returned holding the appropriate entry
+            if the field doesn't exist then an empty list is returned
+    """
+    val_type = 3
+    (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(measurement_type, data, jfield, True)
+    if exists and well_formed:
+        return True, [(measurement_type, val_type, val)]  # jfield is present in the json and no errors
+    elif exists and not well_formed:  # jfield is present but there are errors
+        return False, []
+    else:
+        return True, []  # Field doesn't exist, which is OK as this is an optional field
 
 
 def mk_boolean(measurement_type, data, jfield):
