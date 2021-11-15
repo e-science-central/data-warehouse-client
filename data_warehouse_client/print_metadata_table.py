@@ -31,7 +31,7 @@ def print_metadata_tables_to_file(dw, study_id):
     file_dir = "reports/"
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
-    fname = mk_txt_report_file_name(file_dir, "metadata-table", time_fname_str)
+    fname = mk_txt_report_file_name(file_dir, "metadata-table-", time_fname_str)
 
     metadata = create_measurement_group_info(dw, study_id)
     headers = ['Measurement Type', 'Id', 'Value Type', 'Optional?', 'Units', 'Min Value', 'Max Value', 'Categories']
