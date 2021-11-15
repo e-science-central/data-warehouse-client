@@ -139,7 +139,7 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
     if (not optional) and (not exists):
         print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
     elif exists and (not well_typed):
-        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(val_type)} (value type {val_type})')
+        print(f'Wrong type for {jfield} (measurement type {measurement_type}) in data {data}; it should be a {type_names(val_type)} (value type {val_type})')
     return exists, well_typed, val
 
 
@@ -624,6 +624,35 @@ def split_enum(measurement_types, data, jfield, valuelist):
     else:
         print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}')
         return False, []
+
+
+def split_optional_enum(measurement_types, data, jfield, valuelist):
+    """
+    ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
+    measurementtype per value. This function takes a json list of values and creates the list of measurements from it -
+    one for each type.
+    :param measurement_types: the list of measurement_types of the measurements into which the booleans are to be stored
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param valuelist: the list of values in the ENUM (in the order in which they are to be added into the
+                    measurement types
+    :return The list of (measurement_type,valType,value) triples that are used by
+                    insertMeasurementGroup to add the measurements
+    """
+    res = []
+    values = data.get(jfield)  # try to read the the list of values
+    if values is None:
+        exists = False
+    elif values == "":
+        exists = False
+    else:
+        exists = True
+    if exists:
+        for (measurement_type, value) in zip(measurement_types, valuelist):
+            res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
+        return True, res
+    else:
+        return True, []  # Field doesn't exist, which is OK as this is an optional field
 
 
 def get_converter_fn(event_type, mapper_dict):
