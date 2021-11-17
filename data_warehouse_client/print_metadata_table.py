@@ -36,7 +36,7 @@ def print_metadata_tables_to_file(dw, study_id):
     metadata = create_measurement_group_info(dw, study_id)
     headers = ['Measurement Type', 'Id', 'Value Type', 'Optional?', 'Units', 'Min Value', 'Max Value', 'Categories']
 
-    with open(fname, "w") as f:
+    with open(fname, "w", encoding="utf-8") as f:
         print(f'Measurement Groups for Study {study_id}', file=f)
         for mg_id, mg_data in metadata.items():
             mg_info = mg_data['message_types']

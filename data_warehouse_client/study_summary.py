@@ -100,7 +100,7 @@ def print_all_instances_in_a_study_to_file(dw, study):
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     fname = mk_txt_report_file_name(file_dir, "study-instances", time_fname_str)
-    with open(fname, "w") as f:
+    with open(fname, "w", encoding="utf-8") as f:
         print(f'All Measurement Group Instances in Study {study}\n', file=f)
         measurement_groups = dw.get_all_measurement_groups(study)
         for [mg_id, mg_name] in measurement_groups:
@@ -163,7 +163,7 @@ def print_study_summary_to_file(dw, study):
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     fname = mk_txt_report_file_name(file_dir, "study-summary", time_fname_str)
-    with open(fname, "w") as f:
+    with open(fname, "w", encoding="utf-8") as f:
         print(f'Summary of Study {study}', file=f)
         # Get Number of Participants
         n_participants = len(dw.get_participants(study))
