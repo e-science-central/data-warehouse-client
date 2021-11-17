@@ -28,7 +28,7 @@ def export_measurements_as_csv(rows, fname):
                     getMeasurementGroupInstancesWithValueTests
     :param fname: the filename of the output CSV file
     """
-    with open(fname, "w", newline="") as f:
+    with open(fname, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["Id", "Time", "Study", "Participant", "Measurement Type", "Measurement Type Name", "Measurement Group",
@@ -48,7 +48,7 @@ def export_measurement_groups_as_csv(header, instances, fname):
     :param instances: a list of instances returned by formatMeasurementGroup
     :param fname: the filename of the output CSV file
     """
-    with open(fname, "w", newline="") as f:
+    with open(fname, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(header)
         writer.writerows(instances)
