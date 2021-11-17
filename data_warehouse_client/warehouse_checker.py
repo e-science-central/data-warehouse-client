@@ -169,7 +169,7 @@ def print_check_warehouse(dw, study):
     r4 = check_bounded_integers(dw, study)
     n_errors = len(r4)
     if n_errors > 0:
-        print(tabulate(r4, headers=['Id', 'Value']))
+        print(tabulate(r4, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
     print(f'({n_errors} measurements)')
 
     print()
@@ -177,7 +177,7 @@ def print_check_warehouse(dw, study):
     r5 = check_bounded_reals(dw, study)
     n_errors = len(r5)
     if n_errors > 0:
-        print(tabulate(r5, headers=['Id', 'Value']))
+        print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
     print(f'({n_errors} measurements)')
     print()
 
