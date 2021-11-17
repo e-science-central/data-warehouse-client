@@ -162,7 +162,7 @@ def print_study_summary_to_file(dw, study):
     file_dir = "reports/"
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
-    fname = mk_txt_report_file_name(file_dir, "study-summary", time_fname_str)
+    fname = mk_txt_report_file_name(file_dir, "study-summary-", time_fname_str)
     with open(fname, "w", encoding="utf-8") as f:
         print(f'Summary of Study {study}', file=f)
         # Get Number of Participants

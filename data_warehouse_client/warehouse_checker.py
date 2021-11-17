@@ -197,7 +197,7 @@ def print_check_warehouse_to_file(dw, study):
     file_dir = "reports/"
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
-    fname = mk_txt_report_file_name(file_dir, "warehouse-check", time_fname_str)
+    fname = mk_txt_report_file_name(file_dir, "warehouse-check-", time_fname_str)
 
     with open(fname, "w", encoding="utf-8") as f:
         print(f'Check Study {study}\n', file=f)
