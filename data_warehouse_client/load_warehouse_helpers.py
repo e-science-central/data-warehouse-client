@@ -93,7 +93,7 @@ def check_boolean(string):
     :param string: 
     :return: True if the string represents a boolean
     """
-    return string in ['T', 'Y', 'F', 'N', '0', '1']
+    return string in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
 
 
 def type_check(val, val_type):
@@ -401,10 +401,10 @@ def mk_boolean(measurement_type, data, jfield):
     (exists, well_formed, val) = get_and_check_value(measurement_type, 4, data, jfield, False)
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
     if exists and well_formed:
-        if val in ['0', 'N', 'F']:
+        if val in ['0', 'N', 'F', 0]:
             val01 = '0'
         else:
-            val01 = '1'  # must be Y or T or 1
+            val01 = '1'  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)]
     else:
         return False, []
@@ -423,10 +423,10 @@ def mk_optional_boolean(measurement_type, data, jfield):
     (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, True)
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
-        if val in ['0', 'N', 'F']:
+        if val in ['0', 'N', 'F', 0]:
             val01 = '0'
         else:
-            val01 = '1'  # must be Y or T or 1
+            val01 = '1'  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)]
     elif exists and not well_formed:
         return False, []
