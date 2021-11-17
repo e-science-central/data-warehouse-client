@@ -1,5 +1,5 @@
 SELECT
-  DISTINCT measurement.id, measurement.valinteger
+  DISTINCT measurement.id, measurement.valinteger, measurement.measurementtype, measurement.measurementgroup, boundsint.minval, boundsint.maxval, measurement.participant
 FROM
   measurement
   JOIN boundsint ON (

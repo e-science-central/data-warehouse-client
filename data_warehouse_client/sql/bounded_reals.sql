@@ -1,5 +1,5 @@
 SELECT
-  DISTINCT measurement.id, measurement.valreal
+  DISTINCT measurement.id, measurement.valreal, measurement.measurementtype, measurement.measurementgroup, boundsreal.minval, boundsreal.maxval, measurement.participant
 FROM
   measurement
   JOIN boundsreal ON (
