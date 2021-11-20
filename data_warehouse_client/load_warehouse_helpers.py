@@ -15,16 +15,6 @@ import functools
 from datetime import datetime
 
 
-def convert_epoch_in_ms_to_string(timestamp_in_ms):
-    """
-    converts timestamp in ms epoch format to string
-    :param timestamp_in_ms: epoch timestamp in ms
-    :return: date time string
-    """
-    timestamp_in_sec = timestamp_in_ms//1000
-    return str(datetime.fromtimestamp(timestamp_in_sec))
-
-
 def process_message_group(mg_triples):
     oks = list(map(lambda r: r[0], mg_triples))
     triples = list(map(lambda r: r[1], mg_triples))
@@ -50,6 +40,23 @@ def type_names(val_type):
         return "boolean"
     else:
         return "string"
+
+
+def convert_epoch_in_ms_to_string(timestamp_in_ms):
+    """
+    converts timestamp in ms epoch format to string
+    :param timestamp_in_ms: epoch timestamp in ms
+    :return: well_formed, date time string
+    """
+    if check_int(timestamp_in_ms):
+        timestamp_in_sec = timestamp_in_ms//1000
+        try:
+            time_val = datetime.fromtimestamp(timestamp_in_sec)
+            return True, str(time_val)
+        except ValueError:
+            return False, None
+    else:
+        return False, None
 
 
 def check_int(string):
@@ -326,7 +333,7 @@ def mk_optional_datetime(measurement_type, data, jfield):
 
 def get_and_check_datetime_from_epoch_ms(data, jfield):
     """
-    check if a value exists, and if so that its type is correct
+    check if a value exists, and if so convert it from an epoch (in ms) to a datetime string
     :param data: json that contains the jfield
     :param jfield: the name of the field
     :return: (field exists, well typed, value)
@@ -343,8 +350,7 @@ def get_and_check_datetime_from_epoch_ms(data, jfield):
         return exists, well_typed, ""
     else:
         exists = True
-        str_val = convert_epoch_in_ms_to_string(val)
-        well_typed = type_check(str_val, date_time_type)
+        well_typed, str_val = convert_epoch_in_ms_to_string(val)
         return exists, well_typed, str_val
 
 
