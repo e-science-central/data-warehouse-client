@@ -53,7 +53,7 @@ def convert_epoch_in_ms_to_string(timestamp_in_ms):
         try:
             time_val = datetime.fromtimestamp(timestamp_in_sec)
             return True, str(time_val)
-        except ValueError:
+        except OSError as error:
             return False, None
     else:
         return False, None
