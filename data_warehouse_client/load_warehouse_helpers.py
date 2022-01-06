@@ -59,6 +59,15 @@ def convert_epoch_in_ms_to_string(timestamp_in_ms):
         return False, None
 
 
+def convert_posix_timestamp_to_string(val):
+    """
+    converts timestamp in ms epoch format to string
+    :param val: posix timestamp
+    :return: well_formed, date time string
+    """
+    return True, val.replace('T', ' ')
+
+
 def check_int(string):
     """
     Check if a string represents an integer
@@ -322,8 +331,8 @@ def mk_optional_datetime(measurement_type, data, jfield):
     Used for an optional datetime represented as a string
     If the jfield exists in the data then return [(measurement_type, valtype, value for the jfield in the data)].
     If not then return an empty list.
-    :param measurement_type:    measurement type of jfield in the data warehouse
-    :param data:   json that may contain the jfield
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
     :param jfield: the name of the field
     :return if the field exists then a list is returned holding the appropriate entry
             if the field doesn't exist then an empty list is returned
@@ -338,7 +347,6 @@ def get_and_check_datetime_from_epoch_ms(data, jfield):
     :param jfield: the name of the field
     :return: (field exists, well typed, value)
     """
-    date_time_type = 3
     val = data.get(jfield)
     if val is None:
         exists = False
@@ -374,6 +382,48 @@ def mk_datetime_from_epoch_in_ms(measurement_type, data, jfield):
         return False, []
 
 
+def get_and_check_datetime_from_posix_timestamp(data, jfield):
+    """
+    check if a value exists, and if so convert it from a posix timestamp to a datetime string
+    :param data: json that contains the jfield
+    :param jfield: the name of the field
+    :return: (field exists, well typed, value)
+    """
+    val = data.get(jfield)
+    if val is None:
+        exists = False
+        well_typed = False  # default
+        return exists, well_typed, ""
+    elif val == "":
+        exists = False
+        well_typed = False  # default
+        return exists, well_typed, ""
+    else:
+        exists = True
+        well_typed, str_val = convert_posix_timestamp_to_string(val)
+        return exists, well_typed, str_val
+
+
+def mk_datetime_from_posix_timestamp(measurement_type, data, jfield):
+    """
+    Transform a CSV Posix timestamp field held in a string to a date/time format
+    :param measurement_type:    measurement type of jfield in the data warehouse
+    :param data: json that contains the jfield
+    :param jfield: the name of the field
+    :return: string formatted in year-month-day hrs:mins:sec
+    """
+    date_time_type = 3
+    (exists, well_formed, val) = get_and_check_datetime_from_posix_timestamp(data, jfield)
+    if exists and well_formed:
+        return True, [(measurement_type, date_time_type, val)]
+    else:
+        if not exists:
+            print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+        else:  # must exist but not be well-formed
+            print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type)} (value type {date_time_type})')
+        return False, []
+
+
 def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     """
     Used when from epoch time in ms
@@ -398,7 +448,7 @@ def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
 
 def mk_boolean(measurement_type, data, jfield):
     """
-    Create a Transform a boolean represented as a 'T' or 'F' string into boolean field with 0 for False or 1 for True
+    Transform a boolean represented as a 'T' or 'F' string into boolean field with 0 for False or 1 for True
     :param measurement_type:    measurement type of jfield in the data warehouse
     :param data:   json that may contain the jfield
     :param jfield: the name of the field
