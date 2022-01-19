@@ -208,22 +208,22 @@ def print_check_warehouse_to_file(dw, study):
         r2 = check_category_exists(dw, study)
         n_errors = len(r2)
         if n_errors > 0:
-            print(tabulate(r2, headers=['Measurement Type Id', 'Message Type Name']))
-        print(f'({n_errors} invalid entries)', file=f)
+            print(tabulate(r2, headers=['Measurement Type Id', 'Message Type Name']), file=f)
+        print(f'({n_errors} invalid entries)\n', file=f)
 
         print(f'-- Measurement types declared as bounded integer but without entries in the Boundsint Table', file=f)
         rbi = check_integer_bounds_exist(dw, study)
         n_errors = len(rbi)
         if n_errors > 0:
             print(tabulate(rbi, headers=['Measurement Type Id', 'Message Type Name']), file=f)
-        print(f'({n_errors} invalid entries)', file=f)
+        print(f'({n_errors} invalid entries)\n', file=f)
 
         print(f'-- Measurement types declared as bounded real but without entries in the Boundsreal Table', file=f)
         rbr = check_real_bounds_exist(dw, study)
         n_errors = len(rbr)
         if n_errors > 0:
             print(tabulate(rbr, headers=['Measurement Type Id', 'Message Type Name']), file=f)
-        print(f'({n_errors} invalid entries)', file=f)
+        print(f'({n_errors} invalid entries)\n', file=f)
 
         print(f'- Check Measurements\n', file=f)
 
@@ -232,16 +232,15 @@ def print_check_warehouse_to_file(dw, study):
         n_invalid_entries = len(r1)
         if n_invalid_entries > 0:
             print_io.print_measurements_to_file(r1, f)
-        print(f'({n_invalid_entries} invalid entries)', file=f)
+        print(f'({n_invalid_entries} invalid entries)\n', file=f)
 
         print(f'-- Measurements declared as ordinal or nominal that refer to a non-existent category', file=f)
         r3 = check_category_in_range(dw, study)
         n_errors = len(r3)
         if n_errors > 0:
             print(tabulate(r3, headers=['Measurement Id']), file=f)
-        print(f'({n_errors} measurements)', file=f)
+        print(f'({n_errors} measurements)\n', file=f)
 
-        print()
         print(f'-- Measurements declared as Bounded Integers whose value is outside of the bounds', file=f)
         r4 = check_bounded_integers(dw, study)
         n_errors = len(r4)
@@ -253,5 +252,6 @@ def print_check_warehouse_to_file(dw, study):
         r5 = check_bounded_reals(dw, study)
         n_errors = len(r5)
         if n_errors > 0:
-            print(tabulate(r5, headers=['Id', 'Value']), file=f)
+            print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),
+                  file=f)
         print(f'({n_errors} measurements)\n', file=f)
