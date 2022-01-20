@@ -16,12 +16,46 @@ from datetime import datetime
 
 
 def process_message_group(mg_triples):
-    oks = list(map(lambda r: r[0], mg_triples))
-    triples = list(map(lambda r: r[1], mg_triples))
-    if functools.reduce(lambda x, y: x and y, oks):
-        return True, sum(triples, [])
-    else:
-        return False, []
+    """
+    takes the result of attempting to load each field in a message group and processes it
+    :param mg_triples: list of (successful load?, ((measurement_ttpe, valtype, value)))
+    :return: Success?, the list of (measurement_ttpe, valtype, value) triples, the error message list
+    """
+    success_index = 0
+    triple_index = 1
+    error_message_index = 2
+    oks = list(map(lambda r: r[success_index], mg_triples))     # get a list of the bools indicating success
+    triples = list(map(lambda r: r[triple_index], mg_triples))  # get a list of the triples
+    if functools.reduce(lambda x, y: x and y, oks):             # if all value in message group are correct....
+        return True, sum(triples, []), []                       # return Success, the triples, empty error message list
+    else:                                                       # there was a problem with >0 fields in message group
+        # remove empty strings from error messages
+        error_messages = list(filter(lambda s: s != "", list(map(lambda r: r[error_message_index], mg_triples))))
+        return False, [], error_messages  # return Failure, no triples and the list of error messages
+
+
+def missing_mandatory_type_error_message(jfield, measurement_type, data):
+    """
+    form error message for missing mandatory types
+    :param jfield: the field name
+    :param measurement_type: the measurement type
+    :param data: the data in which the field is missing
+    :return: error message
+    """
+    return f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}'
+
+
+def wrong_type_error_message(jfield, measurement_type, data, val_type):
+    """
+    form error message for missing mandatory types
+    :param jfield: the field name
+    :param measurement_type: the measurement type
+    :param data: the data in which the field is missing
+    :param val_type: the correct type of the field
+    :return: error message
+    """
+    return f'Wrong type for {jfield} (measurement type {measurement_type}) in data {data};' +\
+           f'it should be a {type_names(val_type)} (value type {val_type})'
 
 
 def type_names(val_type):
@@ -140,8 +174,9 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
     :param data: json that contains the jfield
     :param jfield: the name of the field
     :param optional: if the field is optional
-    :return: (field exists,well typed, value)
+    :return: (field exists,well typed, value, error_message)
     """
+    error_message = ""
     val = data.get(jfield)
     if val is None:
         exists = False
@@ -153,10 +188,10 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
         exists = True
         well_typed = type_check(val, val_type)
     if (not optional) and (not exists):
-        print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+        error_message = missing_mandatory_type_error_message(jfield, measurement_type, data)
     elif exists and (not well_typed):
-        print(f'Wrong type for {jfield} (measurement type {measurement_type}) in data {data}; it should be a {type_names(val_type)} (value type {val_type})')
-    return exists, well_typed, val
+        error_message = wrong_type_error_message(jfield, measurement_type, data, val_type)
+    return exists, well_typed, val, error_message
 
 
 def mk_basic_field(measurement_type, val_type, data, jfield):
@@ -166,13 +201,13 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     :param val_type: the type of the value to be stored
     :param data: json that contains the jfield
     :param jfield: the name of the field
-    :return: (Error free, (measurement_ttpe, valtype, value for the jfield in the data))
+    :return: Error free, (measurement_ttpe, valtype, value for the jfield in the data), error_message
     """
-    (exists, well_formed, val) = get_and_check_value(measurement_type, val_type, data, jfield, False)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, val_type, data, jfield, False)
     if exists and well_formed:
-        return True, [(measurement_type, val_type, val)]
+        return True, [(measurement_type, val_type, val)], ""
     else:
-        return False, []
+        return False, [], error_message
 
 
 def mk_optional_basic_field(measurement_type, val_type, data, jfield):
@@ -186,13 +221,13 @@ def mk_optional_basic_field(measurement_type, val_type, data, jfield):
     :return                     (Error free, if the field exists then a list is returned holding the appropriate entry;
                                 if the field doesn't exist then an empty list is returned)
     """
-    (exists, well_formed, val) = get_and_check_value(measurement_type, val_type, data, jfield, True)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, val_type, data, jfield, True)
     if exists and well_formed:
-        return True, [(measurement_type, val_type, val)]  # jfield is present in the json and no errors
+        return True, [(measurement_type, val_type, val)], ""  # jfield is present in the json and no errors
     elif exists and not well_formed:  # jfield is present but there are errors
-        return False, []
+        return False, [], error_message
     else:
-        return True, []  # Field doesn't exist, which is OK as this is an optional field
+        return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
 
 
 def mk_int(measurement_type, data, jfield):
@@ -373,13 +408,12 @@ def mk_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     date_time_type = 3
     (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(data, jfield)
     if exists and well_formed:
-        return True, [(measurement_type, date_time_type, val)]
+        return True, [(measurement_type, date_time_type, val)], ""
     else:
         if not exists:
-            print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+            return False, [], missing_mandatory_type_error_message(jfield, measurement_type, data)
         else:  # must exist but not be well-formed
-            print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type)} (value type {date_time_type})')
-        return False, []
+            return False, [], wrong_type_error_message(jfield, measurement_type, data, date_time_type)
 
 
 def get_and_check_datetime_from_posix_timestamp(data, jfield):
@@ -415,13 +449,12 @@ def mk_datetime_from_posix_timestamp(measurement_type, data, jfield):
     date_time_type = 3
     (exists, well_formed, val) = get_and_check_datetime_from_posix_timestamp(data, jfield)
     if exists and well_formed:
-        return True, [(measurement_type, date_time_type, val)]
+        return True, [(measurement_type, date_time_type, val)], ""
     else:
         if not exists:
-            print(f'Missing mandatory field {jfield} (measurement type {measurement_type}) in data: {data}')
+            return False, [], missing_mandatory_type_error_message(jfield, measurement_type, data)
         else:  # must exist but not be well-formed
-            print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type)} (value type {date_time_type})')
-        return False, []
+            return False, [],  wrong_type_error_message(jfield, measurement_type, data, date_time_type)
 
 
 def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
@@ -438,12 +471,11 @@ def mk_optional_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     date_time_type = 3
     (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(data, jfield)
     if exists and well_formed:
-        return True, [(measurement_type, date_time_type, val)]  # jfield is present in the json and no errors
+        return True, [(measurement_type, date_time_type, val)], ""  # jfield is present in the json and no errors
     elif exists and not well_formed:  # jfield is present but there are errors
-        print(f'Wrong type for {jfield} (measurement type {measurement_type}): it should be a {type_names(date_time_type )} (value type {date_time_type })')
-        return False, []
+        return False, [], wrong_type_error_message(jfield, measurement_type, data, date_time_type)
     else:
-        return True, []  # Field doesn't exist, which is OK as this is an optional field
+        return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
 
 
 def mk_boolean(measurement_type, data, jfield):
@@ -454,16 +486,16 @@ def mk_boolean(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return : the field
     """
-    (exists, well_formed, val) = get_and_check_value(measurement_type, 4, data, jfield, False)
+    (exists, well_formed, val, error_messsage) = get_and_check_value(measurement_type, 4, data, jfield, False)
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
             val01 = '0'
         else:
             val01 = '1'  # must be 'Y' or 'T' or '1' or 1
-        return True, [(measurement_type, 4, val01)]
+        return True, [(measurement_type, 4, val01)], ""
     else:
-        return False, []
+        return False, [], error_messsage
 
 
 def mk_optional_boolean(measurement_type, data, jfield):
@@ -476,18 +508,18 @@ def mk_optional_boolean(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, True)
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
             val01 = '0'
         else:
             val01 = '1'  # must be 'Y' or 'T' or '1' or 1
-        return True, [(measurement_type, 4, val01)]
+        return True, [(measurement_type, 4, val01)], ""
     elif exists and not well_formed:
-        return False, []
+        return False, [], error_message
     else:
-        return True, []  # it's optional so OK if the field is not found
+        return True, [], ""  # it's optional so OK if the field is not found
 
 
 def mk_category_from_dict(cat_name, cat_dict, measurement_type):
@@ -496,14 +528,13 @@ def mk_category_from_dict(cat_name, cat_dict, measurement_type):
     :param cat_name: the category name from the category table
     :param cat_dict: a directory with the category names as keys, and the categoryid as the values
     :param measurement_type: the measurement type (only used for debugging)
-    :return (no error, the categoryid of the category)
+    :return (no error, the categoryid of the category, error message)
     """
     val = cat_dict.get(cat_name)
     if val is None:
-        print(f'\"{cat_name}\" is not in the dictionary for measurement type {measurement_type}')
-        return False, val
+        return False, val, f'\"{cat_name}\" is not in the dictionary for measurement type {measurement_type}'
     else:
-        return True, val
+        return True, val, ""
 
 
 def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
@@ -517,15 +548,15 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :return: (measurement_ttpe, valtype, value for the jfield in the data)
     """
     #  use val_type of 2 as string expected
-    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, False)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, False)
     if exists and well_formed:
-        (ok, cat) = mk_category_from_dict(val, cat_dict, measurement_type)
+        (ok, cat, category_error_message) = mk_category_from_dict(val, cat_dict, measurement_type)
         if ok:
-            return True, [(measurement_type, val_type, cat)]
+            return True, [(measurement_type, val_type, cat)], ""
         else:
-            return False, []
+            return False, [], category_error_message
     else:
-        return False, []
+        return False, [], error_message
 
 
 def mk_optional_category_field(measurement_type, val_type, data, jfield, cat_dict):
@@ -541,17 +572,17 @@ def mk_optional_category_field(measurement_type, val_type, data, jfield, cat_dic
              if the field doesn't exist then an empty list is returned
     """
     #  use val_type of 2 as string expected
-    (exists, well_formed, val) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, True)
     if exists and well_formed:
-        (ok, cat) = mk_category_from_dict(val, cat_dict, measurement_type)
+        (ok, cat, category_error_message) = mk_category_from_dict(val, cat_dict, measurement_type)
         if ok:
-            return True, [(measurement_type, val_type, cat)]
+            return True, [(measurement_type, val_type, cat)], ""
         else:
-            return False, []
+            return False, [], category_error_message
     elif exists and not well_formed:
-        return False, []
+        return False, [], error_message
     else:
-        return True, []  # it's optional, so it's OK is the field is missing
+        return True, [], ""  # it's optional, so it's OK that the field is missing
 
 
 def mk_nominal(measurement_type, data, jfield, cat_dict):
@@ -676,10 +707,9 @@ def split_enum(measurement_types, data, jfield, valuelist):
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
             res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
-        return True, res
+        return True, res, ""
     else:
-        print(f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}')
-        return False, []
+        return False, [], f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}'
 
 
 def split_optional_enum(measurement_types, data, jfield, valuelist):
@@ -706,9 +736,9 @@ def split_optional_enum(measurement_types, data, jfield, valuelist):
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
             res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
-        return True, res
+        return True, res, ""
     else:
-        return True, []  # Field doesn't exist, which is OK as this is an optional field
+        return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
 
 
 def get_converter_fn(event_type, mapper_dict):
