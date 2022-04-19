@@ -1,3 +1,6 @@
+production-db-credentials-read-only.json
+data_warehouse_client/production-db-credentials-read-only.json
+
 db-credentials.json
 db-credentials-read-only.json
 data_warehouse_client/db-credentials.json

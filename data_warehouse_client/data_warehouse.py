@@ -516,10 +516,10 @@ class DataWarehouse:
                             (time, study, trial, measurement_group, group_instance, measurementType, participant,
                              source, val_type, val_integer, val_real))
             except psycopg2.Error as e:
-                print("Error in insertMeasurementGroup: ", e.pgcode, "occurred.")
+                print("Error in insert_measurement_group: ", e.pgcode, "occurred.")
                 print("See https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE")
                 print(f'Study = {study},Trial = {trial}, Measurement Group = {measurement_group},'
-                      f'Measurement Type = {measurementType},Source = {source}')
+                      f'Measurement Type = {measurementType}, value = {value}, Source = {source}')
             gid = cur.fetchone()[0]
             if group_instance == 0:
                 group_instance = gid
