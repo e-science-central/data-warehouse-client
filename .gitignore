@@ -7,6 +7,7 @@ data_warehouse_client/db-credentials.json
 data_warehouse_client/db-credentials-read-only.json
 output/
 input/
+reports/
 
 datawarehouse-visualization.py
 
