@@ -50,7 +50,7 @@ def plot_measurements(dw, rows, study, measurement_type_id, plot_file):
 
 
 def mk_pdf_report_file_name(f_dir, report_name, time_string):
-    return f_dir + report_name + time_string + ".pdf"
+    return f_dir + report_name + "-" + time_string + ".pdf"
 
 
 def plot_distributions(dw, study):
@@ -80,6 +80,7 @@ def plot_distributions(dw, study):
             if len(ms) > 0:
                 trans = [list(i) for i in zip(*ms)]  # transpose the list of lists
                 values = trans[measurement_value_index]  # the measurement value
+                values = list(filter(lambda val: val is not None, values))  # remove missing values
                 # plot distribution based on value type
                 value_type = print_metadata_table.valuetype_to_name()[mt_info['valtype']]
                 if value_type in ['Integer', 'Real', 'Bounded Integer', 'Bounded Real']:
@@ -128,8 +129,8 @@ def plot_distributions(dw, study):
 
 
 # test it out
-dw_handle = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
-
-study_id = 8
-
-plot_distributions(dw_handle, study_id)
+#  dw_handle = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
+#
+#  study_id = 8
+#
+#  plot_distributions(dw_handle, study_id)

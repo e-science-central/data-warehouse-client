@@ -1,9 +1,13 @@
+production-db-credentials-read-only.json
+data_warehouse_client/production-db-credentials-read-only.json
+
 db-credentials.json
 db-credentials-read-only.json
 data_warehouse_client/db-credentials.json
 data_warehouse_client/db-credentials-read-only.json
 output/
 input/
+reports/
 
 datawarehouse-visualization.py
 

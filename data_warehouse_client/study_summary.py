@@ -128,6 +128,33 @@ def print_all_instances_in_a_study_to_csv_files(dw, study):
             csv_io.export_measurement_groups_as_csv(header, instances, fname)
 
 
+def print_instances_in_a_study_to_csv_files(dw, study, report_dir, select_participants=False, participants=[],
+                                            filename_prefix=''):
+    """
+    Print instances in a study to a set of csvs - one per measurement group,
+    but only for those participants in the participants list
+    :param dw: data warehouse handle
+    :param study: study id
+    :param report_dir: the directory in which the profiles will be written
+    :param select_participants: select a subset of participants to be included in the profile
+    :param participants: list of participants to be included in the profile if select_participants is true
+    :param filename_prefix: optional string to add to front of filename
+    """
+    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
+    measurement_groups = dw.get_all_measurement_groups(study)
+    for [mg_id, mg_name] in measurement_groups:
+        (header, all_instances) = dw.get_measurement_group_instances(study, mg_id, [])
+        if select_participants:  # select participants
+            participant_index = 3   # the participant_id is in position 3 of the list
+            instances = list(filter(lambda instance: instance[participant_index] in participants, all_instances))
+        else:
+            instances = all_instances
+        fname = mk_csv_report_file_name(report_dir, filename_prefix +
+                                        "study-instances-" + mg_name + "-", time_fname_str)
+        csv_io.export_measurement_groups_as_csv(header, instances, fname)
+
+
 def print_all_instances_in_a_study_with_local_participant_id_to_csv_files(dw, study):
     """
     Print all instances in a study to a set of csvs - one per measurement group - including participants
