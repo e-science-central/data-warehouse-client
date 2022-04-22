@@ -23,7 +23,7 @@ def mk_html_report_file_name(f_dir, report_name, time_string):
 
 
 def profile_all_measurement_groups(dw, study, report_dir, select_participants=False, participants=[],
-                                   select_trials=False, trials=[], hide_trial_column=False):
+                                   select_trials=False, trials=[], hide_trial_column=False, filename_prefix=''):
     """
     Write a Profile file for each measurement group in a study
     :param dw: data warehouse handle
@@ -34,6 +34,7 @@ def profile_all_measurement_groups(dw, study, report_dir, select_participants=Fa
     :param select_trials: select a subset of trials to be included in the profile
     :param trials: list of trials to be included in the profile if select_trials is true
     :param hide_trial_column: don't include the Trial column (useful for studies where trial is not used)
+    :param filename_prefix: optional string to add to front of filename
     """
     timestamp = datetime.datetime.now()                        # use the current date and time in the filenames
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')   # format the date time string used in the filename
@@ -64,6 +65,8 @@ def profile_all_measurement_groups(dw, study, report_dir, select_participants=Fa
                 columns_to_drop = std_columns_to_drop
         df_main_columns = df.drop(columns=columns_to_drop)
         # create a profile report
-        profile = pp.ProfileReport(df_main_columns, title="Profiling Report for " + mg_name, progress_bar=True)
-        f_name = mk_html_report_file_name(report_dir, "Measurement-Group-Profile-" + mg_name + "-", time_fname_str)
+        profile = pp.ProfileReport(df_main_columns, title="Profiling Report for " + mg_name, progress_bar=False)
+        f_name = mk_html_report_file_name(report_dir,
+                                          filename_prefix + "Measurement-Group-Profile-" + mg_name + "-",
+                                          time_fname_str)
         profile.to_file(f_name)  # store the report in  a file
