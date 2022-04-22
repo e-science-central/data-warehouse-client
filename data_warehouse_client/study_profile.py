@@ -44,11 +44,11 @@ def profile_all_measurement_groups(dw, study, report_dir, select_participants=Fa
         (header, instances) = dw.get_measurement_group_instances(study, mg_id, [])   # extract header and all instances
         df_full = pd.DataFrame(instances, columns=header)                            # create a pandas data frame
         if select_participants:   # select participants
-            df_participants = df_full.loc[df_full['Participant'] in participants]
+            df_participants = df_full.loc[df_full['Participant'].isin(participants)]
         else:
             df_participants = df_full   # include all participants
         if select_trials:  # select trials
-            df = df_participants.loc[df_participants['Trial'] in trials]
+            df = df_participants.loc[df_participants['Trial'].isin(trials)]
         else:
             df = df_participants   # include all trials
         # drop columns that are not needed in the profile
