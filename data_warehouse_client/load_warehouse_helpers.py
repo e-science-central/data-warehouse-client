@@ -13,6 +13,7 @@
 # limitations under the License.
 import functools
 from datetime import datetime
+import unidecode
 
 
 def process_message_group(mg_triples):
@@ -83,7 +84,7 @@ def convert_epoch_in_ms_to_string(timestamp_in_ms):
     :return: well_formed, date time string
     """
     if check_int(timestamp_in_ms):
-        timestamp_in_sec = timestamp_in_ms//1000
+        timestamp_in_sec = int(timestamp_in_ms)//1000
         try:
             time_val = datetime.fromtimestamp(timestamp_in_sec)
             return True, str(time_val)
@@ -201,7 +202,7 @@ def mk_basic_field(measurement_type, val_type, data, jfield):
     :param val_type: the type of the value to be stored
     :param data: json that contains the jfield
     :param jfield: the name of the field
-    :return: Error free, (measurement_ttpe, valtype, value for the jfield in the data), error_message
+    :return: Error free, (measurement_type, valtype, value for the jfield in the data), error_message
     """
     (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, val_type, data, jfield, False)
     if exists and well_formed:
@@ -219,7 +220,7 @@ def mk_optional_basic_field(measurement_type, val_type, data, jfield):
     :param data:                json that may contain the jfield
     :param jfield:              the name of the field
     :return                     (Error free, if the field exists then a list is returned holding the appropriate entry;
-                                if the field doesn't exist then an empty list is returned)
+                                if the field doesn't exist then an empty list is returned, error message)
     """
     (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, val_type, data, jfield, True)
     if exists and well_formed:
@@ -236,7 +237,7 @@ def mk_int(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 0, data, jfield)
 
@@ -260,7 +261,7 @@ def mk_bounded_int(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 7, data, jfield)
 
@@ -284,7 +285,7 @@ def mk_real(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 1, data, jfield)
 
@@ -308,7 +309,7 @@ def mk_bounded_real(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 8, data, jfield)
 
@@ -332,7 +333,7 @@ def mk_string(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 2, data, jfield)
 
@@ -350,13 +351,50 @@ def mk_optional_string(measurement_type, data, jfield):
     return mk_optional_basic_field(measurement_type, 2, data, jfield)
 
 
+def mk_unidecoded_string(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple for a string - remove accents
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    error_free, result, error_message = mk_basic_field(measurement_type, 2, data, jfield)
+    if error_free:   # a result value exists
+        measurement_type, val_type, val = result[0]  # pick the result triple from the list
+        unidecoded_val = unidecode.unidecode(val)
+        return error_free, [(measurement_type, val_type, unidecoded_val)], error_message
+    else:
+        return error_free, result, error_message
+
+
+def mk_optional_unidecoded_string(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_type, valtype, value for the jfield in the data)]
+    Remove accents
+    If not then return an empty list.
+    :param measurement_type:    measurement type of jfield in the data warehouse
+    :param data:   json that may contain the jfield
+    :param jfield: the name of the field
+    :return if the field exists then a list is returned holding the appropriate entry
+            if the field doesn't exist then an empty list is returned
+    """
+    error_free, result, error_message = mk_optional_basic_field(measurement_type, 2, data, jfield)
+    if error_free and (len(result) == 1):   # There is no error, and the optional string exists
+        measurement_type, val_type, val = result[0]  # pick the result triple from the list
+        unidecoded_val = unidecode.unidecode(val)
+        return error_free, [(measurement_type, val_type, unidecoded_val)], error_message
+    else:
+        return error_free, result, error_message
+
+
 def mk_datetime(measurement_type, data, jfield):
     """
     create a (measurement_type, valtype, value for the jfield in the data) triple for a datetime represented as a string
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 3, data, jfield)
 
@@ -403,7 +441,7 @@ def mk_datetime_from_epoch_in_ms(measurement_type, data, jfield):
     :param measurement_type: measurement type of jfield in the data warehouse
     :param data: json that may contain the jfield
     :param jfield: the name of the field
-    :return: (measurement_type, valtype, value for the jfield in the data) triple
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     date_time_type = 3
     (exists, well_formed, val) = get_and_check_datetime_from_epoch_ms(data, jfield)
@@ -484,7 +522,7 @@ def mk_boolean(measurement_type, data, jfield):
     :param measurement_type:    measurement type of jfield in the data warehouse
     :param data:   json that may contain the jfield
     :param jfield: the name of the field
-    :return : the field
+    :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     (exists, well_formed, val, error_messsage) = get_and_check_value(measurement_type, 4, data, jfield, False)
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
@@ -528,7 +566,7 @@ def mk_category_from_dict(cat_name, cat_dict, measurement_type):
     :param cat_name: the category name from the category table
     :param cat_dict: a directory with the category names as keys, and the categoryid as the values
     :param measurement_type: the measurement type (only used for debugging)
-    :return (no error, the categoryid of the category, error message)
+    :return Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     val = cat_dict.get(cat_name)
     if val is None:
@@ -545,7 +583,7 @@ def mk_category_field(measurement_type, val_type, data, jfield, cat_dict):
     :param data: the json structure
     :param jfield: the name of the field
     :param cat_dict: the dictionary for this category
-    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     #  use val_type of 2 as string expected
     (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, False)
@@ -592,7 +630,7 @@ def mk_nominal(measurement_type, data, jfield, cat_dict):
     :param data: the json structure
     :param jfield: the name of the field
     :param cat_dict: the dictionary for this category
-    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_category_field(measurement_type, 5, data, jfield, cat_dict)
 
@@ -604,7 +642,7 @@ def mk_ordinal(measurement_type, data, jfield, cat_dict):
     :param data: the json structure
     :param jfield: the name of the field
     :param cat_dict: the dictionary for this category
-    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_category_field(measurement_type, 6, data, jfield, cat_dict)
 
@@ -615,7 +653,7 @@ def mk_nominal_from_id(measurement_type, data, jfield):
     :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
-    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 5, data, jfield)
 
@@ -626,7 +664,7 @@ def mk_ordinal_from_id(measurement_type, data, jfield):
     :param measurement_type: the id of the measurementtype that will hold the value
     :param data: the json structure
     :param jfield: the name of the field
-    :return: (measurement_ttpe, valtype, value for the jfield in the data)
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 6, data, jfield)
 
