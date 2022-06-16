@@ -39,6 +39,7 @@ def get_instances_per_measurement_group(dw, study):
 def print_all_instances_in_a_study(dw, study):
     """
     Print all instances in a study - don't print for measurement groups that have no measurements
+    Now depreciated. Use print_instances_in_a_study_to_csv_files
     :param dw: data warehouse handle
     :param study: study id
     """
@@ -114,6 +115,7 @@ def print_all_instances_in_a_study_to_file(dw, study):
 def print_all_instances_in_a_study_to_csv_files(dw, study):
     """
     Print all instances in a study to a set of csvs - one per measurement group
+    No depreciated. Use print_instances_in_a_study_to_csv_files
     :param dw: data warehouse handle
     :param study: study id
     """
@@ -128,8 +130,22 @@ def print_all_instances_in_a_study_to_csv_files(dw, study):
             csv_io.export_measurement_groups_as_csv(header, instances, fname)
 
 
+def mk_participants_dictionary(dw, study):
+    """
+    Create a dictionary containing mapping from participant_id to local_id for all the participants in a study
+    :param dw: data warehouse handle
+    :param study: study_id
+    :return: the dictionary
+    """
+    participants = dw.get_participants(study)  # return list of ids and local ids
+    participant_local_id = {}
+    for p in participants:
+        participant_local_id[p[0]] = p[1]
+    return participant_local_id
+
+
 def print_instances_in_a_study_to_csv_files(dw, study, report_dir, select_participants=False, participants=[],
-                                            local_participant_id=True, filename_prefix=''):
+                                            local_participant_id=True, filename_prefix='', print_empty_files=False):
     """
     Print instances in a study to a set of csvs - one per measurement group,
     but only for those participants in the participants list
@@ -140,7 +156,10 @@ def print_instances_in_a_study_to_csv_files(dw, study, report_dir, select_partic
     :param participants: list of participants to be included in the profile if select_participants is true
     :param local_participant_id: include the local participant id if this boolean is True
     :param filename_prefix: optional string to add to front of filename
+    :param print_empty_files: optional boolean to print csv files with no instances in them
     """
+    if local_participant_id:
+        participant_local_id = mk_participants_dictionary(dw, study)   # create a dictionary mapping from id to local id
     timestamp = datetime.datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     participant_index = 3  # the participant_id is in position 3 of the list
@@ -151,23 +170,27 @@ def print_instances_in_a_study_to_csv_files(dw, study, report_dir, select_partic
             instances = list(filter(lambda instance: instance[participant_index] in participants, all_instances))
         else:
             instances = all_instances
-        fname = mk_csv_report_file_name(report_dir, filename_prefix +
-                                        "study-instances-" + mg_name + "-", time_fname_str)
-        if local_participant_id:
-            instances_with_local_participant_id = []
-            extended_header = ['Local Participant'] + header
-            for instance in instances:  # add the local participant id to the start of each row
-                participant_id = instance[participant_index]  # get unique participant id
-                (success, part) = dw.get_participant_by_id(study, participant_id)  # get local participant id
-                instances_with_local_participant_id = instances_with_local_participant_id + [[part] + instance]
-                csv_io.export_measurement_groups_as_csv(extended_header, instances_with_local_participant_id, fname)
-        else:  # don't include local id
-            csv_io.export_measurement_groups_as_csv(header, instances, fname)
+        if (len(instances) > 0) or print_empty_files:   # if there are some instances in the measurement group
+                                                        #  or if files should be created even if there are no instances
+            fname = mk_csv_report_file_name(report_dir, filename_prefix +
+                                            "study-instances-" + mg_name + "-", time_fname_str)
+            if local_participant_id:
+                instances_with_local_participant_id = []
+                extended_header = ['Local Participant'] + header
+                for instance in instances:  # add the local participant id to the start of each row
+                    participant_id = instance[participant_index]  # get unique participant id
+                    local_participant = participant_local_id[participant_id]  # get the local participant id
+                    instances_with_local_participant_id = instances_with_local_participant_id +\
+                                                          [[local_participant] + instance]
+                    csv_io.export_measurement_groups_as_csv(extended_header, instances_with_local_participant_id, fname)
+            else:  # don't include local id
+                csv_io.export_measurement_groups_as_csv(header, instances, fname)
 
 
 def print_all_instances_in_a_study_with_local_participant_id_to_csv_files(dw, study):
     """
     Print all instances in a study to a set of csvs - one per measurement group - including participants
+    This is now depreciated. Use print_instances_in_a_study_to_csv_files
     :param dw: data warehouse handle
     :param study: study id
     """
