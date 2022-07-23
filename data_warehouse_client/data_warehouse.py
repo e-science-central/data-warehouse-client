@@ -494,7 +494,7 @@ class DataWarehouse:
 
         group_instance = 0   # used temporarily for the first measurement inserted in the measurement group
         insert_error = False  # will be set to true if there is an error inserting any measurement in the group
-        if cursor is None:
+        if cursor is None:     # no cursor has been passed into the function, so create one
             cur = self.dbConnection.cursor()
         else:
             cur = cursor
@@ -555,7 +555,7 @@ class DataWarehouse:
                                 """,
                                 (gid, value, study))
                 error_message = ''
-            except psycopg2.Error as e:
+            except psycopg2.Error as e:   # an error has occurred when inserting into the warehouse
                 error_message = f'[Error in insert_measurement_group. {e.pgcode} occurred: {e.pgerror}, ' \
                                 f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
                                 f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
@@ -563,10 +563,12 @@ class DataWarehouse:
                 insert_error = True
                 break  # ignore the remaining measurements to be inserted in teh measurement group
         success = not insert_error
-        if success:
+        if success:     # no inserts in the measurement group raised an error
             self.dbConnection.commit()     # commit the whole measurement group insert
         else:
             self.dbConnection.rollback()   # rollback the whole measurement group insert
+        if cursor is None:    # if the cursor was created in this function then close it
+            cur.close()
         return success, group_instance, error_message
 
     def get_participant_by_id(self, study, participant):
