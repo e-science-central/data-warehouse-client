@@ -528,9 +528,9 @@ def mk_boolean(measurement_type, data, jfield):
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = '0'
+            val01 = mk_bool_string(False)
         else:
-            val01 = '1'  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     else:
         return False, [], error_messsage
@@ -550,9 +550,9 @@ def mk_optional_boolean(measurement_type, data, jfield):
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = '0'
+            val01 = mk_bool_string(False)
         else:
-            val01 = '1'  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     elif exists and not well_formed:
         return False, [], error_message
@@ -721,6 +721,18 @@ def mk_optional_ordinal_from_id(measurement_type, data, jfield):
     return mk_optional_basic_field(measurement_type, 6, data, jfield)
 
 
+def mk_bool_string(bool_val):
+    """
+    represent a boolean as a string ready to be stored in the db as an integer value
+    :param bool_val: True or False
+    :return: '0' or '1'
+    """
+    if bool_val:
+        return '1'
+    else:
+        return '0'
+
+
 def split_enum(measurement_types, data, jfield, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
@@ -744,7 +756,7 @@ def split_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return False, [], f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}'
@@ -773,7 +785,7 @@ def split_optional_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, int(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
