@@ -115,7 +115,7 @@ def print_all_instances_in_a_study_to_file(dw, study):
 def print_all_instances_in_a_study_to_csv_files(dw, study):
     """
     Print all instances in a study to a set of csvs - one per measurement group
-    No depreciated. Use print_instances_in_a_study_to_csv_files
+    Now depreciated. Use print_instances_in_a_study_to_csv_files
     :param dw: data warehouse handle
     :param study: study id
     """
