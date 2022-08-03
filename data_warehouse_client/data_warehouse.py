@@ -476,7 +476,7 @@ class DataWarehouse:
         return self.return_query_result(query)
 
     def insert_measurement_group(self, study, measurement_group, values,
-                                 time=-1, trial=None, participant=None, source=None):  # None maps to SQL NULL
+                                 time=-1, trial=None, participant=None, source=None, cursor=None):  # None maps to SQL NULL
         """
          Insert one measurement group
          :param study: the study id
@@ -486,14 +486,19 @@ class DataWarehouse:
          :param trial: optional trial id
          :param participant: optional participant id
          :param source: optional source
-         :return the measurement group instance
+         :param cursor: database cursor
+         :return success boolean, the measurement group instance, error message
          """
         if time == -1:  # use the current date and time if none is specified
             time = datetime.datetime.now()  # use the current date and time if none is specified
 
-        group_instance = 0
-        cur = self.dbConnection.cursor()
-        for (measurementType, val_type, value) in values:
+        group_instance = 0   # used temporarily for the first measurement inserted in the measurement group
+        insert_error = False  # will be set to true if there is an error inserting any measurement in the group
+        if cursor is None:     # no cursor has been passed into the function, so create one
+            cur = self.dbConnection.cursor()
+        else:
+            cur = cursor
+        for (measurement_type, val_type, value) in values:
             if val_type in [0, 4, 5, 6, 7]:  # the value must be stored in valInteger
                 val_integer = value
                 val_real = None
@@ -504,46 +509,67 @@ class DataWarehouse:
                 val_integer = None
                 val_real = None
             else:
-                print("Error in valType in insertMeasurementGroup")
+                error_message = f'[Error in valType ({val_type}) in insert_measurement_group.' \
+                                f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
+                                f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
+                                f' value = {value}, Source = {source}]'
                 val_integer = None
                 val_real = None
+                insert_error = True
+                break   # Don't try to execute the insert if there's an error in the val_type
+            if val_type == 4 and value not in [0, 1]:    # Error in boolean value
+                error_message = f'[Error in boolean value in insert_measurement_group' \
+                                f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
+                                f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
+                                f' value = {value}, Source = {source}]'
+                insert_error = True
+                break    # Don't try to execute the insert if there's an error in the val_type
             try:
                 cur.execute("""
                             INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
                                                      measurementtype,participant,source,valtype,valinteger,valreal)
                             VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
                             """,
-                            (time, study, trial, measurement_group, group_instance, measurementType, participant,
+                            (time, study, trial, measurement_group, group_instance, measurement_type, participant,
                              source, val_type, val_integer, val_real))
-            except psycopg2.Error as e:
-                print("Error in insert_measurement_group: ", e.pgcode, "occurred.")
-                print("See https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE")
-                print(f'Study = {study},Trial = {trial}, Measurement Group = {measurement_group},'
-                      f'Measurement Type = {measurementType}, value = {value}, Source = {source}')
-            gid = cur.fetchone()[0]
-            if group_instance == 0:
-                group_instance = gid
-                # Now we know the id of the new measurement we can set the groupinstance field to be the same value for
-                # all measurements in the group
-                cur.execute("""
-                            UPDATE measurement SET groupinstance = %s
-                            WHERE id = %s;
-                            """,
-                            (group_instance, group_instance))  # set the groupinstance for the first measurement
-            if val_type == 2:  # it's a Text Value so make entry in textvalue table
-                cur.execute("""
-                            INSERT INTO textvalue(measurement,textval,study)
-                            VALUES (%s, %s, %s);
-                            """,
-                            (gid, value, study))
-            if val_type == 3:  # it's a DateTime value so make entry in datetimevalue table
-                cur.execute("""
-                            INSERT INTO datetimevalue(measurement,datetimeval,study)
-                            VALUES (%s, %s, %s);
-                            """,
-                            (gid, value, study))
-        self.dbConnection.commit()
-        return group_instance
+                gid = cur.fetchone()[0]   # get the id of the new entry in the measurement table
+                if group_instance == 0:   # this is the first measurement in the group to be inserted
+                    group_instance = gid  # set measurement group instance id to the id of the 1st measurement in group
+                    # Now we know the id of the new measurement, set the groupinstance field to be the same value for
+                    # all measurements in the group
+                    cur.execute("""
+                                UPDATE measurement SET groupinstance = %s
+                                WHERE id = %s;
+                                """,
+                                (group_instance, group_instance))  # set the groupinstance for the first measurement
+                if val_type == 2:  # it's a Text Value so make entry in textvalue table
+                    cur.execute("""
+                                INSERT INTO textvalue(measurement,textval,study)
+                                VALUES (%s, %s, %s);
+                                """,
+                                (gid, value, study))
+                if val_type == 3:  # it's a DateTime value so make entry in datetimevalue table
+                    cur.execute("""
+                                INSERT INTO datetimevalue(measurement,datetimeval,study)
+                                VALUES (%s, %s, %s);
+                                """,
+                                (gid, value, study))
+                error_message = ''
+            except psycopg2.Error as e:   # an error has occurred when inserting into the warehouse
+                error_message = f'[Error in insert_measurement_group. {e.pgcode} occurred: {e.pgerror}, ' \
+                                f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
+                                f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
+                                f' value = {value}, Source = {source}]'
+                insert_error = True
+                break  # ignore the remaining measurements to be inserted in teh measurement group
+        success = not insert_error
+        if success:     # no inserts in the measurement group raised an error
+            self.dbConnection.commit()     # commit the whole measurement group insert
+        else:
+            self.dbConnection.rollback()   # rollback the whole measurement group insert
+        if cursor is None:    # if the cursor was created in this function then close it
+            cur.close()
+        return success, group_instance, error_message
 
     def get_participant_by_id(self, study, participant):
         """

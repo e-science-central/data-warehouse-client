@@ -155,3 +155,4 @@ dmypy.json
 cython_debug/
 scratchpad.py
 *.pdf
+/data_warehouse_client/production-db-credentials-full-access.json

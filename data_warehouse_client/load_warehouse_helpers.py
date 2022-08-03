@@ -20,7 +20,7 @@ def process_message_group(mg_triples):
     """
     takes the result of attempting to load each field in a message group and processes it
     :param mg_triples: list of (successful load?, ((measurement_ttpe, valtype, value)))
-    :return: Success?, the list of (measurement_ttpe, valtype, value) triples, the error message list
+    :return: Success?, the list of (measurement_type, valtype, value) triples, the error message list
     """
     success_index = 0
     triple_index = 1
