@@ -19,8 +19,8 @@ import unidecode
 def process_message_group(mg_triples):
     """
     takes the result of attempting to load each field in a message group and processes it
-    :param mg_triples: list of (successful load?, ((measurement_ttpe, valtype, value)))
-    :return: Success?, the list of (measurement_type, valtype, value) triples, the error message list
+    :param mg_triples: [(Success?, [(measurement_type, valtype, value)], Error Message)]
+    :return: Success?, [(measurement_type, valtype, value)], [error messages]
     """
     success_index = 0
     triple_index = 1
