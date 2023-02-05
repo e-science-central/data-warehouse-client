@@ -13,6 +13,7 @@
 # limitations under the License.
 import datetime
 import psycopg2
+from data_warehouse_client import file_utils
 import type_definitions as typ
 from typing import Tuple, List, Optional
 
@@ -97,35 +98,32 @@ def insert_one_measurement(cur, study: int, participant: int, time: datetime, tr
     """
 
     try:  # try to insert the measurement
-        cur.execute("""
-                     INSERT INTO measurement (id,time,study,trial,measurementgroup,groupinstance,
-                                              measurementtype,participant,source,valtype,valinteger,valreal)
-                     VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                     """,
-                    (time, study, trial, measurement_group, measurement_group_instance_id,
-                     measurement_type, participant, source, val_type, val_integer, val_real))
+        mappings = {'time': time, 'study': study, 'trial': trial, 'measurementgroup': measurement_group,
+                    'groupinstance': measurement_group_instance_id, 'measurementype': measurement_type,
+                    'participant': participant, 'source': source, 'valtype': val_type,
+                    'valinteger': val_integer, 'valreal': val_real}
+        insert_measurement_sql = file_utils.process_sql_template("insert_measurements.sql", mappings)
+        cur.execute(insert_measurement_sql)
         measurement_id = cur.fetchone()[0]  # get the id of the new entry in the measurement table
         if first_measurement_in_group:  # this is the first measurement in the group to be inserted
-            group_instance_id = measurement_id  # set the groupinstance field to this value
-            cur.execute("""
-                         UPDATE measurement SET groupinstance = %s
-                         WHERE id = %s;
-                         """,
-                        (group_instance_id, group_instance_id))  # set the groupinstance id for 1st measurement
+            group_instance_id = measurement_id  # set the group instance id field to this value
+            update_group_instance_id_map = {'group_instance_id': group_instance_id, 'measurement_id': measurement_id}
+            update_group_instance_id_sql = file_utils.process_sql_template("update_measurement_group_instance_id.sql",
+                                                                           update_group_instance_id_map)
+            cur.execute(update_group_instance_id_sql)  # set the groupinstance id for 1st measurement
         else:  # keep using the measurement_group_instance_id passed to the function
             group_instance_id = measurement_group_instance_id
+
         if text_valued_type(val_type):  # it's a string or external (URI) so make entry in textvalue table
-            cur.execute("""
-                         INSERT INTO textvalue(measurement,textval,study)
-                         VALUES (%s, %s, %s);
-                         """,
-                        (measurement_id, value, study))
-        if datetime_valued_type(val_type):  # it's a DateTime value so make entry in datetimevalue table
-            cur.execute("""
-                         INSERT INTO datetimevalue(measurement,datetimeval,study)
-                         VALUES (%s, %s, %s);
-                         """,
-                        (measurement_id, value, study))
+            text_insert_map = {'measurement': measurement_id, 'textval': value, 'study': study}
+            insert_text_sql = file_utils.process_sql_template("insert_text.sql", text_insert_map)
+            cur.execute(insert_text_sql)
+
+        elif datetime_valued_type(val_type):  # it's a datetime value so make entry in datetimevalue table
+            datetime_insert_map = {'measurement': measurement_id, 'datetimeval': value, 'study': study}
+            insert_datetime_sql = file_utils.process_sql_template("insert_datetime.sql", datetime_insert_map)
+            cur.execute(insert_datetime_sql)
+
         return True, group_instance_id, ""   # successful insert
     except psycopg2.Error as e:  # an error has occurred when inserting into the warehouse
         error_message = f'[Error in insert_measurement_group. {e.pgcode} occurred: {e.pgerror}, ' \
