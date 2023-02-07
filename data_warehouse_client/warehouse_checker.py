@@ -65,6 +65,18 @@ def check_real_bounds_exist(dw, study):
     return dw.return_query_result(query)
 
 
+def check_datetime_bounds_exist(dw, study):
+    """
+    Find measurement types of bounded datetime value type without entry in boundsreal table
+    :param dw: handle to data warehouse
+    :param study: study id
+    :return: the ids and names of measurement types in the study that fail the test
+    """
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("bounded_datetime_measurement_types_without_bounds.sql", mappings)#
+    return dw.return_query_result(query)
+
+
 def check_valtype_matches_values(dw, study):
     """
     Find measurements that lack a value
@@ -110,6 +122,18 @@ def check_bounded_reals(dw, study):
     """
     mappings = {"study": str(study)}
     query = file_utils.process_sql_template("bounded_reals.sql", mappings)
+    return dw.return_query_result(query)
+
+
+def check_bounded_datetimes(dw, study):
+    """
+    Returns the ids of measurements that hold bounded reals that are out of range
+    :param dw: handle to data warehouse
+    :param study: study id
+    :return: the ids of measurements in the study that fail the test
+    """
+    mappings = {"study": str(study)}
+    query = file_utils.process_sql_template("bounded_datetimes.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -175,6 +199,14 @@ def print_check_warehouse(dw, study):
     print()
     print(f'-- Measurements declared as Bounded Reals whose value is outside of the bounds')
     r5 = check_bounded_reals(dw, study)
+    n_errors = len(r5)
+    if n_errors > 0:
+        print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
+    print(f'({n_errors} measurements)')
+
+    print()
+    print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds')
+    r5 = check_bounded_datetimes(dw, study)
     n_errors = len(r5)
     if n_errors > 0:
         print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
@@ -245,11 +277,20 @@ def print_check_warehouse_to_file(dw, study):
         r4 = check_bounded_integers(dw, study)
         n_errors = len(r4)
         if n_errors > 0:
-            print(tabulate(r4, headers=['Id', 'Value']), file=f)
+            print(tabulate(r4, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),
+                  file=f)
         print(f'({n_errors} measurements)\n', file=f)
 
         print(f'-- Measurements declared as Bounded Reals whose value is outside of the bounds', file=f)
         r5 = check_bounded_reals(dw, study)
+        n_errors = len(r5)
+        if n_errors > 0:
+            print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),
+                  file=f)
+        print(f'({n_errors} measurements)\n', file=f)
+
+        print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds', file=f)
+        r5 = check_bounded_datetimes(dw, study)
         n_errors = len(r5)
         if n_errors > 0:
             print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),

@@ -43,7 +43,8 @@ def field_holding_value(val_type):
     """
     val_types = {0: "measurement.valinteger", 1: "measurement.valreal", 2: "textvalue.textval",
                  3: "datetimevalue.datetimeval", 4: "measurement.valinteger", 5: "measurement.valinteger",
-                 6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal"}
+                 6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal",
+                 9: "datetimevalue.datetimeval", 10: "textvalue.textval"}
     try:
         return val_types[val_type]
     except KeyError:

@@ -19,7 +19,8 @@ import datetime
 
 def valuetype_to_name():
     return {0: 'Integer', 1: 'Real', 2: 'Text', 3: 'Date Time', 4: 'Boolean',
-            5: 'Nominal', 6: 'Ordinal', 7: 'Bounded Integer', 8: 'Bounded Real'}
+            5: 'Nominal', 6: 'Ordinal', 7: 'Bounded Integer', 8: 'Bounded Real',
+            9: 'Bounded Date Time', 10: 'External'}
 
 
 def mk_txt_report_file_name(f_dir, report_name, time_string):
@@ -52,6 +53,9 @@ def print_metadata_tables_to_file(dw, study_id):
                 elif mt_info['realbounds'] != {}:
                     lower_bound = mt_info['realbounds']['minval']
                     upper_bound = mt_info['realbounds']['maxval']
+                elif mt_info['datetimebounds'] != {}:
+                    lower_bound = mt_info['datetimebounds']['minval']
+                    upper_bound = mt_info['datetimebounds']['maxval']
                 if mt_info['units'] is None:
                     units_prnt = ""
                 else:
@@ -84,6 +88,9 @@ def print_metadata_tables(dw, study_id):
             elif mt_info['realbounds'] != {}:
                 lower_bound = mt_info['realbounds']['minval']
                 upper_bound = mt_info['realbounds']['maxval']
+            elif mt_info['datetimebounds'] != {}:
+                lower_bound = mt_info['datetimebounds']['minval']
+                upper_bound = mt_info['datetimebounds']['maxval']
             if mt_info['units'] is None:
                 units_prnt = ""
             else:
@@ -136,6 +143,12 @@ def create_measurement_group_info(dw, study):
     for [mt_id, minval, maxval] in r4:
         real_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
+    q4a = file_utils.process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
+    r4a = dw.return_query_result(q4a)
+    datetime_bounds = {}
+    for [mt_id, minval, maxval] in r4a:
+        datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
+
     q5 = file_utils.process_sql_template("get_measurement_groups_in_study.sql", {"study": study})
     r5 = dw.return_query_result(q5)
     mg_names = {}
@@ -167,13 +180,19 @@ def create_measurement_group_info(dw, study):
                 real_bounds_val = {}
             else:
                 real_bounds_val = realbounds
+            datetimebounds = datetime_bounds.get(ms_type)
+            if datetimebounds is None:
+                datetime_bounds_val = {}
+            else:
+                datetime_bounds_val = datetimebounds
             unitname = unit_name.get(ms_type)
             if unitname is None:
                 units_val = None
             else:
                 units_val = unitname
             mt_info = {'name': name, 'valtype': valtype, 'optional': mk_optional(optional), 'units': units_val,
-                       'categories': cat_val, 'intbounds': int_bounds_val, 'realbounds': real_bounds_val}
+                       'categories': cat_val, 'intbounds': int_bounds_val, 'realbounds': real_bounds_val,
+                       'datetimebounds': datetime_bounds_val}
             mt_info_all[ms_type] = mt_info
         mg_info[mg] = {'name': mg_names[mg], 'message_types': mt_info_all}
     return mg_info

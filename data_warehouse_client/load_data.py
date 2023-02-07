@@ -34,7 +34,7 @@ def get_converter_fn_from_data_name(data_name: str,
 
 def load_data(data_warehouse_handle, data, data_name: str, mapper_dict: Dict[str, Callable], study: int,
               trial: Optional[int] = None, participant: Optional[int] = None,
-              source=None, cursor=None) -> Tuple[bool, List[int], List[str]]:
+              source: Optional[int] = None, cursor=None) -> Tuple[bool, List[int], List[str]]:
     """
     Load one item of data into the datawarehouse.
     :param data_warehouse_handle: handle to access the data warehouse

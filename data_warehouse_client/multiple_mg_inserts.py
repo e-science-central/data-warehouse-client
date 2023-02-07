@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import datetime
 import psycopg2
 from data_warehouse_client import file_utils
@@ -22,7 +23,7 @@ def insert_measurement_group_instances(data_warehouse_handle, study: int,
                                        measurement_group_vals: List[Tuple[int, List[typ.ValueTriple]]],
                                        time: Optional[datetime] = None, trial: Optional[int] = None,
                                        participant: Optional[int] = None,
-                                       source=None, cursor=None) -> Tuple[bool, List[int], str]:
+                                       source: Optional[int] = None, cursor=None) -> Tuple[bool, List[int], str]:
     """
      Insert multiple measurement groups
      :param data_warehouse_handle:
@@ -210,7 +211,7 @@ def check_val_type(val_type: typ.ValType, value: typ.Value) -> Tuple[bool, Optio
 
 
 def insert_one_measurement_group_instance(cur, study: int, time, participant: int, trial: int,
-                                          measurement_group: int, source,
+                                          measurement_group: int, source:int,
                                           values: List[typ.ValueTriple]) -> Tuple[bool, Optional[int], str]:
     """
     insert one measurement group instance in the data warehouse

@@ -126,11 +126,3 @@ def plot_distributions(dw, study):
 #              else:
                     # print('No Measurements Recorded', file=f)
     pdf.close()
-
-
-# test it out
-#  dw_handle = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
-#
-#  study_id = 8
-#
-#  plot_distributions(dw_handle, study_id)
