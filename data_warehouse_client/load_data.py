@@ -33,8 +33,9 @@ def get_converter_fn_from_data_name(data_name: str,
 
 
 def load_data(data_warehouse_handle, data, data_name: str, mapper_dict: Dict[str, Callable], study: int,
-              trial: Optional[int] = None, participant: Optional[int] = None,
-              source: Optional[int] = None, cursor=None) -> Tuple[bool, List[int], List[str]]:
+              trial: Optional[typ.Trial] = None, participant: Optional[typ.Participant] = None,
+              source: Optional[typ.Source] = None,
+              cursor=None) -> Tuple[bool, List[typ.MeasurementGroupInstance], List[str]]:
     """
     Load one item of data into the datawarehouse.
     :param data_warehouse_handle: handle to access the data warehouse
@@ -79,21 +80,22 @@ def load_data(data_warehouse_handle, data, data_name: str, mapper_dict: Dict[str
         return False, [], [f'Loader Not Found for data named {data_name}']   # loader not found
 
 
-def process_measurement_groups(vals_to_load_in_mgs: List[int, List[Tuple[bool, List[typ.ValueTriple]]], List[str]]) -> \
-        Tuple[bool, List[Tuple[int, typ.ValueTriple]], List[str]]:
+def process_measurement_groups(
+        vals_to_load_in_mgs: List[Tuple[typ.MeasurementGroup, List[Tuple[bool, List[typ.ValueTriple]]], List[str]]]) ->\
+        Tuple[bool, List[Tuple[typ.MeasurementGroup, List[typ.ValueTriple]]], List[str]]:
     """
     takes the result of attempting to load each field in a message group and processes it
-    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, value)], Error Mess)])]
+    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
     :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
     """
-    successful = True
-    all_mgs_and_triples: List[Tuple[int, typ.ValueTriple]] = []
+    successful: bool = True
+    all_mgs_and_triples: List[Tuple[int, List[typ.ValueTriple]]] = []
     all_error_messages: List[str] = []
     for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
         success, triples, error_messages = load_warehouse_helpers.process_message_group(vals_to_load_in_mg)
         successful = successful and success
         all_mgs_and_triples = [(measurement_group_id, triples)] + all_mgs_and_triples
-        all_error_messages = [error_messages] + all_error_messages
+        all_error_messages = error_messages + all_error_messages
 
     combined_error_messages = list(filter(lambda s: s != "", all_error_messages))
     return successful, all_mgs_and_triples, combined_error_messages

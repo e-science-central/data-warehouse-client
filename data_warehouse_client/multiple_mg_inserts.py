@@ -15,15 +15,17 @@
 import datetime
 import psycopg2
 from data_warehouse_client import file_utils
-import type_definitions as typ
+import type_definitions as ty
 from typing import Tuple, List, Optional
 
 
-def insert_measurement_group_instances(data_warehouse_handle, study: int,
-                                       measurement_group_vals: List[Tuple[int, List[typ.ValueTriple]]],
-                                       time: Optional[datetime] = None, trial: Optional[int] = None,
-                                       participant: Optional[int] = None,
-                                       source: Optional[int] = None, cursor=None) -> Tuple[bool, List[int], str]:
+def insert_measurement_group_instances(data_warehouse_handle,
+                                       study: int,
+                                       measurement_group_vals: List[Tuple[int, List[ty.ValueTriple]]],
+                                       time: Optional[ty.DateTime] = None,
+                                       trial: Optional[ty.Trial] = None,
+                                       participant: Optional[ty.Participant] = None,
+                                       source: Optional[ty.Source] = None, cursor=None) -> Tuple[bool, List[int], str]:
     """
      Insert multiple measurement groups
      :param data_warehouse_handle:
@@ -74,11 +76,12 @@ def insert_measurement_group_instances(data_warehouse_handle, study: int,
         return False, [], error_message
 
 
-def insert_one_measurement(cur, study: int, participant: int, time: datetime, trial: int, measurement_group: int,
-                           measurement_type: int, source, value: typ.Value,
-                           val_type: typ.ValType, val_integer: Optional[int], val_real: Optional[float],
-                           measurement_group_instance_id: int,
-                           first_measurement_in_group: bool) -> Tuple[bool, Optional[int], str]:
+def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, time: datetime, trial: ty.Trial,
+                           measurement_group: ty.MeasurementGroup,
+                           measurement_type: ty.MeasurementType, source: ty.Source, value: ty.Value,
+                           val_type: ty.ValType, val_integer: Optional[int], val_real: Optional[float],
+                           measurement_group_instance_id: ty.MeasurementGroupInstance,
+                           first_measurement_in_group: bool) -> Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
     """
     insert a single measurement in the data warehouse
     :param cur: the database cursor used to insert the data
@@ -95,7 +98,7 @@ def insert_one_measurement(cur, study: int, participant: int, time: datetime, tr
     :param val_real: value to store in real field
     :param measurement_group_instance_id:  measurement_group_instance_id for this measurement
     :param first_measurement_in_group: is this the first measurement in the measurement group instance to be inserted?
-    :return:
+    :return: Success?, List of ids of Measurement Groups Inserted, Error
     """
 
     try:  # try to insert the measurement
@@ -134,53 +137,53 @@ def insert_one_measurement(cur, study: int, participant: int, time: datetime, tr
         return False, None, error_message   # insert has failed
 
 
-def text_valued_type(val_type: typ.ValType) -> bool:
+def text_valued_type(val_type: ty.ValType) -> bool:
     """
     is this a text type that will be stored in the text table?
     :param val_type: value type
     :return: true if string value
     """
-    string_type: typ.ValType = 2
-    external_type: typ.ValType = 10
+    string_type: ty.ValType = 2
+    external_type: ty.ValType = 10
     return val_type in [string_type, external_type]
 
 
-def datetime_valued_type(val_type: typ.ValType) -> bool:
+def datetime_valued_type(val_type: ty.ValType) -> bool:
     """
     is this a datetime type that will be stored in the datetime table?
     :param val_type: value type
     :return: true if datetime value
     """
-    datetime_type: typ.ValType = 3
-    bounded_datetime_type: typ.ValType = 9
+    datetime_type: ty.ValType = 3
+    bounded_datetime_type: ty.ValType = 9
     return val_type in [datetime_type, bounded_datetime_type]
 
 
-def integer_valued_type(val_type: typ.ValType) -> bool:
+def integer_valued_type(val_type: ty.ValType) -> bool:
     """
     is this an integer valued type that will be stored in the measurement table's integer field?
     :param val_type: value type
     :return: true if integer value
     """
-    integer_type: typ.ValType = 0
-    nominal_type: typ.ValType = 5
-    ordinal_type: typ.ValType = 6
-    bounded_int_type: typ.ValType = 7
+    integer_type: ty.ValType = 0
+    nominal_type: ty.ValType = 5
+    ordinal_type: ty.ValType = 6
+    bounded_int_type: ty.ValType = 7
     return val_type in [integer_type, nominal_type, ordinal_type, bounded_int_type]
 
 
-def real_valued_type(val_type: typ.ValType) -> bool:
+def real_valued_type(val_type: ty.ValType) -> bool:
     """
     is this a real valued type that will be stored in the measurement table's real field?
     :param val_type: value type
     :return: true if real value
     """
-    real_type: typ.ValType = 1
-    bounded_real_type: typ.ValType = 8
+    real_type: ty.ValType = 1
+    bounded_real_type: ty.ValType = 8
     return val_type in [real_type, bounded_real_type]
 
 
-def ok_bool_val(value: typ.Value) -> bool:
+def ok_bool_val(value: ty.Value) -> bool:
     """
     acceptable boolean value?
     :param value: value to be tested
@@ -189,14 +192,14 @@ def ok_bool_val(value: typ.Value) -> bool:
     return value in ['0', '1']
 
 
-def check_val_type(val_type: typ.ValType, value: typ.Value) -> Tuple[bool, Optional[int], Optional[float], str]:
+def check_val_type(val_type: ty.ValType, value: ty.Value) -> Tuple[bool, Optional[int], Optional[float], str]:
     """
     check valid value type, and set the entries in the measurement table's integer and real fields
     :param val_type: type of the value
     :param value: value to be inserted in the measurement table
     :return: success?, value to be stored in the integer field, value to be stored in the real field, error message
     """
-    boolean_type: typ.ValType = 4
+    boolean_type: ty.ValType = 4
 
     if val_type == boolean_type and not ok_bool_val(value):
         return False, None, None, '[Error in boolean value in insert_measurement_group'
@@ -211,8 +214,9 @@ def check_val_type(val_type: typ.ValType, value: typ.Value) -> Tuple[bool, Optio
 
 
 def insert_one_measurement_group_instance(cur, study: int, time, participant: int, trial: int,
-                                          measurement_group: int, source:int,
-                                          values: List[typ.ValueTriple]) -> Tuple[bool, Optional[int], str]:
+                                          measurement_group: ty.MeasurementGroup, source: ty.Source,
+                                          values: List[ty.ValueTriple]) ->\
+        Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
     """
     insert one measurement group instance in the data warehouse
     :param cur: cursor to use in accessing the data warehouse
@@ -227,7 +231,7 @@ def insert_one_measurement_group_instance(cur, study: int, time, participant: in
     """
     success: bool = True   # used to indicate the success or otherwise of the insertion
     first_measurement_in_group: bool = True  # used to ensure the same instance id is used for every measurement
-    measurement_group_instance_id: int = 0  # used temporarily for the first measurement inserted in the group instance
+    measurement_group_instance_id: ty.MeasurementGroupInstance = 0  # temp val for 1st measurement inserted in instance
     error_message: str = ""
 
     for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance

@@ -73,7 +73,7 @@ def check_datetime_bounds_exist(dw, study):
     :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_datetime_measurement_types_without_bounds.sql", mappings)#
+    query = file_utils.process_sql_template("bounded_datetime_measurement_types_without_bounds.sql", mappings)
     return dw.return_query_result(query)
 
 

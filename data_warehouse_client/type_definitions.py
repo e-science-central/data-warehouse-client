@@ -12,9 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeAlias, Union
+from typing import Union, Tuple
+import datetime
 
-MeasurementType: TypeAlias = int
-ValType: TypeAlias = int
-Value: TypeAlias = Union[int, float, str]
-ValueTriple: TypeAlias = (MeasurementType, ValType, Value)
+MeasurementType = int
+ValType = int
+Value = Union[int, float, str]
+ValueTriple = Tuple[MeasurementType, ValType, Value]
+
+Source = int
+Participant = int
+Trial = int
+MeasurementGroup = int
+MeasurementGroupInstance = int
+Study = int
+DateTime = datetime.datetime

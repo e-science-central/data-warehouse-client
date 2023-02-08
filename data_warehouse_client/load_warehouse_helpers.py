@@ -69,7 +69,7 @@ def type_names(val_type):
         return "integer"
     elif val_type in [1, 8]:
         return "real"
-    elif val_type == 3:
+    elif val_type in [3, 9]:
         return "datetime"
     elif val_type == 4:
         return "boolean"
@@ -103,48 +103,40 @@ def convert_posix_timestamp_to_string(val):
     return True, val.replace('T', ' ')
 
 
-def check_int(string):
+def check_int(val):
     """
     Check if a string represents an integer
-    :param string: string
-    :return: True if the string represents an integer
+    :param val: value
+    :return: True if the value represents an integer
     """
-    try:
-        val = int(string)
-        return True
-    except ValueError:
-        return False
+    return isinstance(val, int)
 
 
-def check_real(string):
+def check_real(val):
     """
     Check if a string represents a real
-    :param string: string
-    :return: True if the string represents a real
+    :param val: value
+    :return: True if the value represents a real
     """
-    try:
-        val = float(string)
-        return True
-    except ValueError:
-        return False
+    return isinstance(val, float)
 
 
-def check_datetime(string):
+def check_datetime(val):
     """
-    Check if a string represents a datetime
-    :param string: string
-    :return: True if the string represents a datetime
+    Check if a val represents a datetime
+    :param val: value
+    :return: True if the value represents a datetime
     """
-    return True  # need to add checking later
+    return isinstance(val, datetime)  # need to add checking later
 
 
-def check_boolean(string):
+def check_boolean(val):
     """
-    Check if a string represents a boolean
-    :param string: 
-    :return: True if the string represents a boolean
+    Check if a value represents a boolean
+    :param val:
+    :return: True if the val represents a boolean
     """
-    return string in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
+    return val in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
 
 
 def type_check(val, val_type):
@@ -158,7 +150,7 @@ def type_check(val, val_type):
         well_typed = check_int(val)
     elif val_type in [1, 8]:
         well_typed = check_real(val)
-    elif val_type == 3:
+    elif val_type in [3, 9]:
         well_typed = check_datetime(val)
     elif val_type == 4:
         well_typed = check_boolean(val)
@@ -789,6 +781,58 @@ def split_optional_enum(measurement_types, data, jfield, valuelist):
         return True, res, ""
     else:
         return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
+
+
+def mk_bounded_datetime(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple for a bounded datetime
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: Error free?, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    bounded_datetime_type = 9
+    return mk_basic_field(measurement_type, bounded_datetime_type, data, jfield)
+
+
+def mk_optional_bounded_datetime(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     Error free?, if field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned, Error message
+        """
+    bounded_datetime_type = 9
+    return mk_optional_basic_field(measurement_type, bounded_datetime_type, data, jfield)
+
+
+def mk_optional_external(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     Error free?, if field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned, Error message
+        """
+    external_type = 11
+    return mk_optional_basic_field(measurement_type, external_type, data, jfield)
+
+
+def mk_external(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple for an external reference
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    external_type = 11
+    return mk_basic_field(measurement_type, external_type, data, jfield)
 
 
 def get_converter_fn(event_type, mapper_dict):
