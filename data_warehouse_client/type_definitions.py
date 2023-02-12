@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Dict, Optional
 import datetime
 
 MeasurementType = int
 ValType = int
-Value = Union[int, float, str]
+DateTime = datetime.datetime
+Value = Union[int, float, str, DateTime]
 ValueTriple = Tuple[MeasurementType, ValType, Value]
 
 Source = int
@@ -26,5 +27,8 @@ Trial = int
 MeasurementGroup = int
 MeasurementGroupInstance = int
 Study = int
-DateTime = datetime.datetime
+
 LoadHelperResult = Tuple[bool, List[ValueTriple], str]
+LoaderResult = Tuple[List[Tuple[MeasurementGroup, List[LoadHelperResult]]], Optional[DateTime], Optional[Trial], Optional[Participant], Optional[Source]]
+
+DataToLoad = Dict[str, Union[Value, List['DataToLoad'], List[str]]]

@@ -20,8 +20,8 @@ from typing import Tuple, List, Optional
 
 
 def insert_measurement_group_instances(data_warehouse_handle,
-                                       study: int,
-                                       measurement_group_vals: List[Tuple[int, List[ty.ValueTriple]]],
+                                       study: ty.Study,
+                                       measurement_group_vals: List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]],
                                        time: Optional[ty.DateTime] = None,
                                        trial: Optional[ty.Trial] = None,
                                        participant: Optional[ty.Participant] = None,
@@ -76,7 +76,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
         return False, [], error_message
 
 
-def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, time: datetime, trial: ty.Trial,
+def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, time: ty.DateTime, trial: ty.Trial,
                            measurement_group: ty.MeasurementGroup,
                            measurement_type: ty.MeasurementType, source: ty.Source, value: ty.Value,
                            val_type: ty.ValType, val_integer: Optional[int], val_real: Optional[float],
@@ -189,7 +189,7 @@ def ok_bool_val(value: ty.Value) -> bool:
     :param value: value to be tested
     :return: true if acceptable boolean value
     """
-    return value in ['0', '1']
+    return value in [0, 1]
 
 
 def check_val_type(val_type: ty.ValType, value: ty.Value) -> Tuple[bool, Optional[int], Optional[float], str]:
@@ -202,7 +202,7 @@ def check_val_type(val_type: ty.ValType, value: ty.Value) -> Tuple[bool, Optiona
     boolean_type: ty.ValType = 4
 
     if val_type == boolean_type and not ok_bool_val(value):
-        return False, None, None, '[Error in boolean value in insert_measurement_group'
+        return False, None, None, '[Error in boolean value in insert_measurement_group.]'
     elif integer_valued_type(val_type):
         return True, value, None, ""   # all stored in integer field
     elif real_valued_type(val_type):  # the value must be stored in real field
@@ -210,11 +210,16 @@ def check_val_type(val_type: ty.ValType, value: ty.Value) -> Tuple[bool, Optiona
     elif text_valued_type(val_type) or datetime_valued_type(val_type):
         return True, None, None, ""  # the value must be stored in the text or datetime tables
     else:  # error in valType
-        return False, None, None, f'[Error in valType ({val_type}) in insert_measurement_group.'
+        return False, None, None, f'[Error in valType ({val_type}) in insert_measurement_group.]'
 
 
-def insert_one_measurement_group_instance(cur, study: int, time, participant: int, trial: int,
-                                          measurement_group: ty.MeasurementGroup, source: ty.Source,
+def insert_one_measurement_group_instance(cur,
+                                          study: ty.Study,
+                                          time: ty.DateTime,
+                                          participant: ty.Participant,
+                                          trial: ty.Trial,
+                                          measurement_group: ty.MeasurementGroup,
+                                          source: ty.Source,
                                           values: List[ty.ValueTriple]) ->\
         Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
     """

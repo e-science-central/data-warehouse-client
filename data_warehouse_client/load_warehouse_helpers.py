@@ -14,6 +14,9 @@
 import functools
 from datetime import datetime
 import unidecode
+import type_definitions as ty
+from typing import Tuple, List, Any, Callable, Optional, Dict
+import itertools
 
 
 def process_message_group(mg_triples):
@@ -33,6 +36,45 @@ def process_message_group(mg_triples):
         # remove empty strings from error messages
         error_messages = list(filter(lambda s: s != "", list(map(lambda r: r[error_message_index], mg_triples))))
         return False, [], error_messages  # return Failure, no triples and the list of error messages
+
+
+def process_measurement_groups(
+        vals_to_load_in_mgs: List[Tuple[ty.MeasurementGroup, List[Tuple[bool, List[ty.ValueTriple]]], List[str]]]) ->\
+        Tuple[bool, List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]], List[str]]:
+    """
+    takes the result of attempting to load each field in a message group and processes it
+    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
+    :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
+    """
+    successful: bool = True
+    all_mgs_and_triples: List[Tuple[int, List[ty.ValueTriple]]] = []
+    all_error_messages: List[str] = []
+    for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
+        success, triples, error_messages = process_message_group(vals_to_load_in_mg)
+        successful = successful and success
+        all_mgs_and_triples = [(measurement_group_id, triples)] + all_mgs_and_triples
+        all_error_messages = error_messages + all_error_messages
+
+    combined_error_messages = list(filter(lambda s: s != "", all_error_messages))
+    if successful:
+        return True, all_mgs_and_triples, combined_error_messages
+    else:
+        return False, [], combined_error_messages
+
+
+def get_loader_from_data_name(
+        data_name: str,
+        mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]) -> Tuple[bool, Optional[Callable]]:
+    """
+    map from the data_name to the mapper function
+    :param data_name: the measurement_type_in_the_json
+    :param mapper: the dictionary that maps from the event_type to the mapper function
+    :return: (boolean indicating if the data_name is found, mapper function
+    """
+    if data_name in mapper:
+        return True, mapper[data_name]
+    else:
+        return False, None
 
 
 def missing_mandatory_type_error_message(jfield, measurement_type, data):
@@ -56,7 +98,7 @@ def wrong_type_error_message(jfield, measurement_type, data, val_type):
     :return: error message
     """
     return f'Wrong type for {jfield} (measurement type {measurement_type}) in data {data};' +\
-           f'it should be a {type_names(val_type)} (value type {val_type})'
+           f' it should be a {type_names(val_type)} (value type {val_type})'
 
 
 def type_names(val_type):
@@ -105,7 +147,7 @@ def convert_posix_timestamp_to_string(val):
 
 def check_int(val):
     """
-    Check if a string represents an integer
+    Check if a value represents an integer
     :param val: value
     :return: True if the value represents an integer
     """
@@ -114,16 +156,16 @@ def check_int(val):
 
 def check_real(val):
     """
-    Check if a string represents a real
+    Check if a value represents a real. Note that
     :param val: value
-    :return: True if the value represents a real
+    :return: True if the value represents a real; note that reals must contain a decimal point (e.g. 1 is not a real)
     """
     return isinstance(val, float)
 
 
 def check_datetime(val):
     """
-    Check if a val represents a datetime
+    Check if a value represents a datetime
     :param val: value
     :return: True if the value represents a datetime
     """
@@ -520,9 +562,9 @@ def mk_boolean(measurement_type, data, jfield):
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool_string(False)
+            val01 = mk_bool(False)
         else:
-            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     else:
         return False, [], error_messsage
@@ -542,9 +584,9 @@ def mk_optional_boolean(measurement_type, data, jfield):
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool_string(False)
+            val01 = mk_bool(False)
         else:
-            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     elif exists and not well_formed:
         return False, [], error_message
@@ -725,6 +767,18 @@ def mk_bool_string(bool_val):
         return '0'
 
 
+def mk_bool(bool_val: bool) -> int:
+    """
+    COnvert a boolean value to an integer ready to be inserted into the measurement table
+    :param bool_val: boolean
+    :return: integer (0 = False, 1 = True)
+    """
+    if bool_val:
+        return 1
+    else:
+        return 0
+
+
 def split_enum(measurement_types, data, jfield, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
@@ -748,7 +802,7 @@ def split_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return False, [], f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}'
@@ -777,7 +831,7 @@ def split_optional_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
@@ -833,6 +887,66 @@ def mk_external(measurement_type, data, jfield):
     """
     external_type = 11
     return mk_basic_field(measurement_type, external_type, data, jfield)
+
+
+def concat(ls: List[List[Any]]) -> List[Any]:
+    """
+    Concatenate a list of lists
+    :param ls:  list of lists
+    :return: list
+    """
+    return list(itertools.chain.from_iterable(ls))
+
+
+def load_a_list(data: ty.DataToLoad,
+                jfield: str,
+                loader: Callable[[ty.DataToLoad], ty.LoaderResult],
+                mg_id: ty.MeasurementGroup, optional: bool) ->\
+        List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+    """
+    Load a list within data loaded into the
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :param optional: True if the list is optional
+    :return: list of measurement group ids and the values to load into them
+    """
+    list_val: List[ty.DataToLoad] = data.get(jfield)   # extract the list field
+    if list_val is None:  # missing field
+        if optional:
+            return []    # if optional then it's not an error
+        else:   # there should have been a list, so flag an error
+            return [(mg_id, [(False, [], f'Missing mandatory field {jfield} (list expected) in data: {data}')])]
+    else:  # the list exists
+        # create a single, combined list and ignore the optional fields (Time, Trial, Participant, Source)
+        return concat(list(map(lambda e: loader(e)[0], list_val)))
+
+
+def load_list(data: ty.DataToLoad, jfield: str, loader: Callable[[ty.DataToLoad], ty.LoaderResult],
+              mg_id: ty.MeasurementGroup) -> List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+    """
+
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :return: list of measurement group ids and the values to load into them
+    """
+    return load_a_list(data, jfield, loader, mg_id, False)
+
+
+def load_optional_list(data: ty.DataToLoad, jfield: str, loader, mg_id: ty.MeasurementGroup) ->\
+        List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+    """
+
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :return: list of measurement group ids and the values to load into them
+    """
+    return load_a_list(data, jfield, loader, mg_id, True)
 
 
 def get_converter_fn(event_type, mapper_dict):
