@@ -17,6 +17,7 @@ import unidecode
 import type_definitions as ty
 from typing import Tuple, List, Any, Callable, Optional, Dict
 import itertools
+import type_checks
 
 
 def process_message_group(mg_triples):
@@ -66,7 +67,7 @@ def get_loader_from_data_name(
         data_name: str,
         mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]) -> Tuple[bool, Optional[Callable]]:
     """
-    map from the data_name to the mapper function
+    map from the data_name to the mapper function - used when process_measurement_groups is the way to ingest data
     :param data_name: the measurement_type_in_the_json
     :param mapper: the dictionary that maps from the event_type to the mapper function
     :return: (boolean indicating if the data_name is found, mapper function
@@ -125,7 +126,7 @@ def convert_epoch_in_ms_to_string(timestamp_in_ms):
     :param timestamp_in_ms: epoch timestamp in ms
     :return: well_formed, date time string
     """
-    if check_int(timestamp_in_ms):
+    if type_checks.check_int(timestamp_in_ms):
         timestamp_in_sec = int(timestamp_in_ms)//1000
         try:
             time_val = datetime.fromtimestamp(timestamp_in_sec)
@@ -143,62 +144,6 @@ def convert_posix_timestamp_to_string(val):
     :return: well_formed, date time string
     """
     return True, val.replace('T', ' ')
-
-
-def check_int(val):
-    """
-    Check if a value represents an integer
-    :param val: value
-    :return: True if the value represents an integer
-    """
-    return isinstance(val, int)
-
-
-def check_real(val):
-    """
-    Check if a value represents a real. Note that
-    :param val: value
-    :return: True if the value represents a real; note that reals must contain a decimal point (e.g. 1 is not a real)
-    """
-    return isinstance(val, float)
-
-
-def check_datetime(val):
-    """
-    Check if a value represents a datetime
-    :param val: value
-    :return: True if the value represents a datetime
-    """
-    return isinstance(val, datetime)  # need to add checking later
-
-
-def check_boolean(val):
-    """
-    Check if a value represents a boolean
-    :param val:
-    :return: True if the val represents a boolean
-    """
-    return val in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
-
-
-def type_check(val, val_type):
-    """
-    Check the type of a value retrieved from a field
-    :param val: value
-    :param val_type: the type is should be
-    :return: True if the value has the right type, False otherwise
-    """
-    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
-        well_typed = check_int(val)
-    elif val_type in [1, 8]:
-        well_typed = check_real(val)
-    elif val_type in [3, 9]:
-        well_typed = check_datetime(val)
-    elif val_type == 4:
-        well_typed = check_boolean(val)
-    else:
-        well_typed = True  # everything else is a string
-    return well_typed
 
 
 def get_and_check_value(measurement_type, val_type, data, jfield, optional):
@@ -221,7 +166,7 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
         well_typed = False  # default
     else:
         exists = True
-        well_typed = type_check(val, val_type)
+        well_typed = type_checks.type_check(val, val_type)
     if (not optional) and (not exists):
         error_message = missing_mandatory_type_error_message(jfield, measurement_type, data)
     elif exists and (not well_typed):
@@ -701,6 +646,86 @@ def mk_ordinal_from_id(measurement_type, data, jfield):
     :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
     return mk_basic_field(measurement_type, 6, data, jfield)
+
+
+def mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, val_type, optional: bool):
+    """
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :param val_type: 5 for nominal, 6 for ordinal
+    :param optional: boolean that is True if the id is optional
+    :return: Success?, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    if optional:
+        success, result, error_message = mk_optional_basic_field(measurement_type, val_type, data, jfield)
+    else:
+        success, result, error_message = mk_basic_field(measurement_type, val_type, data, jfield)
+    if success and result != []:  # need to check if value returned is in bounds
+        (measurement_type_returned, val_type_returned, value) = result[0]  # pick the triple from the singleton list
+        if value in id_list:
+            return True, result, ""  # acceptable id value
+        else:  # id is out of range
+            return False, [], f'Category id error for {jfield} (measurement type {measurement_type}) in data: {data}'
+    else:  # in all other cases just return without a check (as no result was returned)
+        return success, result, error_message
+
+
+def mk_nominal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 5, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    nominal_valtype: int = 5
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, nominal_valtype, False)
+
+
+def mk_optional_nominal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 5, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    nominal_valtype: int = 5
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, nominal_valtype, True)
+
+
+def mk_ordinal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 6, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    ordinal_valtype: int = 6
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, ordinal_valtype, False)
+
+
+def mk_optional_ordinal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make an odinal triple (measurement_type, 6, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    ordinal_valtype: int = 6
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, ordinal_valtype, True)
 
 
 def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
