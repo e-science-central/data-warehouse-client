@@ -19,7 +19,7 @@ from typing import Tuple, List, Optional, Dict, Callable
 
 
 def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
-              mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]], study: int,
+              mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]], study: ty.Study,
               trial: Optional[ty.Trial] = None, participant: Optional[ty.Participant] = None,
               source: Optional[ty.Source] = None,
               cursor=None) -> Tuple[bool, List[ty.MeasurementGroupInstance], List[str]]:

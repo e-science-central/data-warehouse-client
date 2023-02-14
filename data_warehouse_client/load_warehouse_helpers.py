@@ -525,7 +525,7 @@ def mk_optional_boolean(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 4, data, jfield, True)
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
@@ -898,7 +898,7 @@ def mk_optional_external(measurement_type, data, jfield):
         :return                     Error free?, if field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned, Error message
         """
-    external_type = 11
+    external_type = 10
     return mk_optional_basic_field(measurement_type, external_type, data, jfield)
 
 
@@ -910,7 +910,7 @@ def mk_external(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
-    external_type = 11
+    external_type = 10
     return mk_basic_field(measurement_type, external_type, data, jfield)
 
 

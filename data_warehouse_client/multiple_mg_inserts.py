@@ -17,7 +17,7 @@ import psycopg2
 from data_warehouse_client import file_utils
 import type_definitions as ty
 import type_checks
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
 import check_bounded_values
 
 
@@ -25,9 +25,10 @@ def insert_measurement_group_instances(data_warehouse_handle,
                                        study: ty.Study,
                                        measurement_group_vals: List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]],
                                        check_bounds: bool,
-                                       int_bounds=None,
-                                       real_bounds=None,
-                                       datetime_bounds=None,
+                                       int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
+                                       real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
+                                       datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
+                                       category_id_map: Dict[ty.MeasurementType, List[int]] = None,
                                        time: Optional[ty.DateTime] = None,
                                        trial: Optional[ty.Trial] = None,
                                        participant: Optional[ty.Participant] = None,
@@ -43,6 +44,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
      :param int_bounds: dictionary holding integer bounds
      :param real_bounds: dictionary holding real bounds
      :param datetime_bounds: dictionary holding datetime bounds
+     :param category_id_map: dictionary holding valid category ids for each measurement type
      :param time: the time the measurement was taken. It defaults to the current time
      :param trial: optional trial id
      :param participant: optional participant id
@@ -65,6 +67,8 @@ def insert_measurement_group_instances(data_warehouse_handle,
             real_bounds = check_bounded_values.get_bounded_real_bounds(data_warehouse_handle, study)
         if datetime_bounds is None:
             datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
+        if category_id_map is None:
+            category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
 
     success: bool = True  # used to indicate if all the inserts succeeded
     error_message: str = ''
@@ -78,7 +82,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
         #  try to insert one measurement group instance
         success, measurement_group_instance_id, error_message = insert_one_measurement_group_instance(
             cur, study, time, participant, trial, measurement_group, source, values,
-            check_bounds, int_bounds, real_bounds, datetime_bounds)
+            check_bounds, int_bounds, real_bounds, datetime_bounds, category_id_map)
         if success:  # if successfully inserted add id to list of message group instances inserted
             message_group_instance_ids = [measurement_group_instance_id] + message_group_instance_ids
         else:  # the whole set of inserts should fail if one fails, so stop trying if this is the case
@@ -230,9 +234,10 @@ def insert_one_measurement_group_instance(cur,
                                           source: ty.Source,
                                           values: List[ty.ValueTriple],
                                           check_bounds: bool,
-                                          int_bounds,
-                                          real_bounds,
-                                          datetime_bounds,
+                                          int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
+                                          real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
+                                          datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
+                                          category_id_map: Dict[ty.MeasurementType, List[int]]
                                           ) ->\
         Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
     """
@@ -249,6 +254,7 @@ def insert_one_measurement_group_instance(cur,
     :param int_bounds: dictionary holding integer bounds
     :param real_bounds: dictionary holding real bounds
     :param datetime_bounds: dictionary holding datetime bounds
+    :param category_id_map: dictionary holding valid category ids for each measurement type
     :return: success?, id of the measurement group instance, error messages
     """
     success: bool = True   # used to indicate the success or otherwise of the insertion
@@ -258,7 +264,7 @@ def insert_one_measurement_group_instance(cur,
 
     for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
         success, error_mess = type_checks.check_value_type(val_type, value, measurement_type, check_bounds,
-                                                           int_bounds, real_bounds, datetime_bounds)
+                                                           int_bounds, real_bounds, datetime_bounds, category_id_map)
         if not success:  # problem with the type of a measurement
             error_message: str = error_mess +\
                                  f' Study = {study}, Participant = {participant}, Trial = {trial}, ' \

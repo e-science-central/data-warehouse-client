@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from datetime import datetime
 import type_definitions as ty
-from typing import Tuple, List, Optional
+from typing import Tuple, Any
 import check_bounded_values as cbv
 
-def check_int(val):
+
+def check_int(val: Any) -> bool:
     """
     Check if a value represents an integer
     :param val: value
@@ -25,7 +27,7 @@ def check_int(val):
     return isinstance(val, int)
 
 
-def check_real(val):
+def check_real(val: Any) -> bool:
     """
     Check if a value represents a real. Note that
     :param val: value
@@ -34,7 +36,7 @@ def check_real(val):
     return isinstance(val, float)
 
 
-def check_datetime(val):
+def check_datetime(val: Any) -> bool:
     """
     Check if a value represents a datetime
     :param val: value
@@ -43,7 +45,7 @@ def check_datetime(val):
     return isinstance(val, datetime)
 
 
-def check_string(val):
+def check_string(val: Any) -> bool:
     """
     Check if a value represents a string
     :param val: value
@@ -52,7 +54,7 @@ def check_string(val):
     return isinstance(val, str)
 
 
-def check_boolean(val):
+def check_boolean(val: Any) -> bool:
     """
     Check if a value represents a boolean
     :param val:
@@ -70,7 +72,7 @@ def ok_bool_val(value: ty.Value) -> bool:
     return value in [0, 1]
 
 
-def type_check(val, val_type):
+def type_check(val: Any, val_type: ty.ValType):
     """
     Check the type of a value retrieved from a field. Used by the load warehouse helpers
     :param val: value
@@ -89,21 +91,24 @@ def type_check(val, val_type):
     bounded_datetime_type: ty.ValType = 9
     external_type: ty.ValType = 10
 
-    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
+    if val_type in [integer_type, nominal_type, ordinal_type, bounded_int_type]:
         well_typed = check_int(val)
-    elif val_type in [1, 8]:
+    elif val_type in [real_type, bounded_real_type]:
         well_typed = check_real(val)
-    elif val_type in [3, 9]:
+    elif val_type in [datetime_type, bounded_datetime_type]:
         well_typed = check_datetime(val)
-    elif val_type == 4:
+    elif val_type == boolean_type:
         well_typed = check_boolean(val)
-    else:
-        well_typed = True  # everything else is a string
+    elif val_type in [string_type, external_type]:
+        well_typed = check_string(val)
+    else:  # wrong valtype
+        well_typed = False
     return well_typed
 
 
 def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty.MeasurementType,
-                     check_bounds: bool, int_bounds=None, real_bounds=None, datetime_bounds=None) -> Tuple[bool, str]:
+                     check_bounds: bool, int_bounds=None, real_bounds=None, datetime_bounds=None,
+                     category_id_map=None) -> Tuple[bool, str]:
     """
     check valid value type, and set the entries in the measurement table's integer and real fields
     :param val_type: type of the value
@@ -113,6 +118,7 @@ def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty
     :param int_bounds: dictionary holding integer bounds
     :param real_bounds: dictionary holding real bounds
     :param datetime_bounds: dictionary holding datetime bounds
+    :param category_id_map: dictionary holding valid category ids for each measurement type
     :return: success?, error message
     """
     integer_type: ty.ValType = 0
@@ -153,15 +159,19 @@ def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty
         else:
             return False, 'Type Error: not a boolean'
     elif val_type == nominal_type:
-        if check_int(value):
+        if check_int(value) and \
+                (not check_bounds or
+                 (check_bounds and cbv.check_category_id(category_id_map, measurement_type, value))):
             return True, ''
         else:
-            return False, 'Type Error: not a nominal'
+            return False, 'Type Error: not a valid nominal id'
     elif val_type == ordinal_type:
-        if check_int(value):
+        if check_int(value) and \
+                (not check_bounds or
+                 (check_bounds and cbv.check_category_id(category_id_map, measurement_type, value))):
             return True, ''
         else:
-            return False, 'Type Error: not an ordinal'
+            return False, 'Type Error: not a valid ordinal id'
     elif val_type == bounded_int_type:
         if check_int(value) and \
                 (not check_bounds or
