@@ -84,8 +84,8 @@ def form_measurement_group(dw, study, measurement_group, rows):
         mts = dw.get_type_ids_in_measurement_group(study, measurement_group)  # get all the measurement type ids
         # Create a dictionary entry for each instance holding the common values and the measurement values
         result_values = {}  # the measurement values
-        result_common = {}  # the common values returned for each instance: instance, time of 1st measurement,
-                            #                                               study, participant, measurementGroup, trial
+        result_common = {}  # the common values returned for each instance:
+                            # instance, time of 1st measurement, study, participant, measurementGroup, trial
         for (row_id, time, study_id, participant, mt, tn, mg, mgi, trial, val_type, value) in rows:
             if not (mgi in result_common):           # it's a new instance
                 result_common.update({mgi: [mgi, time, study, participant, mg, trial]})  # store the common values

@@ -22,9 +22,9 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 
 
-from data_warehouse_client import file_utils
-from data_warehouse_client import data_warehouse
-from data_warehouse_client import print_io
+import file_utils
+import data_warehouse
+import print_io
 from tabulate import tabulate
 import datetime
 

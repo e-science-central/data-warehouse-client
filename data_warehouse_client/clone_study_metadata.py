@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from data_warehouse_client import table_writer_json
+import table_writer_json
 
 
 def clone_study_metadata(dw, source_study_id, dest_study_id):

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from data_warehouse_client import file_utils
+import file_utils
 import type_definitions as ty
 from typing import List, Dict
 

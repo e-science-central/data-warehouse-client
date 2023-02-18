@@ -17,9 +17,8 @@ import sys
 import psycopg2
 import json
 from more_itertools import intersperse
-from data_warehouse_client import transform_result_format
-
-from data_warehouse_client import file_utils
+import transform_result_format
+import file_utils
 
 
 def get_participants_in_result(results):
@@ -477,7 +476,7 @@ class DataWarehouse:
         return self.return_query_result(query)
 
     def insert_measurement_group(self, study, measurement_group, values,
-                                 time=-1, trial=None, participant=None, source=None, cursor=None):  # None maps to SQL NULL
+                                 time=-1, trial=None, participant=None, source=None, cursor=None):
         """
          Insert one measurement group
          :param study: the study id

@@ -15,7 +15,7 @@
 # For the experimental redesign of the measurement table
 
 import psycopg2
-from data_warehouse_client import file_utils
+import file_utils
 import type_definitions as ty
 import type_checks
 from typing import Tuple, List, Optional, Dict

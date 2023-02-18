@@ -16,8 +16,8 @@
 # Summarise a study
 
 from tabulate import tabulate
-from data_warehouse_client import print_io
-from data_warehouse_client import csv_io
+import print_io
+import csv_io
 import datetime
 
 
