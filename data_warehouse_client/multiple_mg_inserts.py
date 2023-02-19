@@ -17,8 +17,8 @@ import psycopg2
 import file_utils
 import type_definitions as ty
 import type_checks
-from typing import Tuple, List, Optional, Dict
 import check_bounded_values
+from typing import Tuple, List, Optional, Dict
 
 
 def insert_measurement_group_instances(data_warehouse_handle,
@@ -44,7 +44,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
      :param int_bounds: dictionary holding integer bounds
      :param real_bounds: dictionary holding real bounds
      :param datetime_bounds: dictionary holding datetime bounds
-     :param category_id_map: dictionary holding valid category ids for each measurement type
+     :param category_id_map: dictionary holding mapping from category ids to names for each measurement type
      :param time: the time the measurement was taken. It defaults to the current time
      :param trial: optional trial id
      :param participant: optional participant id
@@ -69,6 +69,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
             datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
         if category_id_map is None:
             category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
+
 
     success: bool = True  # used to indicate if all the inserts succeeded
     error_message: str = ''

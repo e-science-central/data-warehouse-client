@@ -14,7 +14,7 @@
 
 from datetime import datetime
 import type_definitions as ty
-from typing import Tuple, Any
+from typing import Tuple, Any, List, Dict
 import check_bounded_values as cbv
 
 
@@ -107,14 +107,15 @@ def type_check(val: Any, val_type: ty.ValType):
 
 
 def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty.MeasurementType,
-                     check_bounds: bool, int_bounds=None, real_bounds=None, datetime_bounds=None,
-                     category_id_map=None) -> Tuple[bool, str]:
+                     int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
+                     real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
+                     datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
+                     category_id_map: Dict[ty.MeasurementType, List[int]] = None) -> Tuple[bool, str]:
     """
     check valid value type, and set the entries in the measurement table's integer and real fields
     :param val_type: type of the value
     :param value: value to be inserted in the measurement table
     :param measurement_type: measurement type
-    :param check_bounds: bool,
     :param int_bounds: dictionary holding integer bounds
     :param real_bounds: dictionary holding real bounds
     :param datetime_bounds: dictionary holding datetime bounds
@@ -159,37 +160,27 @@ def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty
         else:
             return False, 'Type Error: not a boolean'
     elif val_type == nominal_type:
-        if check_int(value) and \
-                (not check_bounds or
-                 (check_bounds and cbv.check_category_id(category_id_map, measurement_type, value))):
+        if check_int(value) and cbv.check_category_id(category_id_map, measurement_type, value):
             return True, ''
         else:
             return False, 'Type Error: not a valid nominal id'
     elif val_type == ordinal_type:
-        if check_int(value) and \
-                (not check_bounds or
-                 (check_bounds and cbv.check_category_id(category_id_map, measurement_type, value))):
+        if check_int(value) and cbv.check_category_id(category_id_map, measurement_type, value):
             return True, ''
         else:
             return False, 'Type Error: not a valid ordinal id'
     elif val_type == bounded_int_type:
-        if check_int(value) and \
-                (not check_bounds or
-                 (check_bounds and cbv.check_bounded_int_in_bounds(int_bounds, measurement_type, value))):
+        if check_int(value) and cbv.check_bounded_int_in_bounds(int_bounds, measurement_type, value):
             return True, ''
         else:
             return False, 'Type Error: bounded integer out of range'
     elif val_type == bounded_real_type:
-        if check_real(value) and \
-                (not check_bounds or
-                 (check_bounds and cbv.check_bounded_real_in_bounds(real_bounds, measurement_type, value))):
+        if check_real(value) and cbv.check_bounded_real_in_bounds(real_bounds, measurement_type, value):
             return True, ''
         else:
             return False, 'Type Error: bounded real out of range'
     elif val_type == bounded_datetime_type:
-        if check_datetime(value) and \
-                (not check_bounds or
-                 (check_bounds and cbv.check_bounded_datetime_in_bounds(datetime_bounds, measurement_type, value))):
+        if check_datetime(value) and cbv.check_bounded_datetime_in_bounds(datetime_bounds, measurement_type, value):
             return True, ''
         else:
             return False, 'Type Error: bounded datetime out of range'

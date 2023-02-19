@@ -33,3 +33,5 @@ LoaderResult = Tuple[List[Tuple[MeasurementGroup, List[LoadHelperResult]]],
                      Optional[DateTime], Optional[Trial], Optional[Participant], Optional[Source]]
 
 DataToLoad = Dict[str, Union[Value, List['DataToLoad'], List[str]]]
+
+FieldValue = Union[Value, List['DataToLoad'], List[str]]

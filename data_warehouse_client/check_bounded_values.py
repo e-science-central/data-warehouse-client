@@ -35,6 +35,24 @@ def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]
     return categories
 
 
+def get_inverse_category_ids_map(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, int]]:
+    """
+     Create a dirctory to map from Measurement Type Id to a Dictionary mapping from Category Name to Category Id
+     :param dw: data warehouse handle
+     :param study: Study id
+     :return: Dictionary mapping from Measurement Type to a Dictionary mapping from Category Name to Category Id
+     """
+    query = file_utils.process_sql_template("get_categories_in_study.sql", {"study": study})
+    res = dw.return_query_result(query)  # execute query - returns list of [mt_id, name, id]
+    categories: Dict[ty.MeasurementType, Dict[str, id]] = {}  # a dictionary to hold the mt -> category id mapping
+    for [mt_id, category_id, category_name] in res:
+        if mt_id in categories:  # the mt is already in the dictionary
+            categories[mt_id][category_name] = category_id  # add the category id to the existing list of ids
+        else:   # make a new entry
+            categories[mt_id] = {category_name: category_id}  # make the first entry in the dictionary
+    return categories
+
+
 def get_bounded_int_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, int]]:
     """
     Create a dictionary to map from Measurement Type Id to lower and upper bounds for bounded integers

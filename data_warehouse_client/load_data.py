@@ -16,10 +16,16 @@ import multiple_mg_inserts
 import load_warehouse_helpers as lwh
 import type_definitions as ty
 from typing import Tuple, List, Optional, Dict, Callable
+import check_bounded_values
 
 
 def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
               mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]], study: ty.Study,
+              int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
+              real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
+              datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
+              category_id_map: Dict[ty.MeasurementType, List[int]] = None,
+              inverse_category_id_map: Dict[ty.MeasurementType, Dict[str, int]] = None,
               trial: Optional[ty.Trial] = None, participant: Optional[ty.Participant] = None,
               source: Optional[ty.Source] = None,
               cursor=None) -> Tuple[bool, List[ty.MeasurementGroupInstance], List[str]]:
@@ -30,12 +36,28 @@ def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
     :param data_name: the name of the type of data: this is used to find the correct loader
     :param mapper: a dictionary mapping from data_name to the loader function
     :param study: study id in the data warehouse
+    :param int_bounds: dictionary holding integer bounds
+    :param real_bounds: dictionary holding real bounds
+    :param datetime_bounds: dictionary holding datetime bounds
+    :param category_id_map: dictionary holding mapping from category ids to names for each measurement type
+    :param inverse_category_id_map: dictionary holding mapping from category names to ids
     :param trial: optional trial id
     :param participant: optional participant id (must already be in the warehouse)
     :param source: optional source id
     :param cursor: an optional cursor for accessing the datawarehouse
     :return: Success?, list of measurement group instance ids for the measurement groups inserted, error messages
     """
+
+    if int_bounds is None:
+        int_bounds = check_bounded_values.get_bounded_int_bounds(data_warehouse_handle, study)
+    if real_bounds is None:
+        real_bounds = check_bounded_values.get_bounded_real_bounds(data_warehouse_handle, study)
+    if datetime_bounds is None:
+        datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
+    if category_id_map is None:
+        category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
+    if inverse_category_id_map is None:
+        inverse_category_id_map = check_bounded_values.get_inverse_category_ids_map(data_warehouse_handle, study)
     loader_found, loader = lwh.get_loader_from_data_name(data_name, mapper)  # find the loader function
     if loader_found:
         # get the (message group id, value triples) and other (optional values) to use in the loading
