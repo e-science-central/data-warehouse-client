@@ -1,5 +1,5 @@
 SELECT
-  category.id,
+  category.categoryid,
   category.measurementtype
 FROM
   category

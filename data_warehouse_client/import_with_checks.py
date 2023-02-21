@@ -16,6 +16,50 @@ import type_definitions as ty
 from typing import Tuple, List, Optional, Dict, Callable, Any
 import type_checks
 import itertools
+import functools
+
+
+def process_measurement_group(mg_triples):
+    """
+    takes the result of attempting to load each field in a message group and processes it
+    :param mg_triples: [(Success?, [(measurement_type, valtype, value)], Error Message)]
+    :return: Success?, [(measurement_type, valtype, value)], [error messages]
+    """
+    success_index = 0
+    triple_index = 1
+    error_message_index = 2
+    oks = list(map(lambda r: r[success_index], mg_triples))     # get a list of the bools indicating success
+    triples = list(map(lambda r: r[triple_index], mg_triples))  # get a list of the triples
+    if functools.reduce(lambda x, y: x and y, oks):             # if all value in message group are correct....
+        return True, sum(triples, []), []                       # return Success, the triples, empty error message list
+    else:                                                       # there was a problem with >0 fields in message group
+        # remove empty strings from error messages
+        error_messages = list(filter(lambda s: s != "", list(map(lambda r: r[error_message_index], mg_triples))))
+        return False, [], error_messages  # return Failure, no triples and the list of error messages
+
+
+def process_measurement_groups(
+        vals_to_load_in_mgs: List[Tuple[ty.MeasurementGroup, List[Tuple[bool, List[ty.ValueTriple]]], List[str]]]) ->\
+        Tuple[bool, List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]], List[str]]:
+    """
+    takes the result of attempting to load each field in a message group and processes it
+    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
+    :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
+    """
+    successful: bool = True
+    all_mgs_and_triples: List[Tuple[int, List[ty.ValueTriple]]] = []
+    all_error_messages: List[str] = []
+    for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
+        success, triples, error_messages = process_measurement_group(vals_to_load_in_mg)
+        successful = successful and success
+        all_mgs_and_triples = [(measurement_group_id, triples)] + all_mgs_and_triples
+        all_error_messages = error_messages + all_error_messages
+
+    combined_error_messages = list(filter(lambda s: s != "", all_error_messages))
+    if successful:
+        return True, all_mgs_and_triples, combined_error_messages
+    else:
+        return False, [], combined_error_messages
 
 
 def concat(ls: List[List[Any]]) -> List[Any]:
@@ -78,26 +122,35 @@ def get_category_id_from_value(val: str, measurement_type: ty.MeasurementType,
             return True, cat_id
 
 
-def invert_dictionary(my_dict: Dict[Any, Any]) -> Dict[Any, Any]:
-    return {val: key for (key, val) in my_dict.items()}
-
-
 def type_names(val_type: ty.ValType) -> str:
     """
     return the name of a type represented by a number
     :param val_type: int representing a type in the warehouse
     :return: name
     """
-    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
+    integer_type: ty.ValType = 0
+    real_type: ty.ValType = 1
+    string_type: ty.ValType = 2
+    datetime_type: ty.ValType = 3
+    boolean_type: ty.ValType = 4
+    nominal_type: ty.ValType = 5
+    ordinal_type: ty.ValType = 6
+    bounded_int_type: ty.ValType = 7
+    bounded_real_type: ty.ValType = 8
+    bounded_datetime_type: ty.ValType = 9
+    external_type: ty.ValType = 10
+    if val_type in [integer_type, nominal_type, ordinal_type, bounded_int_type]:
         return "integer"
-    elif val_type in [1, 8]:
+    elif val_type in [real_type, bounded_real_type]:
         return "real"
-    elif val_type in [3, 9]:
+    elif val_type in [datetime_type, bounded_datetime_type]:
         return "datetime"
-    elif val_type == 4:
+    elif val_type == boolean_type:
         return "boolean"
-    else:
+    elif val_type in [string_type, external_type]:
         return "string"
+    else:
+        print('type-names error')
 
 
 def get_field(data: ty.DataToLoad, jfield: str) -> Tuple[bool, ty.FieldValue]:
@@ -116,7 +169,7 @@ def make_field(measurement_type: ty.MeasurementType, val_type: ty.ValType, data:
                int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
                real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
                datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
-               category_id_map: Dict[ty.MeasurementType, Dict[int, str]] = None) ->\
+               category_id_map: Dict[ty.MeasurementType, List[int]] = None) ->\
         Tuple[bool, List[ty.ValueTriple], str]:
     """
     check if a value exists, and if so its type
@@ -255,7 +308,7 @@ def load_optional_boolean(measurement_type: ty.MeasurementType, data: ty.DataToL
 
 
 def load_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                         category_id_map: Dict[ty.MeasurementType, Dict[int, str]]) -> \
+                         category_id_map: Dict[ty.MeasurementType, List[int]]) -> \
         Tuple[bool, List[ty.ValueTriple], str]:
     nominal_type: ty.ValType = 5
     return make_field(measurement_type, nominal_type, data, jfield, False,
@@ -263,7 +316,7 @@ def load_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLo
 
 
 def load_optional_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                                  category_id_map: Dict[ty.MeasurementType, Dict[int, str]]) -> \
+                                  category_id_map: Dict[ty.MeasurementType, List[int]]) -> \
         Tuple[bool, List[ty.ValueTriple], str]:
     nominal_type: ty.ValType = 5
     return make_field(measurement_type, nominal_type, data, jfield, True,
@@ -271,7 +324,7 @@ def load_optional_nominal_from_id(measurement_type: ty.MeasurementType, data: ty
 
 
 def load_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                         category_id_map: Dict[ty.MeasurementType, Dict[int, str]]) -> \
+                         category_id_map: Dict[ty.MeasurementType, List[int]]) -> \
         Tuple[bool, List[ty.ValueTriple], str]:
     ordinal_type: ty.ValType = 6
     return make_field(measurement_type, ordinal_type, data, jfield, False,
@@ -279,7 +332,7 @@ def load_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLo
 
 
 def load_optional_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                                  category_id_map: Dict[ty.MeasurementType, Dict[int, str]]) -> \
+                                  category_id_map: Dict[ty.MeasurementType, List[int]]) -> \
         Tuple[bool, List[ty.ValueTriple], str]:
     ordinal_type: ty.ValType = 6
     return make_field(measurement_type, ordinal_type, data, jfield, True,
