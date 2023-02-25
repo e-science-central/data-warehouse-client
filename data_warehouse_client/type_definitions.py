@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Tuple, List, Dict, Optional
+from typing import Union, Tuple, List, Dict, Optional, Callable
 from datetime import datetime
 
 MeasurementType = int
@@ -35,3 +35,11 @@ LoaderResult = Tuple[List[Tuple[MeasurementGroup, List[LoadHelperResult]]],
 DataToLoad = Dict[str, Union[Value, List['DataToLoad'], List[str]]]
 
 FieldValue = Union[Value, List['DataToLoad'], List[str]]
+
+IntBounds = Dict[MeasurementType, Dict[str, int]]
+RealBounds = Dict[MeasurementType, Dict[str, float]]
+DateTimeBounds = Dict[MeasurementType, Dict[str, DateTime]]
+CategoryIds = Dict[MeasurementType, List[int]]
+CategoryValues = Dict[MeasurementType, Dict[str, int]]
+
+Loader = Callable[[DataToLoad, IntBounds, RealBounds, DateTimeBounds, CategoryIds, CategoryValues], LoaderResult]

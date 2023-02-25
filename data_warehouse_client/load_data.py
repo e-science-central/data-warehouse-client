@@ -19,14 +19,18 @@ from typing import Tuple, List, Optional, Dict, Callable
 import check_bounded_values
 
 
-def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
-              mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]], study: ty.Study,
+def load_data(data_warehouse_handle,
+              data: ty.DataToLoad,
+              data_name: str,
+              mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]],
+              study: ty.Study,
               int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
               real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
               datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
               category_id_map: Dict[ty.MeasurementType, List[int]] = None,
-              inverse_category_id_map: Dict[ty.MeasurementType, Dict[str, int]] = None,
-              trial: Optional[ty.Trial] = None, participant: Optional[ty.Participant] = None,
+              category_value_map: Dict[ty.MeasurementType, Dict[str, int]] = None,
+              trial: Optional[ty.Trial] = None,
+              participant: Optional[ty.Participant] = None,
               source: Optional[ty.Source] = None,
               cursor=None) -> Tuple[bool, List[ty.MeasurementGroupInstance], List[str]]:
     """
@@ -40,7 +44,7 @@ def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
     :param real_bounds: dictionary holding real bounds
     :param datetime_bounds: dictionary holding datetime bounds
     :param category_id_map: dictionary holding mapping from category ids to names for each measurement type
-    :param inverse_category_id_map: dictionary holding mapping from category names to ids
+    :param category_value_map: dictionary holding mapping from category names to ids
     :param trial: optional trial id
     :param participant: optional participant id (must already be in the warehouse)
     :param source: optional source id
@@ -56,12 +60,13 @@ def load_data(data_warehouse_handle, data: ty.DataToLoad, data_name: str,
         datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
     if category_id_map is None:
         category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
-    if inverse_category_id_map is None:
-        inverse_category_id_map = check_bounded_values.get_inverse_category_ids_map(data_warehouse_handle, study)
+    if category_value_map is None:
+        category_value_map = check_bounded_values.get_inverse_category_ids_map(data_warehouse_handle, study)
     loader_found, loader = lwh.get_loader_from_data_name(data_name, mapper)  # find the loader function
     if loader_found:
         # get the (message group id, value triples) and other (optional values) to use in the loading
-        vals_to_load_in_msgs, time_from_data, trial_from_data, participant_from_data, source_from_data = loader(data)
+        vals_to_load_in_msgs, time_from_data, trial_from_data, participant_from_data, source_from_data = \
+            loader(data, int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
         # check for errors in the values
         successful, all_mgs_and_triples, combined_error_messages = lwh.process_measurement_groups(vals_to_load_in_msgs)
         if successful:  # all values are ready to be inserted into the data warehouse

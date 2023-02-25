@@ -24,7 +24,6 @@ from typing import Tuple, List, Optional, Dict
 def insert_measurement_group_instances(data_warehouse_handle,
                                        study: ty.Study,
                                        measurement_group_vals: List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]],
-                                       check_bounds: bool,
                                        int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
                                        real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
                                        datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
@@ -40,7 +39,6 @@ def insert_measurement_group_instances(data_warehouse_handle,
      :param data_warehouse_handle:
      :param study: the study id
      :param measurement_group_vals: a list of the values for each mg in the form: [(mg, [(measType,valType,value)])]
-     :param check_bounds: bool,
      :param int_bounds: dictionary holding integer bounds
      :param real_bounds: dictionary holding real bounds
      :param datetime_bounds: dictionary holding datetime bounds
@@ -60,16 +58,14 @@ def insert_measurement_group_instances(data_warehouse_handle,
     else:  # used the cursor passed to this function
         cur = cursor
 
-    if check_bounds:
-        if int_bounds is None:
-            int_bounds = check_bounded_values.get_bounded_int_bounds(data_warehouse_handle, study)
-        if real_bounds is None:
-            real_bounds = check_bounded_values.get_bounded_real_bounds(data_warehouse_handle, study)
-        if datetime_bounds is None:
-            datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
-        if category_id_map is None:
-            category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
-
+    if int_bounds is None:
+        int_bounds = check_bounded_values.get_bounded_int_bounds(data_warehouse_handle, study)
+    if real_bounds is None:
+        real_bounds = check_bounded_values.get_bounded_real_bounds(data_warehouse_handle, study)
+    if datetime_bounds is None:
+        datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
+    if category_id_map is None:
+        category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
 
     success: bool = True  # used to indicate if all the inserts succeeded
     error_message: str = ''
@@ -83,7 +79,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
         #  try to insert one measurement group instance
         success, measurement_group_instance_id, error_message = insert_one_measurement_group_instance(
             cur, study, time, participant, trial, measurement_group, source, values,
-            check_bounds, int_bounds, real_bounds, datetime_bounds, category_id_map)
+            int_bounds, real_bounds, datetime_bounds, category_id_map)
         if success:  # if successfully inserted add id to list of message group instances inserted
             message_group_instance_ids = [measurement_group_instance_id] + message_group_instance_ids
         else:  # the whole set of inserts should fail if one fails, so stop trying if this is the case
@@ -127,12 +123,22 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
     :return: Success?, List of ids of Measurement Groups Inserted, Error
     """
     try:  # try to insert the measurement
-        mappings = {'time': time, 'study': study, 'trial': trial, 'measurementgroup': measurement_group,
-                    'groupinstance': measurement_group_instance_id, 'measurementype': measurement_type,
-                    'participant': participant, 'source': source, 'valtype': val_type,
-                    'valinteger': val_integer, 'valreal': val_real}
-        insert_measurement_sql = file_utils.process_sql_template("insert_measurement.sql", mappings)
-        cur.execute(insert_measurement_sql)
+        # mappings = {'time': time, 'study': study, 'trial': trial, 'measurementgroup': measurement_group,
+        #             'groupinstance': measurement_group_instance_id, 'measurementtype': measurement_type,
+        #             'participant': participant, 'source': source, 'valtype': val_type,
+        #             'valinteger': val_integer, 'valreal': val_real}
+        # insert_measurement_sql = file_utils.process_sql_template("insert_measurement.sql", mappings)
+        #  cur.execute(insert_measurement_sql)
+
+        # cur.mogrify("SELECT %s, %s, %s;", (dt, dt.date(), dt.time()))
+        sql_template = "INSERT INTO measurement" + \
+                       " (id,time,study,trial,measurementgroup,groupinstance,measurementtype" + \
+                       ",participant,source,valtype,valinteger,valreal) " + \
+                       "VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;"
+        insert_sql = cur.mogrify(sql_template, (time, study, trial, measurement_group, measurement_group_instance_id,
+                                                measurement_type, participant, source, val_type, val_integer, val_real))
+        cur.execute(insert_sql)
+
         measurement_id = cur.fetchone()[0]  # get the id of the new entry in the measurement table
         if first_measurement_in_group:  # this is the first measurement in the group to be inserted
             group_instance_id = measurement_id  # set the group instance id field to this value
@@ -144,18 +150,23 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
             group_instance_id = measurement_group_instance_id
 
         if text_valued_type(val_type):  # it's a string or external (URI) so make entry in textvalue table
-            text_insert_map = {'measurement': measurement_id, 'textval': value, 'study': study}
-            insert_text_sql = file_utils.process_sql_template("insert_text.sql", text_insert_map)
-            cur.execute(insert_text_sql)
+            # text_insert_map = {'measurement': measurement_id, 'textval': value, 'study': study}
+            # insert_text_sql = file_utils.process_sql_template("insert_text.sql", text_insert_map)
+            # print(insert_text_sql)
+            # cur.execute(insert_text_sql)
+            cur.execute("INSERT INTO textvalue(measurement,textval,study) VALUES (%s, %s, %s);",
+                        (measurement_id, value, study))
 
         elif datetime_valued_type(val_type):  # it's a datetime value so make entry in datetimevalue table
-            datetime_insert_map = {'measurement': measurement_id, 'datetimeval': value, 'study': study}
-            insert_datetime_sql = file_utils.process_sql_template("insert_datetime.sql", datetime_insert_map)
-            cur.execute(insert_datetime_sql)
+            # datetime_insert_map = {'measurement': measurement_id, 'datetimeval': value, 'study': study}
+            # insert_datetime_sql = file_utils.process_sql_template("insert_datetime.sql", datetime_insert_map)
+            insert_datetime_template = "INSERT INTO datetimevalue(measurement,datetimeval,study) VALUES (%s, %s, %s);"
+            insert_datetime = cur.mogrify(insert_datetime_template, (measurement_id, value, study))
+            cur.execute(insert_datetime)
 
         return True, group_instance_id, ""   # successful insert
     except psycopg2.Error as e:  # an error has occurred when inserting into the warehouse
-        error_message = f'[Error in insert_measurement_group. {e.pgcode} occurred: {e.pgerror}, ' \
+        error_message = f'[Error in insert_one_measurement. {e.pgcode} occurred: {e.pgerror}, ' \
                         f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
                         f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
                         f' value = {value}, Source = {source}]'
@@ -234,7 +245,6 @@ def insert_one_measurement_group_instance(cur,
                                           measurement_group: ty.MeasurementGroup,
                                           source: ty.Source,
                                           values: List[ty.ValueTriple],
-                                          check_bounds: bool,
                                           int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
                                           real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
                                           datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
@@ -251,7 +261,6 @@ def insert_one_measurement_group_instance(cur,
     :param measurement_group: measurement group id
     :param source: source id
     :param values: list of value triples to be inserted (measurement_type, val_type, value)
-    :param check_bounds: bool,
     :param int_bounds: dictionary holding integer bounds
     :param real_bounds: dictionary holding real bounds
     :param datetime_bounds: dictionary holding datetime bounds
@@ -264,7 +273,7 @@ def insert_one_measurement_group_instance(cur,
     error_message: str = ""
 
     for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
-        success, error_mess = type_checks.check_value_type(val_type, value, measurement_type, check_bounds,
+        success, error_mess = type_checks.check_value_type(val_type, value, measurement_type,
                                                            int_bounds, real_bounds, datetime_bounds, category_id_map)
         if not success:  # problem with the type of a measurement
             error_message: str = error_mess +\
