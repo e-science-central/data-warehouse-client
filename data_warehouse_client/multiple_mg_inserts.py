@@ -289,7 +289,7 @@ def insert_one_measurement_group_instance(cur,
                 val_type, val_integer, val_real, measurement_group_instance_id, first_measurement_in_group)
             if succesful_insert:
                 if first_measurement_in_group:
-                    measurement_group_instance_id = mgi  # use this instance id for every measurement
+                    measurement_group_instance_id = mgi  # use this as the instance id for every measurement
                     first_measurement_in_group = False
             else:
                 error_message = error_msg

@@ -33,43 +33,8 @@ def walking_test_1() -> ty.DataToLoad:
         'Turn_Start_SO': 12.5,
         'Turn_End_SO': 123.3,
         'Turn_Duration_SO': 103.0,
-        'Turn_PeakAngularVelocity_SO': 99.9   # ,
-        # 'drugs': [{'drug': 'asprin', 'dose': 10}, {'drug': 'calpol', 'dose': 30}, {'drug': 'clopidogrel', 'dose': 20}]
-    }
-    return data
-
-
-@pytest.fixture()
-def ex3a() -> ty.DataToLoad:
-    data = {
-        'Int': 4,
-        'Real': 5.45,
-        'Text': 'Test Data',
-        'DateTime': datetime.datetime.now(),
-        'Bool': 1,
-        'Nominal': 'First',
-        'NominalfromId': 1,
-        'Ordinal': 'Two',
-        'OrdinalfromId': 2,
-        'BoundedInt': 5,
-        'BoundedReal': 8.6,
-        'BoundedDateTime': datetime.datetime.now(),
-        'External': 'External Data',
-        'SplitEnum': ['1st', '3rd'],
-        'OptionalInt': 4,
-        'OptionalReal': 5.45,
-        'OptionalText': 'Test Data',
-        'OptionalDateTime': datetime.datetime.now(),
-        'OptionalBool': 1,
-        'OptionalNominal': 'First',
-        'OptionalNominalfromId': 1,
-        'OptionalOrdinal': 'One',
-        'OptionalOrdinalfromId': 2,
-        'OptionalBoundedInt': 5,
-        'OptionalBoundedReal': 8.6,
-        'OptionalBoundedDateTime': datetime.datetime.now(),
-        'OptionalExternal': 'External Data',
-        'OptionalSplitEnum': ['Deux', 'Trois']
+        'Turn_PeakAngularVelocity_SO': 99.9,
+        'drugs': [{'drug': 'asprin', 'dose': 10}, {'drug': 'calpol', 'dose': 30}, {'drug': 'clopidogrel', 'dose': 20}]
     }
     return data
 
@@ -116,13 +81,13 @@ def test_all_example() -> ty.DataToLoad:
     return data
 
 
-def test_all_loader(data: ty.DataToLoad,
-                    int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                    real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                    datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                    category_id_map: Dict[ty.MeasurementType, List[int]],
-                    category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
-                    ) -> ty.LoaderResult:
+def check_all_loader(data: ty.DataToLoad,
+                     int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
+                     real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
+                     datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
+                     category_id_map: Dict[ty.MeasurementType, List[int]],
+                     category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
+                     ) -> ty.LoaderResult:
     test_all_mg_id: ty.MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
@@ -153,9 +118,8 @@ def test_all_loader(data: ty.DataToLoad,
                  iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', real_bounds),
                  iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', datetime_bounds),
                  iwc.load_optional_external(438, data, 'OptionalExternal'),
-                 iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])
-                ])
-                ]
+                 iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
+                 )]
     drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
         iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id,
                       int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
@@ -209,7 +173,8 @@ def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
     to add the measurements into the Data Warehouse
     """
     return {
-        "walking_and_drugs": walking_and_drugs_loader
+        "walking_and_drugs": walking_and_drugs_loader   # ,
+        #  "test_all": test_all_loader
     }
 
 
@@ -218,9 +183,9 @@ def test_study():
     return 999
 
 
-def test_walking_test_1(mk_dw_handle, walking_test1, fn_mapper, test_study):
-    assert load_data.load_data(mk_dw_handle(), walking_test1, "walking_and_drugs", fn_mapper, test_study)[0]
+def test_walking_test_1(mk_dw_handle, walking_test_1, fn_mapper, test_study):
+    assert load_data.load_data(mk_dw_handle(), walking_test_1, "walking_and_drugs", fn_mapper, test_study)[0]
 
 
-def test_walking_test_2(mk_dw_handle, walking_test1, fn_mapper, test_study):
-    assert load_data.load_data(mk_dw_handle(), walking_test1, "walking_and_drugs", fn_mapper, test_study)[0]
+# def test_all(mk_dw_handle, test_all_example, fn_mapper, test_study):
+#    assert load_data.load_data(mk_dw_handle(), test_all_example, "test_all", fn_mapper, test_study)[0]

@@ -27,7 +27,7 @@ def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]
     query = file_utils.process_sql_template("get_category_ids.sql", {"study": study})  # query to get mts and cat ids
     res = dw.return_query_result(query)  # execture query
     categories: Dict[ty.MeasurementType, List[int]] = {}  # a dictionary to hold the mt -> category id mapping
-    for [mt_id, category_id] in res:
+    for [category_id, mt_id] in res:
         if mt_id in categories:  # the mt is already in the dictionary
             categories[mt_id] = [category_id] + categories[mt_id]  # add the category id to the existing list of ids
         else:   # make a new entry
