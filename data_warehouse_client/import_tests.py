@@ -40,9 +40,20 @@ def walking_test_1() -> ty.DataToLoad:
 
 
 @pytest.fixture()
-def mk_dw_handle():
-    data_warehouse_handle = data_warehouse.DataWarehouse("fenland-dw-credentials-full-access.json", "osm_dw")
-    return data_warehouse_handle
+def credentials_file_name():
+    return "fenland-dw-credentials-full-access.json"
+
+
+@pytest.fixture()
+def database_name():
+    return "osm_dw"
+
+
+@pytest.fixture()
+def mk_dw_handle(credentials_file_name, database_name):
+    #    data_warehouse_handle = data_warehouse.DataWarehouse("fenland-dw-credentials-full-access.json", "osm_dw")
+    data_warehouse_handle = data_warehouse.DataWarehouse(credentials_file_name, database_name)
+    yield data_warehouse_handle
 
 
 @pytest.fixture()
@@ -184,7 +195,7 @@ def test_study():
 
 
 def test_walking_test_1(mk_dw_handle, walking_test_1, fn_mapper, test_study):
-    assert load_data.load_data(mk_dw_handle(), walking_test_1, "walking_and_drugs", fn_mapper, test_study)[0]
+    assert load_data.load_data(mk_dw_handle, walking_test_1, "walking_and_drugs", fn_mapper, test_study)[0]
 
 
 # def test_all(mk_dw_handle, test_all_example, fn_mapper, test_study):
