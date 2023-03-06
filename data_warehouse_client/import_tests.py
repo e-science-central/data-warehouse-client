@@ -13,12 +13,15 @@
 # limitations under the License.
 
 import pytest
+
+import type_checks
 import type_definitions as ty
 from typing import Dict, Callable, List, Tuple
 import datetime
 import import_with_checks as iwc
 import load_data
 import data_warehouse
+import check_bounded_values
 
 # see https://realpython.com/pytest-python-testing/
 
@@ -64,9 +67,9 @@ def test_all_example() -> ty.DataToLoad:
         'Text': 'Test Data',
         'DateTime': datetime.datetime.now(),
         'Bool': 1,
-        'Nominal': 'First',
+        'NominalfromValue': 'First',
         'NominalfromId': 1,
-        'Ordinal': 'Two',
+        'OrdinalfromValue': 'Second',
         'OrdinalfromId': 2,
         'BoundedInt': 5,
         'BoundedReal': 8.6,
@@ -78,10 +81,10 @@ def test_all_example() -> ty.DataToLoad:
         'OptionalText': 'Test Data',
         'OptionalDateTime': datetime.datetime.now(),
         'OptionalBool': 1,
-        'OptionalNominal': 'First',
+        'OptionalNominalfromValue': 'First',
         'OptionalNominalfromId': 1,
-        'OptionalOrdinal': 'One',
-        'OptionalOrdinalfromId': 2,
+        'OptionalOrdinalfromValue': 'Second',
+        'OptionalOrdinalfromId': 1,
         'OptionalBoundedInt': 5,
         'OptionalBoundedReal': 8.6,
         'OptionalBoundedDateTime': datetime.datetime.now(),
@@ -121,9 +124,9 @@ def check_all_loader(data: ty.DataToLoad,
                  iwc.load_optional_string(428, data, 'OptionalText'),
                  iwc.load_optional_datetime(429, data, 'OptionalDateTime'),
                  iwc.load_optional_boolean(430, data, 'OptionalBool'),
-                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominal', category_value_map),
+                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', category_value_map),
                  iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', category_id_map),
-                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinal', category_value_map),
+                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', category_value_map),
                  iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', category_id_map),
                  iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', int_bounds),
                  iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', real_bounds),
@@ -184,8 +187,8 @@ def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
     to add the measurements into the Data Warehouse
     """
     return {
-        "walking_and_drugs": walking_and_drugs_loader   # ,
-        #  "test_all": test_all_loader
+        "walking_and_drugs": walking_and_drugs_loader,
+        "test_all": check_all_loader
     }
 
 
@@ -193,10 +196,84 @@ def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
 def test_study():
     return 999
 
-
+"""
 def test_walking_test_1(mk_dw_handle, walking_test_1, fn_mapper, test_study):
-    assert load_data.load_data(mk_dw_handle, walking_test_1, "walking_and_drugs", fn_mapper, test_study)[0]
+    success, mgis, error_msg = load_data.load_data(mk_dw_handle, walking_test_1,
+                                                   "walking_and_drugs", fn_mapper, test_study)
+    assert success
 
 
-# def test_all(mk_dw_handle, test_all_example, fn_mapper, test_study):
-#    assert load_data.load_data(mk_dw_handle(), test_all_example, "test_all", fn_mapper, test_study)[0]
+def test_all_loader(mk_dw_handle, test_all_example, fn_mapper, test_study):
+    success, mgis, error_msg = load_data.load_data(mk_dw_handle, test_all_example, "test_all", fn_mapper, test_study)
+    assert success
+"""
+
+
+@pytest.mark.parametrize("json_key, json_value, measurement_type, expected_result", [
+    ('Int', 4, 410, True),
+    ('Real', 5.45, 411, True),
+    ('Text', 'Test Data', 412, True),
+    ('DateTime', datetime.datetime.now(), 413, False),
+    ('Bool', 1, 414, True),
+    ('NominalfromValue', 'First', 415, True),
+    ('NominalfromId', 1, 416, True),
+    ('OrdinalfromValue', 'Second', 417, True),
+    ('OrdinalfromId', 2, 418, True),
+    ('BoundedInt', 5, 419, True),
+    ('BoundedReal', 8.6, 420, True),
+    ('BoundedDateTime', datetime.datetime.now(), 421, False),
+    ('External', 'External Data', 422, True),
+    ('SplitEnum1', True, 423, True),
+    ('SplitEnum2', False, 424, True),
+    ('SplitEnum3', True, 425, True),
+    ('OptionalInt', 4, 426, True),
+    ('OptionalReal', 5.45, 427, True),
+    ('OptionalText', 'Test Data', 428, True),
+    ('OptionalDateTime', datetime.datetime.now(), 429, False),
+    ('OptionalBool', 1, 430, True),
+    ('OptionalNominalfromValue', 'First', 431, True),
+    ('OptionalNominalfromId', 1, 432, True),
+    ('OptionalOrdinalfromValue', 'Second', 433, True),
+    ('OptionalOrdinalfromId', 1, 434, True),
+    ('OptionalBoundedInt', 5, 435, True),
+    ('OptionalBoundedReal', 8.6, 436, True),
+    ('OptionalBoundedDateTime', datetime.datetime.now(), 437, False),
+    ('OptionalExternal', 'External Data', 438, True),
+    ('OptionalSplitEnum1', False, 439, True),
+    ('OptionalSplitEnum2', True, 440, True),
+    ('OptionalSplitEnum3', True, 441, True)
+])
+def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
+                  json_key, json_value, measurement_type, expected_result):
+    dw_handle = mk_dw_handle
+    category_value_to_id_map = check_bounded_values.get_inverse_category_ids_map(dw_handle, test_study)
+    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
+    if success:
+        main_mgi = mgis[0]
+        test_all_mg_id: ty.MeasurementGroup = 50
+        #  retrieve value from warehouse
+        measurements = dw_handle.get_measurements(test_study, measurement_type=measurement_type,
+                                                  measurement_group=test_all_mg_id, group_instance=main_mgi)
+        if len(measurements) == 1:
+            ident, time, study, participant, measurement_type, type_name, measurement_group,\
+                group_instance, trial, val_type, value = measurements[0]
+            if val_type == 4:   # is a boolean type
+                if value == 'T':
+                    value_to_compare = True
+                else:
+                    value_to_compare = False
+            elif val_type in [5, 6]:
+                if type_checks.check_int(json_value):
+                    value_to_compare = category_value_to_id_map[measurement_type][value]
+                else:
+                    value_to_compare = json_value
+            else:
+                value_to_compare = value
+            if expected_result:
+                assert value_to_compare == json_value
+            else:
+                assert value_to_compare != json_value
+        else:
+            assert False  # Did not return 1 result (may be 0 or >1)
+    else:
+        assert False

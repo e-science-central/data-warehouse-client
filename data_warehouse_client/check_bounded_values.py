@@ -37,7 +37,7 @@ def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]
 
 def get_inverse_category_ids_map(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, int]]:
     """
-     Create a dirctory to map from Measurement Type Id to a Dictionary mapping from Category Name to Category Id
+     Create a directory to map from Measurement Type Id to a Dictionary mapping from Category Name to Category Id
      :param dw: data warehouse handle
      :param study: Study id
      :return: Dictionary mapping from Measurement Type to a Dictionary mapping from Category Name to Category Id
