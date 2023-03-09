@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 import type_checks
 import type_definitions as ty
 from typing import Dict, Callable, List, Tuple
@@ -196,6 +195,7 @@ def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
 def test_study():
     return 999
 
+
 """
 def test_walking_test_1(mk_dw_handle, walking_test_1, fn_mapper, test_study):
     success, mgis, error_msg = load_data.load_data(mk_dw_handle, walking_test_1,
@@ -270,10 +270,10 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
             else:
                 value_to_compare = value
             if expected_result:
-                assert value_to_compare == json_value
+                assert value_to_compare == json_value and len(mgis) > 0 and error_msg == [""]
             else:
-                assert value_to_compare != json_value
+                assert value_to_compare != json_value and len(mgis) > 0 and error_msg == [""]
         else:
             assert False  # Did not return 1 result (may be 0 or >1)
     else:
-        assert False
+        assert len(mgis) == 0 and len(error_msg) > 0
