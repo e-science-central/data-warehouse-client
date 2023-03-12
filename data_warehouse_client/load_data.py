@@ -87,7 +87,7 @@ def load_data(data_warehouse_handle,
                 multiple_mg_inserts.insert_measurement_group_instances(
                     data_warehouse_handle, study, all_mgs_and_triples,
                     time_from_data, trial_to_insert, participant_to_insert, source_to_insert, cursor)
-            return successful_inserts, message_group_instance_ids, [error_message]
+            return successful_inserts, message_group_instance_ids, error_message
         else:
             return False, [], combined_error_messages   # error(s) detected in the data to be loaded
     else:

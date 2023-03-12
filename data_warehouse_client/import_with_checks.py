@@ -629,8 +629,8 @@ def load_a_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad,
     :param value_list: the list of values in the ENUM (in the order in which they are to be added into the
                     measurement types
     :param optional: is set optional?
-    :return The list of (measurement_type,valType,value) triples that are used by
-                    insertMeasurementGroup to add the measurements
+    :return Success, The list of (measurement_type,valType,value) triples that are used by
+                     insertMeasurementGroup to add the measurements, error message
     """
     boolean_type: ty.ValType = 4
     values = data.get(jfield)  # try to read the the list of values
@@ -641,8 +641,15 @@ def load_a_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad,
     else:
         exists = True
     if exists:  # create the boolean triples from the set values
-        res = list(map(lambda ps: (ps[0], boolean_type, mk_bool(ps[1] in values)), zip(measurement_types, value_list)))
-        return True, res, ""
+        # check all the values are strings and set of valid values
+        invalid_vals = list(filter(lambda v: not (type_checks.check_string(v) and (v in value_list)), values))
+        if len(invalid_vals) > 0: # there's at least 1 invalid value
+            return False, [], \
+                f'Invalid ENUM value(s) {invalid_vals} in {jfield} for measurement_types {measurement_types} in {data}'
+        else:
+            res = list(map(lambda ps: (ps[0], boolean_type, mk_bool(ps[1] in values)),
+                           zip(measurement_types, value_list)))
+            return True, res, ""
     else:
         if optional:
             return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
@@ -662,8 +669,8 @@ def load_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad, j
     :param jfield: the name of the field
     :param value_list: the list of values in the ENUM (in the order in which they are to be added into the
                     measurement types
-    :return The list of (measurement_type,valType,value) triples that are used by
-                    insertMeasurementGroup to add the measurements
+    :return Success, The list of (measurement_type,valType,value) triples that are used by
+                     insertMeasurementGroup to add the measurements, Error Message
     """
     return load_a_set(measurement_types, data, jfield, value_list, False)
 

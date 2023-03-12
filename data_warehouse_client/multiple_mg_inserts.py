@@ -32,7 +32,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
                                        trial: Optional[ty.Trial] = None,
                                        participant: Optional[ty.Participant] = None,
                                        source: Optional[ty.Source] = None,
-                                       cursor=None) -> Tuple[bool, List[int], str]:
+                                       cursor=None) -> Tuple[bool, List[int], List[str]]:
     """
      Insert multiple measurement groups resulting from one input of data: all are enclosed in a single transaction, so
      if any insert fails, nothing is added to the data warehouse.
@@ -67,34 +67,31 @@ def insert_measurement_group_instances(data_warehouse_handle,
     if category_id_map is None:
         category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
 
-    success: bool = True  # used to indicate if all the inserts succeeded
-    error_message: str = ''
-
     if len(measurement_group_vals) == 0:   # Catch the edge case where a loader returns nothing to insert
-        success = False
-        error_message = f'[Error in in insert_measurement_groups - no instances to insert.]'
-
-    message_group_instance_ids = []   # used to hold the list of message_group_ids inserted in the data warehouse
-    for (measurement_group, values) in measurement_group_vals:
-        #  try to insert one measurement group instance
-        success, measurement_group_instance_id, error_message = insert_one_measurement_group_instance(
-            cur, study, time, participant, trial, measurement_group, source, values,
-            int_bounds, real_bounds, datetime_bounds, category_id_map)
-        if success:  # if successfully inserted add id to list of message group instances inserted
-            message_group_instance_ids = [measurement_group_instance_id] + message_group_instance_ids
-        else:  # the whole set of inserts should fail if one fails, so stop trying if this is the case
-            break
-    #  All measurements in all measurement groups have been inserted, or an error has been found
-    if success:  # no inserts in the measurement group raised an error
-        data_warehouse_handle.dbConnection.commit()  # commit the whole measurement group insert
+        return False, [], [f'[Error in in insert_measurement_groups - no instances to insert.]']
     else:
-        data_warehouse_handle.dbConnection.rollback()  # rollback the whole measurement group insert
-    if cursor is None:  # if the cursor was created in this function then close it
-        cur.close()
-    if success:
-        return True, message_group_instance_ids, ''
-    else:
-        return False, [], error_message
+        success: bool = True  # used to indicate if all the inserts succeeded
+        message_group_instance_ids: List[int] = []  # holds the list of message_group_ids inserted in the data warehouse
+        for (measurement_group, values) in measurement_group_vals:
+            #  try to insert one measurement group instance
+            success, measurement_group_instance_id, error_messages = insert_one_measurement_group_instance(
+                cur, study, time, participant, trial, measurement_group, source, values,
+                int_bounds, real_bounds, datetime_bounds, category_id_map)
+            if success:  # if successfully inserted add id to list of message group instances inserted
+                message_group_instance_ids = [measurement_group_instance_id] + message_group_instance_ids
+            else:  # the whole set of inserts should fail if one fails, so stop trying if this is the case
+                break
+        #  All measurements in all measurement groups have been inserted, or an error has been found
+        if success:  # no inserts in the measurement group raised an error
+            data_warehouse_handle.dbConnection.commit()  # commit the whole measurement group insert
+        else:
+            data_warehouse_handle.dbConnection.rollback()  # rollback the whole measurement group insert
+        if cursor is None:  # if the cursor was created in this function then close it
+            cur.close()
+        if success:
+            return True, message_group_instance_ids, []
+        else:
+            return False, [], error_messages
 
 
 def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, time: ty.DateTime, trial: ty.Trial,
@@ -102,7 +99,8 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
                            measurement_type: ty.MeasurementType, source: ty.Source, value: ty.Value,
                            val_type: ty.ValType, val_integer: Optional[int], val_real: Optional[float],
                            measurement_group_instance_id: ty.MeasurementGroupInstance,
-                           first_measurement_in_group: bool) -> Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
+                           first_measurement_in_group: bool) -> \
+        Tuple[bool, Optional[ty.MeasurementGroupInstance], List[str]]:
     """
     insert a single measurement in the data warehouse - it is part of a measurement group instance.
     If it fails then raise an error so the whole transaction can be rolled back.
@@ -123,14 +121,6 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
     :return: Success?, List of ids of Measurement Groups Inserted, Error
     """
     try:  # try to insert the measurement
-        # mappings = {'time': time, 'study': study, 'trial': trial, 'measurementgroup': measurement_group,
-        #             'groupinstance': measurement_group_instance_id, 'measurementtype': measurement_type,
-        #             'participant': participant, 'source': source, 'valtype': val_type,
-        #             'valinteger': val_integer, 'valreal': val_real}
-        # insert_measurement_sql = file_utils.process_sql_template("insert_measurement.sql", mappings)
-        #  cur.execute(insert_measurement_sql)
-
-        # cur.mogrify("SELECT %s, %s, %s;", (dt, dt.date(), dt.time()))
         sql_template = "INSERT INTO measurement" + \
                        " (id,time,study,trial,measurementgroup,groupinstance,measurementtype" + \
                        ",participant,source,valtype,valinteger,valreal) " + \
@@ -164,12 +154,12 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
             insert_datetime = cur.mogrify(insert_datetime_template, (measurement_id, value, study))
             cur.execute(insert_datetime)
 
-        return True, group_instance_id, ""   # successful insert
+        return True, group_instance_id, []   # successful insert
     except psycopg2.Error as e:  # an error has occurred when inserting into the warehouse
-        error_message = f'[Error in insert_one_measurement. {e.pgcode} occurred: {e.pgerror}, ' \
-                        f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
-                        f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
-                        f' value = {value}, Source = {source}]'
+        error_message = [f'[Error in insert_one_measurement. {e.pgcode} occurred: {e.pgerror}, '
+                         f'Study = {study}, Participant = {participant}, Trial = {trial}, '
+                         f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},'
+                         f' value = {value}, Source = {source}]']
         return False, None, error_message   # insert has failed
 
 
@@ -250,7 +240,7 @@ def insert_one_measurement_group_instance(cur,
                                           datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
                                           category_id_map: Dict[ty.MeasurementType, List[int]]
                                           ) ->\
-        Tuple[bool, Optional[ty.MeasurementGroupInstance], str]:
+        Tuple[bool, Optional[ty.MeasurementGroupInstance], List[str]]:
     """
     insert one measurement group instance in the data warehouse
     :param cur: cursor to use in accessing the data warehouse
@@ -268,18 +258,18 @@ def insert_one_measurement_group_instance(cur,
     :return: success?, id of the measurement group instance, error messages
     """
     success: bool = True   # used to indicate the success or otherwise of the insertion
+    error_messages: List[str] = []
     first_measurement_in_group: bool = True  # used to ensure the same instance id is used for every measurement
     measurement_group_instance_id: ty.MeasurementGroupInstance = 0  # temp val for 1st measurement inserted in instance
-    error_message: str = ""
 
     for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
         success, error_mess = type_checks.check_value_type(val_type, value, measurement_type,
                                                            int_bounds, real_bounds, datetime_bounds, category_id_map)
         if not success:  # problem with the type of a measurement
-            error_message: str = error_mess +\
-                                 f' Study = {study}, Participant = {participant}, Trial = {trial}, ' \
-                                 f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \
-                                 f' value = {value}, Source = {source}]'
+            error_messages = [error_mess +
+                              f' Study = {study}, Participant = {participant}, Trial = {trial}, '
+                              f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},'
+                              f' value = {value}, Source = {source}]']
             success = False
         else:
             # try to insert one measurement
@@ -292,11 +282,11 @@ def insert_one_measurement_group_instance(cur,
                     measurement_group_instance_id = mgi  # use this as the instance id for every measurement
                     first_measurement_in_group = False
             else:
-                error_message = error_msg
+                error_messages = error_msg
                 success = False
         if not success:
             break  # ignore the remaining measurements to be inserted in the measurement group instance
     if success:
-        return True, measurement_group_instance_id, ""
+        return True, measurement_group_instance_id, []
     else:
-        return False, None, error_message
+        return False, None, error_messages

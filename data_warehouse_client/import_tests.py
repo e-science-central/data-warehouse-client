@@ -245,35 +245,86 @@ def test_all_loader(mk_dw_handle, test_all_example, fn_mapper, test_study):
 ])
 def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
                   json_key, json_value, measurement_type, expected_result):
+    """
+    Check each field in the measurement group instance has been inserted into the database
+    """
     dw_handle = mk_dw_handle
     category_value_to_id_map = check_bounded_values.get_inverse_category_ids_map(dw_handle, test_study)
     success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
     if success:
-        main_mgi = mgis[0]
+        main_mgi = mgis[0]  # Get the main mgi (not those of the Drug measurement group instances)
         test_all_mg_id: ty.MeasurementGroup = 50
         #  retrieve value from warehouse
         measurements = dw_handle.get_measurements(test_study, measurement_type=measurement_type,
                                                   measurement_group=test_all_mg_id, group_instance=main_mgi)
-        if len(measurements) == 1:
+        if len(measurements) == 1:  # there should only be one result returned
             ident, time, study, participant, measurement_type, type_name, measurement_group,\
-                group_instance, trial, val_type, value = measurements[0]
+                group_instance, trial, val_type, value = measurements[0]  # pick out the fields in that result
             if val_type == 4:   # is a boolean type
-                if value == 'T':
+                if value == 'T':  # booleans are turned into 'T' and 'F' by get measurements
                     value_to_compare = True
                 else:
                     value_to_compare = False
-            elif val_type in [5, 6]:
-                if type_checks.check_int(json_value):
+            elif val_type in [5, 6]:  # if categorical data
+                if type_checks.check_int(json_value):   # if it's a key that was in the json, get the value
                     value_to_compare = category_value_to_id_map[measurement_type][value]
-                else:
+                else:  # it was a value in the json, which is what will be retrived
                     value_to_compare = json_value
             else:
                 value_to_compare = value
-            if expected_result:
-                assert value_to_compare == json_value and len(mgis) > 0 and error_msg == [""]
+            if expected_result:  # if what was stored and retrieved are expected to be the same...
+                assert value_to_compare == json_value and len(mgis) > 0 and len(error_msg) == 0
             else:
-                assert value_to_compare != json_value and len(mgis) > 0 and error_msg == [""]
+                assert value_to_compare != json_value and len(mgis) > 0 and len(error_msg) == 0
         else:
             assert False  # Did not return 1 result (may be 0 or >1)
+    else:  # expect a failure to read the measurement from the data warehouse
+        assert len(mgis) == 0 and len(error_msg) > 0 and len(error_msg) > 0
+
+
+@pytest.mark.parametrize("json_key, json_value, valid", [
+    ('Int', 4.1, False),
+    ('Real', 5, False),
+    ('Text', 0, False),
+    ('DateTime', 'Not a Datetime', False),
+    ('Bool', 3, False),
+    ('NominalfromValue', 'Fifth', False),
+    ('NominalfromId', 'First', False),
+    ('OrdinalfromValue', 3.142, False),
+    ('OrdinalfromId', 77, False),
+    ('BoundedInt', 9999999, False),
+    ('BoundedReal', 999999.9, False),
+    ('BoundedDateTime', datetime.datetime(1666, 5, 17, 23, 17, 59), False),
+    ('External', 5, False),
+    ('SplitEnum', ['First', 'Fifth'], False),
+    ('OptionalInt', '4', False),
+    ('OptionalReal', '3.1', False),
+    ('OptionalText', ['Text List'], False),
+    ('OptionalDateTime', 3, False),
+    ('OptionalBool', 'T', False),
+    ('OptionalNominalfromValue', 'Seventh', False),
+    ('OptionalNominalfromId', 'First', False),
+    ('OptionalOrdinalfromValue', '1', False),
+    ('OptionalOrdinalfromId', '1', False),
+    ('OptionalBoundedInt', 7.89, False),
+    ('OptionalBoundedReal', 4, False),
+    ('OptionalBoundedDateTime', datetime.datetime(2500, 5, 17, 23, 17, 59), False),
+    ('OptionalExternal', 5.6, False),
+    ('OptionalSplitEnum', [1, 2], False)
+])
+def test_each_field(mk_dw_handle, test_all_example, fn_mapper, test_study,
+                    json_key, json_value, valid):
+    """
+    Check each field in the measurement group instance has been inserted into the database
+    """
+    dw_handle = mk_dw_handle
+    # category_value_to_id_map = check_bounded_values.get_inverse_category_ids_map(dw_handle, test_study)
+    test_all_example[json_key] = json_value
+    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
+    if success == valid:
+        assert True
     else:
-        assert len(mgis) == 0 and len(error_msg) > 0
+        assert False
+
+
+# Test trial and participant
