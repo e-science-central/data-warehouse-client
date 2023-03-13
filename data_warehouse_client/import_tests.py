@@ -196,19 +196,6 @@ def test_study():
     return 999
 
 
-"""
-def test_walking_test_1(mk_dw_handle, walking_test_1, fn_mapper, test_study):
-    success, mgis, error_msg = load_data.load_data(mk_dw_handle, walking_test_1,
-                                                   "walking_and_drugs", fn_mapper, test_study)
-    assert success
-
-
-def test_all_loader(mk_dw_handle, test_all_example, fn_mapper, test_study):
-    success, mgis, error_msg = load_data.load_data(mk_dw_handle, test_all_example, "test_all", fn_mapper, test_study)
-    assert success
-"""
-
-
 @pytest.mark.parametrize("json_key, json_value, measurement_type, expected_result", [
     ('Int', 4, 410, True),
     ('Real', 5.45, 411, True),
@@ -279,7 +266,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
         else:
             assert False  # Did not return 1 result (may be 0 or >1)
     else:  # expect a failure to read the measurement from the data warehouse
-        assert len(mgis) == 0 and len(error_msg) > 0 and len(error_msg) > 0
+        assert len(mgis) == 0 and len(error_msg) > 0
 
 
 @pytest.mark.parametrize("json_key, json_value, valid", [
@@ -327,4 +314,30 @@ def test_each_field(mk_dw_handle, test_all_example, fn_mapper, test_study,
         assert False
 
 
-# Test trial and participant
+@pytest.mark.parametrize("participant, trial, valid", [
+    (1, 1, True),
+    (2, 1, True),
+    (0, 1, False),
+    (1, 0, False)
+])
+def test_participant_and_trial_fields(mk_dw_handle, test_all_example, fn_mapper, test_study, participant, trial, valid):
+    """
+    test loading with valid and invalid participants and trials
+    """
+    dw_handle = mk_dw_handle
+    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study,
+                                                   participant=participant, trial=trial)
+    if not success and not valid:  # failed when it should fail
+        assert len(mgis) == 0 and len(error_msg) > 0
+    elif success != valid:  # should not occur
+        assert False
+    else:  # success and valid
+        main_mgi = mgis[0]  # Get the main mgi (not those of the Drug measurement group instances)
+        #  retrieve measurements from the data warehouse
+        measurements = dw_handle.get_measurements(test_study, group_instance=main_mgi)
+        participant_index = 3
+        trial_index = 8
+        bad_results = list(filter(lambda measurement: (measurement[participant_index] != participant) or
+                                                      (measurement[trial_index] != trial),
+                                  measurements))
+        assert len(bad_results) == 0

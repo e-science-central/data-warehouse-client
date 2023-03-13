@@ -86,7 +86,11 @@ def load_data(data_warehouse_handle,
             successful_inserts, message_group_instance_ids, error_message = \
                 multiple_mg_inserts.insert_measurement_group_instances(
                     data_warehouse_handle, study, all_mgs_and_triples,
-                    time_from_data, trial_to_insert, participant_to_insert, source_to_insert, cursor)
+                    int_bounds=int_bounds, real_bounds=real_bounds, datetime_bounds=datetime_bounds,
+                    category_id_map=category_id_map,
+                    time=time_from_data, trial=trial_to_insert,
+                    participant=participant_to_insert, source=source_to_insert,
+                    cursor=cursor)
             return successful_inserts, message_group_instance_ids, error_message
         else:
             return False, [], combined_error_messages   # error(s) detected in the data to be loaded
