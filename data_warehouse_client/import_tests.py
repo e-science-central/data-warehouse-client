@@ -139,6 +139,54 @@ def check_all_loader(data: ty.DataToLoad,
     return test_mgi + drug_group_instances, None, None, None, None
 
 
+def check_all_loader_2(data: ty.DataToLoad,
+                       int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
+                       real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
+                       datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
+                       category_id_map: Dict[ty.MeasurementType, List[int]],
+                       category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
+                       ) -> ty.LoaderResult:
+    test_all_mg_id: ty.MeasurementGroup = 50
+    test_mgi = [(test_all_mg_id,
+                [
+                 iwc.load_int(410, data, 'Int'),
+                 iwc.load_real(411, data, 'Real'),
+                 iwc.load_string(412, data, 'Text'),
+                 iwc.load_datetime(413, data, 'DateTime'),
+                 iwc.load_boolean(414, data, 'Bool'),
+                 iwc.load_nominal_from_value(415, data, 'NominalfromValue', category_value_map),
+                 iwc.load_nominal_from_id(416, data, 'NominalfromId', category_id_map),
+                 iwc.load_ordinal_from_value(417, data, 'OrdinalfromValue', category_value_map),
+                 iwc.load_ordinal_from_id(418, data, 'OrdinalfromId', category_id_map),
+                 iwc.load_bounded_int(419, data, 'BoundedInt', int_bounds),
+                 iwc.load_bounded_real(420, data, 'BoundedReal', real_bounds),
+                 iwc.load_bounded_datetime(421, data, 'BoundedDateTime', datetime_bounds),
+                 iwc.load_external(422, data, 'External'),
+                 iwc.load_set([423, 424, 425], data, 'SplitEnum', ['1st', '2nd', '3rd']),
+                 iwc.load_optional_int(426, data, 'OptionalInt'),
+                 iwc.load_optional_real(427, data, 'OptionalReal'),
+                 iwc.load_optional_string(428, data, 'OptionalText'),
+                 iwc.load_optional_datetime(429, data, 'OptionalDateTime'),
+                 iwc.load_optional_boolean(430, data, 'OptionalBool'),
+                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', category_value_map),
+                 iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', category_id_map),
+                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', category_value_map),
+                 iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', category_id_map),
+                 iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', int_bounds),
+                 iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', real_bounds),
+                 iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', datetime_bounds),
+                 iwc.load_optional_external(438, data, 'OptionalExternal'),
+                 iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
+                 )]
+    drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
+        iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id,
+                      int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
+    participant = data['participant']
+    trial = data['trial']
+    source = data['source']
+    return test_mgi + drug_group_instances, None, trial, participant, source
+
+
 def drugs_loader(data: ty.DataToLoad,
                  int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
                  real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
@@ -187,7 +235,8 @@ def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
     """
     return {
         "walking_and_drugs": walking_and_drugs_loader,
-        "test_all": check_all_loader
+        "test_all": check_all_loader,
+        "test_all_2": check_all_loader_2
     }
 
 
@@ -314,19 +363,21 @@ def test_each_field(mk_dw_handle, test_all_example, fn_mapper, test_study,
         assert False
 
 
-@pytest.mark.parametrize("participant, trial, valid", [
-    (1, 1, True),
-    (2, 1, True),
-    (0, 1, False),
-    (1, 0, False)
+@pytest.mark.parametrize("participant, trial, source, valid", [
+    (1, 1, 1, True),
+    (2, 1, 1, True),
+    (0, 1, 1, False),  # incorrect study
+    (1, 0, 1, False),  # incorrect trial
+    (1, 1, 3, False)   # incorrect source
 ])
-def test_participant_and_trial_fields(mk_dw_handle, test_all_example, fn_mapper, test_study, participant, trial, valid):
+def test_participant_and_trial_and_source_fields(mk_dw_handle, test_all_example, fn_mapper, test_study,
+                                                 participant, trial, source, valid):
     """
-    test loading with valid and invalid participants and trials
+    test loading with valid and invalid participants and trials and sources
     """
     dw_handle = mk_dw_handle
     success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study,
-                                                   participant=participant, trial=trial)
+                                                   participant=participant, trial=trial, source=source)
     if not success and not valid:  # failed when it should fail
         assert len(mgis) == 0 and len(error_msg) > 0
     elif success != valid:  # should not occur
@@ -344,4 +395,35 @@ def test_participant_and_trial_fields(mk_dw_handle, test_all_example, fn_mapper,
         assert total_bad_results == 0
 
 
-# test source
+@pytest.mark.parametrize("participant, trial, source, valid", [
+    (1, 1, 1, True),
+    (2, 1, 1, True),
+    (0, 1, 1, False),  # incorrect study
+    (1, 0, 1, False),  # incorrect trial
+    (1, 1, 3, False)   # incorrect source
+])
+def test_participant_and_trial_and_source_fields_2(mk_dw_handle, test_all_example, fn_mapper, test_study,
+                                                   participant, trial, source, valid):
+    """
+    test loading with valid and invalid participants and trials and sources loaded from the json
+    """
+    dw_handle = mk_dw_handle
+    test_all_example['participant'] = participant
+    test_all_example['trial'] = trial
+    test_all_example['source'] = source
+    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all_2", fn_mapper, test_study)
+    if not success and not valid:  # failed when it should fail
+        assert len(mgis) == 0 and len(error_msg) > 0
+    elif success != valid:  # should not occur
+        assert False
+    else:  # success and valid
+        total_bad_results: int = 0
+        for mgi in mgis:
+            #  retrieve measurements from the data warehouse
+            measurements = dw_handle.get_measurements(test_study, group_instance=mgi)
+            participant_index = 3
+            trial_index = 8
+            bad_results = list(filter(lambda measurement: (measurement[participant_index] != participant) or
+                                                          (measurement[trial_index] != trial), measurements))
+            total_bad_results = total_bad_results + len(bad_results)
+        assert total_bad_results == 0
