@@ -2,8 +2,8 @@ SELECT
   DISTINCT measurement.id, datetimevalue.datetimeval, measurement.measurementtype, measurement.measurementgroup, boundsdatetime.minval, boundsdatetime.maxval, measurement.participant
 FROM
   measurement
-  LEFT OUTER JOIN textvalue ON textvalue.measurement = measurement.id
-  AND textvalue.study = measurement.study
+  LEFT OUTER JOIN datetimevalue ON datetimevalue.measurement = measurement.id
+  AND datetimevalue.study = measurement.study
   JOIN boundsdatetime ON (
     measurement.measurementtype = boundsdatetime.measurementtype
     AND measurement.study = boundsdatetime.study

@@ -332,12 +332,16 @@ def test_participant_and_trial_fields(mk_dw_handle, test_all_example, fn_mapper,
     elif success != valid:  # should not occur
         assert False
     else:  # success and valid
-        main_mgi = mgis[0]  # Get the main mgi (not those of the Drug measurement group instances)
-        #  retrieve measurements from the data warehouse
-        measurements = dw_handle.get_measurements(test_study, group_instance=main_mgi)
-        participant_index = 3
-        trial_index = 8
-        bad_results = list(filter(lambda measurement: (measurement[participant_index] != participant) or
-                                                      (measurement[trial_index] != trial),
-                                  measurements))
-        assert len(bad_results) == 0
+        total_bad_results: int = 0
+        for mgi in mgis:
+            #  retrieve measurements from the data warehouse
+            measurements = dw_handle.get_measurements(test_study, group_instance=mgi)
+            participant_index = 3
+            trial_index = 8
+            bad_results = list(filter(lambda measurement: (measurement[participant_index] != participant) or
+                                                          (measurement[trial_index] != trial), measurements))
+            total_bad_results = total_bad_results + len(bad_results)
+        assert total_bad_results == 0
+
+
+# test source
