@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+import pytest  # see https://realpython.com/pytest-python-testing/
 import type_checks
 import type_definitions as ty
 from typing import Dict, Callable, List, Tuple
@@ -21,8 +21,7 @@ import import_with_checks as iwc
 import load_data
 import data_warehouse
 import check_bounded_values
-
-# see https://realpython.com/pytest-python-testing/
+from delete_study_contents import delete_study_measurements
 
 
 @pytest.fixture()

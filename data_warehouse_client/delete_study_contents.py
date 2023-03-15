@@ -55,7 +55,9 @@ def metadata_table_names():
     """
     :return: the names of all the tables in the data warehouse that hold metadata
     """
-    return ['measurementtypetogroup', 'boundsreal', 'boundsint', 'category', 'measurementtype', 'units',
+    return ['measurementtypetogroup',
+            'boundsreal', 'boundsint', 'boundsdatetime',
+            'category', 'measurementtype', 'units',
             'measurementgroup', 'source', 'sourcetype', 'participant', 'trial']
 
 
