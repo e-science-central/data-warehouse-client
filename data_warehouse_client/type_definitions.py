@@ -42,4 +42,6 @@ DateTimeBounds = Dict[MeasurementType, Dict[str, DateTime]]
 CategoryIds = Dict[MeasurementType, List[int]]
 CategoryValues = Dict[MeasurementType, Dict[str, int]]
 
-Loader = Callable[[DataToLoad, IntBounds, RealBounds, DateTimeBounds, CategoryIds, CategoryValues], LoaderResult]
+Bounds = Tuple[IntBounds, RealBounds, DateTimeBounds, CategoryIds, CategoryValues]
+
+Loader = Callable[[DataToLoad, Bounds], LoaderResult]

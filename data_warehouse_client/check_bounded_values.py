@@ -15,6 +15,7 @@
 import file_utils
 import type_definitions as ty
 from typing import List, Dict
+from type_definitions import Bounds as Bounds
 
 
 def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]:
@@ -96,6 +97,21 @@ def get_bounded_datetime_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType,
     for [mt_id, minval, maxval] in res:
         datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}  # add new entry in dictionary
     return datetime_bounds
+
+
+def get_bounds(dw, study: ty.Study) -> Bounds:
+    """
+    Create a tuple holding all the bounds needed to check values to be inserted into the warehouse
+    :param dw: data warehouse handle
+    :param study: Study id
+    :return: Tuple holding: int bounds, real bounds, datetime bounds, category ids, category value to id mapper
+    """
+    bounded_int_bounds = get_bounded_int_bounds(dw, study)
+    bounded_real_bounds = get_bounded_real_bounds(dw, study)
+    bounded_datetime_bounds = get_bounded_datetime_bounds(dw, study)
+    category_ids = get_category_ids(dw, study)
+    inverse_category_ids_map = get_inverse_category_ids_map(dw, study)
+    return bounded_int_bounds, bounded_real_bounds, bounded_datetime_bounds, category_ids, inverse_category_ids_map
 
 
 def check_bounded_int_in_bounds(int_bounds: Dict[ty.MeasurementType, Dict[str, int]],

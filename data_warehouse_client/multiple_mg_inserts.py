@@ -18,16 +18,14 @@ import file_utils
 import type_definitions as ty
 import type_checks
 import check_bounded_values
-from typing import Tuple, List, Optional, Dict
+from typing import Tuple, List, Optional
+from type_definitions import Bounds as Bounds
 
 
 def insert_measurement_group_instances(data_warehouse_handle,
                                        study: ty.Study,
                                        measurement_group_vals: List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]],
-                                       int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = None,
-                                       real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = None,
-                                       datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = None,
-                                       category_id_map: Dict[ty.MeasurementType, List[int]] = None,
+                                       bounds: ty.Bounds = None,
                                        time: Optional[ty.DateTime] = None,
                                        trial: Optional[ty.Trial] = None,
                                        participant: Optional[ty.Participant] = None,
@@ -39,16 +37,13 @@ def insert_measurement_group_instances(data_warehouse_handle,
      :param data_warehouse_handle:
      :param study: the study id
      :param measurement_group_vals: a list of the values for each mg in the form: [(mg, [(measType,valType,value)])]
-     :param int_bounds: dictionary holding integer bounds
-     :param real_bounds: dictionary holding real bounds
-     :param datetime_bounds: dictionary holding datetime bounds
-     :param category_id_map: dictionary holding mapping from category ids to names for each measurement type
+     :param bounds: tuple holding bounds used for checking
      :param time: the time the measurement was taken. It defaults to the current time
      :param trial: optional trial id
      :param participant: optional participant id
      :param source: optional source
      :param cursor: database cursor
-     :return success boolean, the measurement groups' instanceids, error message
+     :return success boolean, the measurement groups' instanceids, error messages
     """
     if time is None:  # use the current date and time if none is specified
         time = datetime.datetime.now()  # use the current date and time if none is specified
@@ -57,15 +52,8 @@ def insert_measurement_group_instances(data_warehouse_handle,
         cur = data_warehouse_handle.dbConnection.cursor()
     else:  # used the cursor passed to this function
         cur = cursor
-
-    if int_bounds is None:
-        int_bounds = check_bounded_values.get_bounded_int_bounds(data_warehouse_handle, study)
-    if real_bounds is None:
-        real_bounds = check_bounded_values.get_bounded_real_bounds(data_warehouse_handle, study)
-    if datetime_bounds is None:
-        datetime_bounds = check_bounded_values.get_bounded_datetime_bounds(data_warehouse_handle, study)
-    if category_id_map is None:
-        category_id_map = check_bounded_values.get_category_ids(data_warehouse_handle, study)
+    if bounds is None:
+        bounds = check_bounded_values.get_bounds(data_warehouse_handle, study)
 
     if len(measurement_group_vals) == 0:   # Catch the edge case where a loader returns nothing to insert
         return False, [], [f'[Error in in insert_measurement_groups - no instances to insert.]']
@@ -75,8 +63,7 @@ def insert_measurement_group_instances(data_warehouse_handle,
         for (measurement_group, values) in measurement_group_vals:
             #  try to insert one measurement group instance
             success, measurement_group_instance_id, error_messages = insert_one_measurement_group_instance(
-                cur, study, time, participant, trial, measurement_group, source, values,
-                int_bounds, real_bounds, datetime_bounds, category_id_map)
+                cur, study, time, participant, trial, measurement_group, source, values, bounds)
             if success:  # if successfully inserted add id to list of message group instances inserted
                 message_group_instance_ids = [measurement_group_instance_id] + message_group_instance_ids
             else:  # the whole set of inserts should fail if one fails, so stop trying if this is the case
@@ -163,6 +150,64 @@ def insert_one_measurement(cur, study: ty.Study, participant: ty.Participant, ti
         return False, None, error_message   # insert has failed
 
 
+def insert_one_measurement_group_instance(cur,
+                                          study: ty.Study,
+                                          time: ty.DateTime,
+                                          participant: ty.Participant,
+                                          trial: ty.Trial,
+                                          measurement_group: ty.MeasurementGroup,
+                                          source: ty.Source,
+                                          values: List[ty.ValueTriple],
+                                          bounds: Bounds
+                                          ) ->\
+        Tuple[bool, Optional[ty.MeasurementGroupInstance], List[str]]:
+    """
+    insert one measurement group instance in the data warehouse
+    :param cur: cursor to use in accessing the data warehouse
+    :param study: study id
+    :param time: timestamp
+    :param participant: participant id
+    :param trial: trial id
+    :param measurement_group: measurement group id
+    :param source: source id
+    :param values: list of value triples to be inserted (measurement_type, val_type, value)
+    :param bounds: tuple holding bounds used for checking
+    :return: success?, id of the measurement group instance, error messages
+    """
+    success: bool = True   # used to indicate the success or otherwise of the insertion
+    error_messages: List[str] = []
+    first_measurement_in_group: bool = True  # used to ensure the same instance id is used for every measurement
+    measurement_group_instance_id: ty.MeasurementGroupInstance = 0  # temp val for 1st measurement inserted in instance
+
+    for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
+        success, error_mess = type_checks.check_value_type(val_type, value, measurement_type, bounds)
+        if not success:  # problem with the type of a measurement
+            error_messages = [error_mess +
+                              f' Study = {study}, Participant = {participant}, Trial = {trial}, '
+                              f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},'
+                              f' value = {value}, Source = {source}]']
+            success = False
+        else:
+            # try to insert one measurement
+            val_integer, val_real = extract_fields_to_insert(val_type, value)
+            succesful_insert, mgi, error_msg = insert_one_measurement(
+                cur, study, participant, time, trial, measurement_group, measurement_type, source, value,
+                val_type, val_integer, val_real, measurement_group_instance_id, first_measurement_in_group)
+            if succesful_insert:
+                if first_measurement_in_group:
+                    measurement_group_instance_id = mgi  # use this as the instance id for every measurement
+                    first_measurement_in_group = False
+            else:
+                error_messages = error_msg
+                success = False
+        if not success:
+            break  # ignore the remaining measurements to be inserted in the measurement group instance
+    if success:
+        return True, measurement_group_instance_id, []
+    else:
+        return False, None, error_messages
+
+
 def text_valued_type(val_type: ty.ValType) -> bool:
     """
     is this a text type that will be stored in the text table?
@@ -225,68 +270,3 @@ def extract_fields_to_insert(val_type: ty.ValType, value: ty.Value) -> Tuple[Opt
         return None, None  # the value must be stored in the text or datetime tables
     else:  # error in valType
         return None, None
-
-
-def insert_one_measurement_group_instance(cur,
-                                          study: ty.Study,
-                                          time: ty.DateTime,
-                                          participant: ty.Participant,
-                                          trial: ty.Trial,
-                                          measurement_group: ty.MeasurementGroup,
-                                          source: ty.Source,
-                                          values: List[ty.ValueTriple],
-                                          int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                                          real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                                          datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                                          category_id_map: Dict[ty.MeasurementType, List[int]]
-                                          ) ->\
-        Tuple[bool, Optional[ty.MeasurementGroupInstance], List[str]]:
-    """
-    insert one measurement group instance in the data warehouse
-    :param cur: cursor to use in accessing the data warehouse
-    :param study: study id
-    :param time: timestamp
-    :param participant: participant id
-    :param trial: trial id
-    :param measurement_group: measurement group id
-    :param source: source id
-    :param values: list of value triples to be inserted (measurement_type, val_type, value)
-    :param int_bounds: dictionary holding integer bounds
-    :param real_bounds: dictionary holding real bounds
-    :param datetime_bounds: dictionary holding datetime bounds
-    :param category_id_map: dictionary holding valid category ids for each measurement type
-    :return: success?, id of the measurement group instance, error messages
-    """
-    success: bool = True   # used to indicate the success or otherwise of the insertion
-    error_messages: List[str] = []
-    first_measurement_in_group: bool = True  # used to ensure the same instance id is used for every measurement
-    measurement_group_instance_id: ty.MeasurementGroupInstance = 0  # temp val for 1st measurement inserted in instance
-
-    for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
-        success, error_mess = type_checks.check_value_type(val_type, value, measurement_type,
-                                                           int_bounds, real_bounds, datetime_bounds, category_id_map)
-        if not success:  # problem with the type of a measurement
-            error_messages = [error_mess +
-                              f' Study = {study}, Participant = {participant}, Trial = {trial}, '
-                              f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},'
-                              f' value = {value}, Source = {source}]']
-            success = False
-        else:
-            # try to insert one measurement
-            val_integer, val_real = extract_fields_to_insert(val_type, value)
-            succesful_insert, mgi, error_msg = insert_one_measurement(
-                cur, study, participant, time, trial, measurement_group, measurement_type, source, value,
-                val_type, val_integer, val_real, measurement_group_instance_id, first_measurement_in_group)
-            if succesful_insert:
-                if first_measurement_in_group:
-                    measurement_group_instance_id = mgi  # use this as the instance id for every measurement
-                    first_measurement_in_group = False
-            else:
-                error_messages = error_msg
-                success = False
-        if not success:
-            break  # ignore the remaining measurements to be inserted in the measurement group instance
-    if success:
-        return True, measurement_group_instance_id, []
-    else:
-        return False, None, error_messages

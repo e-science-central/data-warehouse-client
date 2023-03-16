@@ -15,13 +15,14 @@
 import pytest  # see https://realpython.com/pytest-python-testing/
 import type_checks
 import type_definitions as ty
+from type_definitions import Bounds as Bounds
 from typing import Dict, Callable, List, Tuple
 import datetime
 import import_with_checks as iwc
 import load_data
 import data_warehouse
 import check_bounded_values
-from delete_study_contents import delete_study_measurements
+#  from delete_study_contents import delete_study_measurements
 
 
 @pytest.fixture()
@@ -93,13 +94,7 @@ def test_all_example() -> ty.DataToLoad:
     return data
 
 
-def check_all_loader(data: ty.DataToLoad,
-                     int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                     real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                     datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                     category_id_map: Dict[ty.MeasurementType, List[int]],
-                     category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
-                     ) -> ty.LoaderResult:
+def check_all_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     test_all_mg_id: ty.MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
@@ -108,13 +103,13 @@ def check_all_loader(data: ty.DataToLoad,
                  iwc.load_string(412, data, 'Text'),
                  iwc.load_datetime(413, data, 'DateTime'),
                  iwc.load_boolean(414, data, 'Bool'),
-                 iwc.load_nominal_from_value(415, data, 'NominalfromValue', category_value_map),
-                 iwc.load_nominal_from_id(416, data, 'NominalfromId', category_id_map),
-                 iwc.load_ordinal_from_value(417, data, 'OrdinalfromValue', category_value_map),
-                 iwc.load_ordinal_from_id(418, data, 'OrdinalfromId', category_id_map),
-                 iwc.load_bounded_int(419, data, 'BoundedInt', int_bounds),
-                 iwc.load_bounded_real(420, data, 'BoundedReal', real_bounds),
-                 iwc.load_bounded_datetime(421, data, 'BoundedDateTime', datetime_bounds),
+                 iwc.load_nominal_from_value(415, data, 'NominalfromValue', bounds),
+                 iwc.load_nominal_from_id(416, data, 'NominalfromId', bounds),
+                 iwc.load_ordinal_from_value(417, data, 'OrdinalfromValue', bounds),
+                 iwc.load_ordinal_from_id(418, data, 'OrdinalfromId', bounds),
+                 iwc.load_bounded_int(419, data, 'BoundedInt', bounds),
+                 iwc.load_bounded_real(420, data, 'BoundedReal', bounds),
+                 iwc.load_bounded_datetime(421, data, 'BoundedDateTime', bounds),
                  iwc.load_external(422, data, 'External'),
                  iwc.load_set([423, 424, 425], data, 'SplitEnum', ['1st', '2nd', '3rd']),
                  iwc.load_optional_int(426, data, 'OptionalInt'),
@@ -122,29 +117,22 @@ def check_all_loader(data: ty.DataToLoad,
                  iwc.load_optional_string(428, data, 'OptionalText'),
                  iwc.load_optional_datetime(429, data, 'OptionalDateTime'),
                  iwc.load_optional_boolean(430, data, 'OptionalBool'),
-                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', category_value_map),
-                 iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', category_id_map),
-                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', category_value_map),
-                 iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', category_id_map),
-                 iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', int_bounds),
-                 iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', real_bounds),
-                 iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', datetime_bounds),
+                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', bounds),
+                 iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', bounds),
+                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', bounds),
+                 iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', bounds),
+                 iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', bounds),
+                 iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', bounds),
+                 iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', bounds),
                  iwc.load_optional_external(438, data, 'OptionalExternal'),
                  iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
                  )]
     drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
-        iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id,
-                      int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
+        iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id, bounds)
     return test_mgi + drug_group_instances, None, None, None, None
 
 
-def check_all_loader_2(data: ty.DataToLoad,
-                       int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                       real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                       datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                       category_id_map: Dict[ty.MeasurementType, List[int]],
-                       category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
-                       ) -> ty.LoaderResult:
+def check_all_loader_2(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     test_all_mg_id: ty.MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
@@ -153,13 +141,13 @@ def check_all_loader_2(data: ty.DataToLoad,
                  iwc.load_string(412, data, 'Text'),
                  iwc.load_datetime(413, data, 'DateTime'),
                  iwc.load_boolean(414, data, 'Bool'),
-                 iwc.load_nominal_from_value(415, data, 'NominalfromValue', category_value_map),
-                 iwc.load_nominal_from_id(416, data, 'NominalfromId', category_id_map),
-                 iwc.load_ordinal_from_value(417, data, 'OrdinalfromValue', category_value_map),
-                 iwc.load_ordinal_from_id(418, data, 'OrdinalfromId', category_id_map),
-                 iwc.load_bounded_int(419, data, 'BoundedInt', int_bounds),
-                 iwc.load_bounded_real(420, data, 'BoundedReal', real_bounds),
-                 iwc.load_bounded_datetime(421, data, 'BoundedDateTime', datetime_bounds),
+                 iwc.load_nominal_from_value(415, data, 'NominalfromValue', bounds),
+                 iwc.load_nominal_from_id(416, data, 'NominalfromId', bounds),
+                 iwc.load_ordinal_from_value(417, data, 'OrdinalfromValue', bounds),
+                 iwc.load_ordinal_from_id(418, data, 'OrdinalfromId', bounds),
+                 iwc.load_bounded_int(419, data, 'BoundedInt', bounds),
+                 iwc.load_bounded_real(420, data, 'BoundedReal', bounds),
+                 iwc.load_bounded_datetime(421, data, 'BoundedDateTime', bounds),
                  iwc.load_external(422, data, 'External'),
                  iwc.load_set([423, 424, 425], data, 'SplitEnum', ['1st', '2nd', '3rd']),
                  iwc.load_optional_int(426, data, 'OptionalInt'),
@@ -167,32 +155,25 @@ def check_all_loader_2(data: ty.DataToLoad,
                  iwc.load_optional_string(428, data, 'OptionalText'),
                  iwc.load_optional_datetime(429, data, 'OptionalDateTime'),
                  iwc.load_optional_boolean(430, data, 'OptionalBool'),
-                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', category_value_map),
-                 iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', category_id_map),
-                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', category_value_map),
-                 iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', category_id_map),
-                 iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', int_bounds),
-                 iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', real_bounds),
-                 iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', datetime_bounds),
+                 iwc.load_optional_nominal_from_value(431, data, 'OptionalNominalfromValue', bounds),
+                 iwc.load_optional_nominal_from_id(432, data, 'OptionalNominalfromId', bounds),
+                 iwc.load_optional_ordinal_from_value(433, data, 'OptionalOrdinalfromValue', bounds),
+                 iwc.load_optional_ordinal_from_id(434, data, 'OptionalOrdinalfromId', bounds),
+                 iwc.load_optional_bounded_int(435, data, 'OptionalBoundedInt', bounds),
+                 iwc.load_optional_bounded_real(436, data, 'OptionalBoundedReal', bounds),
+                 iwc.load_optional_bounded_datetime(437, data, 'OptionalBoundedDateTime', bounds),
                  iwc.load_optional_external(438, data, 'OptionalExternal'),
                  iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
                  )]
     drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
-        iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id,
-                      int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
+        iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id, bounds)
     participant = data['participant']
     trial = data['trial']
     source = data['source']
     return test_mgi + drug_group_instances, None, trial, participant, source
 
 
-def drugs_loader(data: ty.DataToLoad,
-                 int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                 real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                 datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                 category_id_map: Dict[ty.MeasurementType, List[int]],
-                 category_value_map: Dict[ty.MeasurementType, Dict[str, int]]
-                 ) -> ty.LoaderResult:
+def drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     drug_mg_id: ty.MeasurementGroup = 40
     drug_mgi = [(drug_mg_id,
                  [iwc.load_string(400, data, 'drug'),
@@ -201,12 +182,7 @@ def drugs_loader(data: ty.DataToLoad,
     return drug_mgi, None, None, None, None
 
 
-def walking_and_drugs_loader(data: ty.DataToLoad,
-                             int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                             real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                             datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                             category_id_map: Dict[ty.MeasurementType, List[int]],
-                             category_value_map: Dict[ty.MeasurementType, Dict[str, int]]) -> ty.LoaderResult:
+def walking_and_drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
 
     turn_group: ty.MeasurementGroup = 39
 
@@ -221,8 +197,7 @@ def walking_and_drugs_loader(data: ty.DataToLoad,
            iwc.load_real(1846, data, 'Turn_Duration_SO'),
            iwc.load_real(1847, data, 'Turn_PeakAngularVelocity_SO')])]
     drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
-        iwc.load_list(data, 'drugs', drugs_loader, turn_group,
-                      int_bounds, real_bounds, datetime_bounds, category_id_map, category_value_map)
+        iwc.load_list(data, 'drugs', drugs_loader, turn_group, bounds)
     return turn_group_instance+drug_group_instances, None, None, None, None
 
 
