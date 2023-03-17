@@ -16,7 +16,10 @@ import pytest  # see https://realpython.com/pytest-python-testing/
 import type_checks
 import type_definitions as ty
 from type_definitions import Bounds as Bounds
-from typing import Dict, Callable, List, Tuple
+from type_definitions import LoaderResult as LoaderResult
+from type_definitions import DataToLoad as DataToLoad
+from type_definitions import Loader as Loader
+from typing import Dict, List, Tuple
 import datetime
 import import_with_checks as iwc
 import load_data
@@ -26,7 +29,7 @@ import check_bounded_values
 
 
 @pytest.fixture()
-def walking_test_1() -> ty.DataToLoad:
+def walking_test_1() -> DataToLoad:
     data = {
         'visit-date': datetime.datetime.now(),
         'visit-code': 'visit3',
@@ -59,7 +62,7 @@ def mk_dw_handle(credentials_file_name, database_name):
 
 
 @pytest.fixture()
-def test_all_example() -> ty.DataToLoad:
+def test_all_example() -> DataToLoad:
     data = {
         'Int': 4,
         'Real': 5.45,
@@ -94,7 +97,7 @@ def test_all_example() -> ty.DataToLoad:
     return data
 
 
-def check_all_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
+def check_all_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
     test_all_mg_id: ty.MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
@@ -132,7 +135,7 @@ def check_all_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     return test_mgi + drug_group_instances, None, None, None, None
 
 
-def check_all_loader_2(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
+def check_all_loader_2(data: DataToLoad, bounds: Bounds) -> LoaderResult:
     test_all_mg_id: ty.MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
@@ -173,7 +176,7 @@ def check_all_loader_2(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     return test_mgi + drug_group_instances, None, trial, participant, source
 
 
-def drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
+def drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
     drug_mg_id: ty.MeasurementGroup = 40
     drug_mgi = [(drug_mg_id,
                  [iwc.load_string(400, data, 'drug'),
@@ -182,7 +185,7 @@ def drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
     return drug_mgi, None, None, None, None
 
 
-def walking_and_drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderResult:
+def walking_and_drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
 
     turn_group: ty.MeasurementGroup = 39
 
@@ -202,7 +205,7 @@ def walking_and_drugs_loader(data: ty.DataToLoad, bounds: Bounds) -> ty.LoaderRe
 
 
 @pytest.fixture()
-def fn_mapper() -> Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]:
+def fn_mapper() -> Dict[str, Loader]:
     """
     maps from the event_type used in e-SC (json script) to the function used by insertMeasurementGroup
     to add the measurements into the Data Warehouse
