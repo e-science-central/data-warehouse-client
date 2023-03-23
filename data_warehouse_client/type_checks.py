@@ -13,10 +13,9 @@
 # limitations under the License.
 
 from datetime import datetime
-import type_definitions as ty
 from typing import Tuple, Any
 import check_bounded_values as cbv
-from type_definitions import Bounds as Bounds
+from type_definitions import Bounds, Value, ValType, MeasurementType
 
 
 def int_bounds(bounds: Bounds):
@@ -84,32 +83,32 @@ def check_boolean(val: Any) -> bool:
     return val in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
 
 
-def check_ordinal(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_ordinal(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_int(value) and cbv.check_category_id(category_ids(bounds), measurement_type, value)
 
 
-def check_nominal(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_nominal(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_int(value) and cbv.check_category_id(category_ids(bounds), measurement_type, value)
 
 
-def check_bounded_int(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_bounded_int(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_int(value) and cbv.check_bounded_int_in_bounds(int_bounds(bounds), measurement_type, value)
 
 
-def check_bounded_real(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_bounded_real(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_real(value) and cbv.check_bounded_real_in_bounds(real_bounds(bounds), measurement_type, value)
 
 
-def check_bounded_datetime(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_bounded_datetime(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_datetime(value) and cbv.check_bounded_datetime_in_bounds(datetime_bounds(bounds),
                                                                           measurement_type, value)
 
 
-def check_external(value: ty.Value, measurement_type: ty.MeasurementType, bounds: Bounds) -> bool:
+def check_external(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
     return check_string(value)
 
 
-def ok_bool_val(value: ty.Value) -> bool:
+def ok_bool_val(value: Value) -> bool:
     """
     acceptable boolean value?
     :param value: value to be tested
@@ -118,24 +117,24 @@ def ok_bool_val(value: ty.Value) -> bool:
     return value in [0, 1]
 
 
-def type_check(val: Any, val_type: ty.ValType):
+def type_check(val: Any, val_type: ValType):
     """
     Check the type of a value retrieved from a field. Used by the load warehouse helpers
     :param val: value
     :param val_type: the type is should be
     :return: True if the value has the right type, False otherwise
     """
-    integer_type: ty.ValType = 0
-    real_type: ty.ValType = 1
-    string_type: ty.ValType = 2
-    datetime_type: ty.ValType = 3
-    boolean_type: ty.ValType = 4
-    nominal_type: ty.ValType = 5
-    ordinal_type: ty.ValType = 6
-    bounded_int_type: ty.ValType = 7
-    bounded_real_type: ty.ValType = 8
-    bounded_datetime_type: ty.ValType = 9
-    external_type: ty.ValType = 10
+    integer_type: ValType = 0
+    real_type: ValType = 1
+    string_type: ValType = 2
+    datetime_type: ValType = 3
+    boolean_type: ValType = 4
+    nominal_type: ValType = 5
+    ordinal_type: ValType = 6
+    bounded_int_type: ValType = 7
+    bounded_real_type: ValType = 8
+    bounded_datetime_type: ValType = 9
+    external_type: ValType = 10
 
     if val_type in [integer_type, nominal_type, ordinal_type, bounded_int_type]:
         well_typed = check_int(val)
@@ -152,7 +151,7 @@ def type_check(val: Any, val_type: ty.ValType):
     return well_typed
 
 
-def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty.MeasurementType,
+def check_value_type(val_type: ValType, value: Value, measurement_type: MeasurementType,
                      bounds: Bounds) -> Tuple[bool, str]:
     """
     check valid value type, and set the entries in the measurement table's integer and real fields
@@ -162,17 +161,17 @@ def check_value_type(val_type: ty.ValType, value: ty.Value, measurement_type: ty
     :param bounds: tuple holding bounds used for checking
     :return: success?, error message
     """
-    integer_type: ty.ValType = 0
-    real_type: ty.ValType = 1
-    string_type: ty.ValType = 2
-    datetime_type: ty.ValType = 3
-    boolean_type: ty.ValType = 4
-    nominal_type: ty.ValType = 5
-    ordinal_type: ty.ValType = 6
-    bounded_int_type: ty.ValType = 7
-    bounded_real_type: ty.ValType = 8
-    bounded_datetime_type: ty.ValType = 9
-    external_type: ty.ValType = 10
+    integer_type: ValType = 0
+    real_type: ValType = 1
+    string_type: ValType = 2
+    datetime_type: ValType = 3
+    boolean_type: ValType = 4
+    nominal_type: ValType = 5
+    ordinal_type: ValType = 6
+    bounded_int_type: ValType = 7
+    bounded_real_type: ValType = 8
+    bounded_datetime_type: ValType = 9
+    external_type: ValType = 10
 
     if val_type == integer_type:
         if check_int(value):

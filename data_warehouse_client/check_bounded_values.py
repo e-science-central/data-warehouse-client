@@ -13,12 +13,11 @@
 # limitations under the License.
 
 import file_utils
-import type_definitions as ty
+from type_definitions import Study, MeasurementType, Bounds, DateTime
 from typing import List, Dict
-from type_definitions import Bounds
 
 
-def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]:
+def get_category_ids(dw, study: Study) -> Dict[MeasurementType, List[int]]:
     """
     Create a dirctory to map from Measurement Type Id to Category Id
     :param dw: data warehouse handle
@@ -27,7 +26,7 @@ def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]
     """
     query = file_utils.process_sql_template("get_category_ids.sql", {"study": study})  # query to get mts and cat ids
     res = dw.return_query_result(query)  # execture query
-    categories: Dict[ty.MeasurementType, List[int]] = {}  # a dictionary to hold the mt -> category id mapping
+    categories: Dict[MeasurementType, List[int]] = {}  # a dictionary to hold the mt -> category id mapping
     for [category_id, mt_id] in res:
         if mt_id in categories:  # the mt is already in the dictionary
             categories[mt_id] = [category_id] + categories[mt_id]  # add the category id to the existing list of ids
@@ -36,7 +35,7 @@ def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]
     return categories
 
 
-def get_inverse_category_ids_map(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, int]]:
+def get_inverse_category_ids_map(dw, study: Study) -> Dict[MeasurementType, Dict[str, int]]:
     """
      Create a directory to map from Measurement Type Id to a Dictionary mapping from Category Name to Category Id
      :param dw: data warehouse handle
@@ -45,7 +44,7 @@ def get_inverse_category_ids_map(dw, study: ty.Study) -> Dict[ty.MeasurementType
      """
     query = file_utils.process_sql_template("get_categories_in_study.sql", {"study": study})
     res = dw.return_query_result(query)  # execute query - returns list of [mt_id, name, id]
-    categories: Dict[ty.MeasurementType, Dict[str, id]] = {}  # a dictionary to hold the mt -> category id mapping
+    categories: Dict[MeasurementType, Dict[str, id]] = {}  # a dictionary to hold the mt -> category id mapping
     for [mt_id, category_id, category_name] in res:
         if mt_id in categories:  # the mt is already in the dictionary
             categories[mt_id][category_name] = category_id  # add the category id to the existing list of ids
@@ -54,7 +53,7 @@ def get_inverse_category_ids_map(dw, study: ty.Study) -> Dict[ty.MeasurementType
     return categories
 
 
-def get_bounded_int_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, int]]:
+def get_bounded_int_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[str, int]]:
     """
     Create a dictionary to map from Measurement Type Id to lower and upper bounds for bounded integers
     :param dw: data warehouse handle
@@ -63,13 +62,13 @@ def get_bounded_int_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict
     """
     query = file_utils.process_sql_template("get_boundsint_in_study.sql", {"study": study})  # get mts and bounds
     res = dw.return_query_result(query)  # execute query
-    int_bounds: Dict[ty.MeasurementType, Dict[str, int]] = {}  # a dictionary to hold the mt -> bounds mapping
+    int_bounds: Dict[MeasurementType, Dict[str, int]] = {}  # a dictionary to hold the mt -> bounds mapping
     for [mt_id, minval, maxval] in res:
         int_bounds[mt_id] = {'minval': minval, 'maxval': maxval}  # add new entry in dictionary
     return int_bounds
 
 
-def get_bounded_real_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, float]]:
+def get_bounded_real_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[str, float]]:
     """
      Create a dictionary to map from Measurement Type Id to lower and upper bounds for bounded reals
      :param dw: data warehouse handle
@@ -78,13 +77,13 @@ def get_bounded_real_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dic
      """
     query = file_utils.process_sql_template("get_boundsreal_in_study.sql", {"study": study})  # get mts and bounds
     res = dw.return_query_result(query)  # execute query
-    real_bounds: Dict[ty.MeasurementType, Dict[str, float]] = {}
+    real_bounds: Dict[MeasurementType, Dict[str, float]] = {}
     for [mt_id, minval, maxval] in res:
         real_bounds[mt_id] = {'minval': minval, 'maxval': maxval}  # add new entry in dictionary
     return real_bounds
 
 
-def get_bounded_datetime_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType, Dict[str, ty.DateTime]]:
+def get_bounded_datetime_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[str, DateTime]]:
     """
      Create a dictionary to map from Measurement Type Id to lower and upper bounds for bounded datetimes
      :param dw: data warehouse handle
@@ -93,13 +92,13 @@ def get_bounded_datetime_bounds(dw, study: ty.Study) -> Dict[ty.MeasurementType,
      """
     query = file_utils.process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
     res = dw.return_query_result(query)
-    datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]] = {}
+    datetime_bounds: Dict[MeasurementType, Dict[str, DateTime]] = {}
     for [mt_id, minval, maxval] in res:
         datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}  # add new entry in dictionary
     return datetime_bounds
 
 
-def get_bounds(dw, study: ty.Study) -> Bounds:
+def get_bounds(dw, study: Study) -> Bounds:
     """
     Create a tuple holding all the bounds needed to check values to be inserted into the warehouse
     :param dw: data warehouse handle
@@ -114,8 +113,8 @@ def get_bounds(dw, study: ty.Study) -> Bounds:
     return bounded_int_bounds, bounded_real_bounds, bounded_datetime_bounds, category_ids, inverse_category_ids_map
 
 
-def check_bounded_int_in_bounds(int_bounds: Dict[ty.MeasurementType, Dict[str, int]],
-                                mt: ty.MeasurementType, value: int) -> bool:
+def check_bounded_int_in_bounds(int_bounds: Dict[MeasurementType, Dict[str, int]],
+                                mt: MeasurementType, value: int) -> bool:
     """
     Check if a bounded int is in bounds
     :param int_bounds: dictionary mapping from Measurement Type to the min and max bounds
@@ -127,8 +126,8 @@ def check_bounded_int_in_bounds(int_bounds: Dict[ty.MeasurementType, Dict[str, i
     return bounds_mt['minval'] <= value <= bounds_mt['maxval']
 
 
-def check_bounded_real_in_bounds(real_bounds: Dict[ty.MeasurementType, Dict[str, float]],
-                                 mt: ty.MeasurementType, value: float) -> bool:
+def check_bounded_real_in_bounds(real_bounds: Dict[MeasurementType, Dict[str, float]],
+                                 mt: MeasurementType, value: float) -> bool:
     """
     Check if a bounded real is in bounds
     :param real_bounds: dictionary mapping from Measurement Type to the min and max bounds
@@ -140,8 +139,8 @@ def check_bounded_real_in_bounds(real_bounds: Dict[ty.MeasurementType, Dict[str,
     return bounds_mt['minval'] <= value <= bounds_mt['maxval']
 
 
-def check_bounded_datetime_in_bounds(datetime_bounds: Dict[ty.MeasurementType, Dict[str, ty.DateTime]],
-                                     mt: ty.MeasurementType, value: ty.DateTime) -> bool:
+def check_bounded_datetime_in_bounds(datetime_bounds: Dict[MeasurementType, Dict[str, DateTime]],
+                                     mt: MeasurementType, value: DateTime) -> bool:
     """
     Check if a bounded datetime is in bounds
     :param datetime_bounds: dictionary mapping from Measurement Type to the min and max bounds
@@ -153,7 +152,7 @@ def check_bounded_datetime_in_bounds(datetime_bounds: Dict[ty.MeasurementType, D
     return bounds_mt['minval'] <= value <= bounds_mt['maxval']
 
 
-def check_category_id(categories: Dict[ty.MeasurementType, List[int]], mt: ty.MeasurementType, cat_id: int) -> bool:
+def check_category_id(categories: Dict[MeasurementType, List[int]], mt: MeasurementType, cat_id: int) -> bool:
     """
     check if category id exists for a measurement type
     :param categories:
