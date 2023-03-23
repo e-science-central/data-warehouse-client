@@ -14,18 +14,13 @@
 
 import pytest  # see https://realpython.com/pytest-python-testing/
 import type_checks
-import type_definitions as ty
-from type_definitions import Bounds as Bounds
-from type_definitions import LoaderResult as LoaderResult
-from type_definitions import DataToLoad as DataToLoad
-from type_definitions import Loader as Loader
+from type_definitions import Bounds, LoaderResult, DataToLoad, Loader, MeasurementGroup, LoadHelperResult
 from typing import Dict, List, Tuple
 import datetime
 import import_with_checks as iwc
 import load_data
 import data_warehouse
 import check_bounded_values
-#  from delete_study_contents import delete_study_measurements
 
 
 @pytest.fixture()
@@ -98,7 +93,7 @@ def test_all_example() -> DataToLoad:
 
 
 def check_all_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
-    test_all_mg_id: ty.MeasurementGroup = 50
+    test_all_mg_id: MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
                  iwc.load_int(410, data, 'Int'),
@@ -130,13 +125,13 @@ def check_all_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
                  iwc.load_optional_external(438, data, 'OptionalExternal'),
                  iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
                  )]
-    drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
+    drug_group_instances: List[Tuple[MeasurementGroup, List[LoadHelperResult]]] = \
         iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id, bounds)
     return test_mgi + drug_group_instances, None, None, None, None
 
 
 def check_all_loader_2(data: DataToLoad, bounds: Bounds) -> LoaderResult:
-    test_all_mg_id: ty.MeasurementGroup = 50
+    test_all_mg_id: MeasurementGroup = 50
     test_mgi = [(test_all_mg_id,
                 [
                  iwc.load_int(410, data, 'Int'),
@@ -168,7 +163,7 @@ def check_all_loader_2(data: DataToLoad, bounds: Bounds) -> LoaderResult:
                  iwc.load_optional_external(438, data, 'OptionalExternal'),
                  iwc.load_optional_set([439, 440, 441], data, 'OptionalSplitEnum', ['Un', 'Deux', 'Trois'])]
                  )]
-    drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
+    drug_group_instances: List[Tuple[MeasurementGroup, List[LoadHelperResult]]] = \
         iwc.load_list(data, 'drugs', drugs_loader, test_all_mg_id, bounds)
     participant = data['participant']
     trial = data['trial']
@@ -177,7 +172,7 @@ def check_all_loader_2(data: DataToLoad, bounds: Bounds) -> LoaderResult:
 
 
 def drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
-    drug_mg_id: ty.MeasurementGroup = 40
+    drug_mg_id: MeasurementGroup = 40
     drug_mgi = [(drug_mg_id,
                  [iwc.load_string(400, data, 'drug'),
                   iwc.load_int(401, data, 'dose')]
@@ -187,9 +182,9 @@ def drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
 
 def walking_and_drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
 
-    turn_group: ty.MeasurementGroup = 39
+    turn_group: MeasurementGroup = 39
 
-    turn_group_instance: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
+    turn_group_instance: List[Tuple[MeasurementGroup, List[LoadHelperResult]]] = \
         [(turn_group,
           [iwc.load_datetime(370, data, 'visit-date'),
            iwc.load_string(371, data, 'visit-code'),
@@ -199,7 +194,7 @@ def walking_and_drugs_loader(data: DataToLoad, bounds: Bounds) -> LoaderResult:
            iwc.load_real(1845, data, 'Turn_End_SO'),
            iwc.load_real(1846, data, 'Turn_Duration_SO'),
            iwc.load_real(1847, data, 'Turn_PeakAngularVelocity_SO')])]
-    drug_group_instances: List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]] = \
+    drug_group_instances: List[Tuple[MeasurementGroup, List[LoadHelperResult]]] = \
         iwc.load_list(data, 'drugs', drugs_loader, turn_group, bounds)
     return turn_group_instance+drug_group_instances, None, None, None, None
 
@@ -266,7 +261,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
     success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
     if success:
         main_mgi = mgis[0]  # Get the main mgi (not those of the Drug measurement group instances)
-        test_all_mg_id: ty.MeasurementGroup = 50
+        test_all_mg_id: MeasurementGroup = 50
         #  retrieve value from warehouse
         measurements = dw_handle.get_measurements(test_study, measurement_type=measurement_type,
                                                   measurement_group=test_all_mg_id, group_instance=main_mgi)

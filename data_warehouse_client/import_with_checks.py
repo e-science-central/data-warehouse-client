@@ -17,7 +17,7 @@ from typing import Tuple, List, Optional, Dict, Callable, Any
 import type_checks
 import itertools
 import functools
-from type_definitions import Bounds as Bounds
+from type_definitions import Bounds, ValueTriple
 
 
 def process_measurement_group(mg_triples):
@@ -40,15 +40,15 @@ def process_measurement_group(mg_triples):
 
 
 def process_measurement_groups(
-        vals_to_load_in_mgs: List[Tuple[ty.MeasurementGroup, List[Tuple[bool, List[ty.ValueTriple]]], List[str]]]) ->\
-        Tuple[bool, List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]], List[str]]:
+        vals_to_load_in_mgs: List[Tuple[ty.MeasurementGroup, List[Tuple[bool, List[ValueTriple]]], List[str]]]) ->\
+        Tuple[bool, List[Tuple[ty.MeasurementGroup, List[ValueTriple]]], List[str]]:
     """
     takes the result of attempting to load each field in a message group and processes it
     :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
     :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
     """
     successful: bool = True
-    all_mgs_and_triples: List[Tuple[int, List[ty.ValueTriple]]] = []
+    all_mgs_and_triples: List[Tuple[int, List[ValueTriple]]] = []
     all_error_messages: List[str] = []
     for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
         success, triples, error_messages = process_measurement_group(vals_to_load_in_mg)
@@ -180,7 +180,7 @@ def get_field(data: ty.DataToLoad, jfield: str) -> Tuple[bool, ty.FieldValue]:
 
 
 def make_field(measurement_type: ty.MeasurementType, val_type: ty.ValType, data: ty.DataToLoad,
-               jfield: str, optional: bool, bounds: Bounds = None) -> Tuple[bool, List[ty.ValueTriple], str]:
+               jfield: str, optional: bool, bounds: Bounds = None) -> Tuple[bool, List[ValueTriple], str]:
     """
     check if a value exists, and if so its type
     :param measurement_type: measurement type of jfield in the data warehouse
@@ -206,7 +206,7 @@ def make_field(measurement_type: ty.MeasurementType, val_type: ty.ValType, data:
 
 
 def load_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) ->\
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load an integer from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -219,7 +219,7 @@ def load_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: 
 
 
 def load_optional_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) ->\
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load an optional integer from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -232,7 +232,7 @@ def load_optional_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad,
 
 
 def load_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) ->\
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load an real from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -245,7 +245,7 @@ def load_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield:
 
 
 def load_optional_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load an optional real from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -258,7 +258,7 @@ def load_optional_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad
 
 
 def load_string(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load a string from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -271,7 +271,7 @@ def load_string(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfiel
 
 
 def load_optional_string(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load an optional string from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -284,7 +284,7 @@ def load_optional_string(measurement_type: ty.MeasurementType, data: ty.DataToLo
 
 
 def load_datetime(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load a datetime from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -297,7 +297,7 @@ def load_datetime(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfi
 
 
 def load_optional_datetime(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load optional datetime from the dictionary holding the data
     :param measurement_type: measurement type id
@@ -310,7 +310,7 @@ def load_optional_datetime(measurement_type: ty.MeasurementType, data: ty.DataTo
 
 
 def load_boolean(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load boolean from the dictionary holding the data (must be 0 or 1)
     :param measurement_type:    measurement type of jfield in the data warehouse
@@ -323,7 +323,7 @@ def load_boolean(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfie
 
 
 def load_optional_boolean(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load optional boolean from the dictionary holding the data (must be 0 or 1)
     :param measurement_type:    measurement type of jfield in the data warehouse
@@ -336,7 +336,7 @@ def load_optional_boolean(measurement_type: ty.MeasurementType, data: ty.DataToL
 
 
 def load_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str, bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load a nominal represented by its id in the category table from the dictionary holding the data
     :param measurement_type:    measurement type of jfield in the data warehouse
@@ -351,7 +351,7 @@ def load_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLo
 
 def load_optional_nominal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                                   bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load optional nominal represented by its id in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -366,7 +366,7 @@ def load_optional_nominal_from_id(measurement_type: ty.MeasurementType, data: ty
 
 def load_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                          bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load a ordinal represented by its id in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -381,7 +381,7 @@ def load_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLo
 
 def load_optional_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                                   bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load optional ordinal represented by its id in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -396,7 +396,7 @@ def load_optional_ordinal_from_id(measurement_type: ty.MeasurementType, data: ty
 
 def load_categorical_from_value(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                                 val_type: int, optional: bool, bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load a categorical represented by its value in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -424,7 +424,7 @@ def load_categorical_from_value(measurement_type: ty.MeasurementType, data: ty.D
 
 
 def load_nominal_from_value(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                            bounds: Bounds) -> Tuple[bool, List[ty.ValueTriple], str]:
+                            bounds: Bounds) -> Tuple[bool, List[ValueTriple], str]:
     """
      Load a nominal represented by its value in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -438,7 +438,7 @@ def load_nominal_from_value(measurement_type: ty.MeasurementType, data: ty.DataT
 
 
 def load_optional_nominal_from_value(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                                     bounds: Bounds) -> Tuple[bool, List[ty.ValueTriple], str]:
+                                     bounds: Bounds) -> Tuple[bool, List[ValueTriple], str]:
     """
      Load optional nominal represented by its value in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -453,7 +453,7 @@ def load_optional_nominal_from_value(measurement_type: ty.MeasurementType, data:
 
 def load_ordinal_from_value(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                             bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load ordinal represented by its value in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -468,7 +468,7 @@ def load_ordinal_from_value(measurement_type: ty.MeasurementType, data: ty.DataT
 
 def load_optional_ordinal_from_value(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                                      bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load optional ordinal represented by its value in the category table from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -483,7 +483,7 @@ def load_optional_ordinal_from_value(measurement_type: ty.MeasurementType, data:
 
 def load_bounded_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                      bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load  bounded int from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -498,7 +498,7 @@ def load_bounded_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, 
 
 def load_optional_bounded_int(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                               bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
     Load optional bounded int from the dictionary holding the data
     :param measurement_type:    measurement type of jfield in the data warehouse
@@ -512,7 +512,7 @@ def load_optional_bounded_int(measurement_type: ty.MeasurementType, data: ty.Dat
 
 
 def load_bounded_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str, bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
      Load bounded real from the dictionary holding the data
      :param measurement_type:    measurement type of jfield in the data warehouse
@@ -527,7 +527,7 @@ def load_bounded_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad,
 
 def load_optional_bounded_real(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
                                bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
       Load optional bounded real from the dictionary holding the data
       :param measurement_type:    measurement type of jfield in the data warehouse
@@ -541,7 +541,7 @@ def load_optional_bounded_real(measurement_type: ty.MeasurementType, data: ty.Da
 
 
 def load_bounded_datetime(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str, bounds: Bounds) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
       Load bounded datetime from the dictionary holding the data
       :param measurement_type:    measurement type of jfield in the data warehouse
@@ -555,7 +555,7 @@ def load_bounded_datetime(measurement_type: ty.MeasurementType, data: ty.DataToL
 
 
 def load_optional_bounded_datetime(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str,
-                                   bounds: Bounds) -> Tuple[bool, List[ty.ValueTriple], str]:
+                                   bounds: Bounds) -> Tuple[bool, List[ValueTriple], str]:
     """
       Load optional bounded datetime from the dictionary holding the data
       :param measurement_type:    measurement type of jfield in the data warehouse
@@ -569,7 +569,7 @@ def load_optional_bounded_datetime(measurement_type: ty.MeasurementType, data: t
 
 
 def load_external(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
       Load external from the dictionary holding the data
       :param measurement_type:    measurement type of jfield in the data warehouse
@@ -582,7 +582,7 @@ def load_external(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfi
 
 
 def load_optional_external(measurement_type: ty.MeasurementType, data: ty.DataToLoad, jfield: str) -> \
-        Tuple[bool, List[ty.ValueTriple], str]:
+        Tuple[bool, List[ValueTriple], str]:
     """
        Load optional external from the dictionary holding the data
        :param measurement_type:    measurement type of jfield in the data warehouse
@@ -595,7 +595,7 @@ def load_optional_external(measurement_type: ty.MeasurementType, data: ty.DataTo
 
 
 def load_a_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad, jfield: str, value_list: List[str],
-               optional: bool) -> Tuple[bool, List[ty.ValueTriple], str]:
+               optional: bool) -> Tuple[bool, List[ValueTriple], str]:
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
     measurementtype per value. This function takes a json list of values and creates the list of measurements from it -
@@ -636,7 +636,7 @@ def load_a_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad,
 
 
 def load_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad, jfield: str,
-             value_list: List[str]) -> Tuple[bool, List[ty.ValueTriple], str]:
+             value_list: List[str]) -> Tuple[bool, List[ValueTriple], str]:
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
     measurementtype per value. This function takes a json list of values and creates the list of measurements from it -
@@ -653,7 +653,7 @@ def load_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad, j
 
 
 def load_optional_set(measurement_types: List[ty.MeasurementType], data: ty.DataToLoad, jfield: str,
-                      value_list: List[str]) -> Tuple[bool, List[ty.ValueTriple], str]:
+                      value_list: List[str]) -> Tuple[bool, List[ValueTriple], str]:
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
     measurementtype per value. This function takes a json list of values and creates the list of measurements from it -

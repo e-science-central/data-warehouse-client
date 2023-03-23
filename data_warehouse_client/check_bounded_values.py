@@ -15,7 +15,7 @@
 import file_utils
 import type_definitions as ty
 from typing import List, Dict
-from type_definitions import Bounds as Bounds
+from type_definitions import Bounds
 
 
 def get_category_ids(dw, study: ty.Study) -> Dict[ty.MeasurementType, List[int]]:

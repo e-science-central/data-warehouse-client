@@ -14,10 +14,10 @@
 import functools
 from datetime import datetime
 import unidecode
-import type_definitions as ty
 from typing import Tuple, List, Any, Callable, Optional, Dict
 import itertools
 import type_checks
+from type_definitions import MeasurementGroup, LoadHelperResult, ValueTriple, LoaderResult, DataToLoad
 
 
 def process_message_group(mg_triples):
@@ -39,16 +39,16 @@ def process_message_group(mg_triples):
         return False, [], error_messages  # return Failure, no triples and the list of error messages
 
 
-def process_measurement_groups(
-        vals_to_load_in_mgs: List[Tuple[ty.MeasurementGroup, List[Tuple[bool, List[ty.ValueTriple]]], List[str]]]) ->\
-        Tuple[bool, List[Tuple[ty.MeasurementGroup, List[ty.ValueTriple]]], List[str]]:
+def process_measurement_groups(vals_to_load_in_mgs: List[Tuple[MeasurementGroup, List[LoadHelperResult]]]) ->\
+        Tuple[bool, List[Tuple[MeasurementGroup, List[ValueTriple]]], List[str]]:
     """
-    takes the result of attempting to load each field in a message group and processes it
+    takes the result of attempting to load each field in a message group and processes it so it can be inserted into
+    the data warehouse (if there are no errors)
     :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
     :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
     """
     successful: bool = True
-    all_mgs_and_triples: List[Tuple[int, List[ty.ValueTriple]]] = []
+    all_mgs_and_triples: List[Tuple[int, List[ValueTriple]]] = []
     all_error_messages: List[str] = []
     for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
         success, triples, error_messages = process_message_group(vals_to_load_in_mg)
@@ -65,7 +65,7 @@ def process_measurement_groups(
 
 def get_loader_from_data_name(
         data_name: str,
-        mapper: Dict[str, Callable[[ty.DataToLoad], ty.LoaderResult]]) -> Tuple[bool, Optional[Callable]]:
+        mapper: Dict[str, Callable[[DataToLoad], LoaderResult]]) -> Tuple[bool, Optional[Callable]]:
     """
     map from the data_name to the mapper function - used when process_measurement_groups is the way to ingest data
     :param data_name: the measurement_type_in_the_json
@@ -923,11 +923,12 @@ def concat(ls: List[List[Any]]) -> List[Any]:
     return list(itertools.chain.from_iterable(ls))
 
 
-def load_a_list(data: ty.DataToLoad,
+def load_a_list(data: DataToLoad,
                 jfield: str,
-                loader: Callable[[ty.DataToLoad], ty.LoaderResult],
-                mg_id: ty.MeasurementGroup, optional: bool) ->\
-        List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+                loader: Callable[[DataToLoad], LoaderResult],
+                mg_id: MeasurementGroup,
+                optional: bool) ->\
+        List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
     """
     Load a list within data loaded into the
     :param data: data to load into warehouse - held in a Dictionary
@@ -937,7 +938,7 @@ def load_a_list(data: ty.DataToLoad,
     :param optional: True if the list is optional
     :return: list of measurement group ids and the values to load into them
     """
-    list_val: List[ty.DataToLoad] = data.get(jfield)   # extract the list field
+    list_val: List[DataToLoad] = data.get(jfield)   # extract the list field
     if list_val is None:  # missing field
         if optional:
             return []    # if optional then it's not an error
@@ -948,8 +949,8 @@ def load_a_list(data: ty.DataToLoad,
         return concat(list(map(lambda e: loader(e)[0], list_val)))
 
 
-def load_list(data: ty.DataToLoad, jfield: str, loader: Callable[[ty.DataToLoad], ty.LoaderResult],
-              mg_id: ty.MeasurementGroup) -> List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+def load_list(data: DataToLoad, jfield: str, loader: Callable[[DataToLoad], LoaderResult],
+              mg_id: MeasurementGroup) -> List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
     """
 
     :param data: data to load into warehouse - held in a Dictionary
@@ -961,8 +962,8 @@ def load_list(data: ty.DataToLoad, jfield: str, loader: Callable[[ty.DataToLoad]
     return load_a_list(data, jfield, loader, mg_id, False)
 
 
-def load_optional_list(data: ty.DataToLoad, jfield: str, loader, mg_id: ty.MeasurementGroup) ->\
-        List[Tuple[ty.MeasurementGroup, List[ty.LoadHelperResult]]]:
+def load_optional_list(data: DataToLoad, jfield: str, loader, mg_id: MeasurementGroup) ->\
+        List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
     """
 
     :param data: data to load into warehouse - held in a Dictionary
