@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import file_utils
+from file_utils import process_sql_template
 from type_definitions import Study, MeasurementType, Bounds, DateTime
 from typing import List, Dict
 
@@ -24,7 +24,7 @@ def get_category_ids(dw, study: Study) -> Dict[MeasurementType, List[int]]:
     :param study: Study id
     :return: Dictionary mapping from Measurement Type to a list of the Category Ids in that Measurement Type
     """
-    query = file_utils.process_sql_template("get_category_ids.sql", {"study": study})  # query to get mts and cat ids
+    query = process_sql_template("get_category_ids.sql", {"study": study})  # query to get mts and cat ids
     res = dw.return_query_result(query)  # execture query
     categories: Dict[MeasurementType, List[int]] = {}  # a dictionary to hold the mt -> category id mapping
     for [category_id, mt_id] in res:
@@ -42,7 +42,7 @@ def get_inverse_category_ids_map(dw, study: Study) -> Dict[MeasurementType, Dict
      :param study: Study id
      :return: Dictionary mapping from Measurement Type to a Dictionary mapping from Category Name to Category Id
      """
-    query = file_utils.process_sql_template("get_categories_in_study.sql", {"study": study})
+    query = process_sql_template("get_categories_in_study.sql", {"study": study})
     res = dw.return_query_result(query)  # execute query - returns list of [mt_id, name, id]
     categories: Dict[MeasurementType, Dict[str, id]] = {}  # a dictionary to hold the mt -> category id mapping
     for [mt_id, category_id, category_name] in res:
@@ -60,7 +60,7 @@ def get_bounded_int_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[str, 
     :param study: Study id
     :return: Dictionary mapping from Measurement Type to the min and max bounds
     """
-    query = file_utils.process_sql_template("get_boundsint_in_study.sql", {"study": study})  # get mts and bounds
+    query = process_sql_template("get_boundsint_in_study.sql", {"study": study})  # get mts and bounds
     res = dw.return_query_result(query)  # execute query
     int_bounds: Dict[MeasurementType, Dict[str, int]] = {}  # a dictionary to hold the mt -> bounds mapping
     for [mt_id, minval, maxval] in res:
@@ -75,7 +75,7 @@ def get_bounded_real_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[str,
      :param study: Study id
      :return: Dictionary mapping from Measurement Type to the min and max bounds
      """
-    query = file_utils.process_sql_template("get_boundsreal_in_study.sql", {"study": study})  # get mts and bounds
+    query = process_sql_template("get_boundsreal_in_study.sql", {"study": study})  # get mts and bounds
     res = dw.return_query_result(query)  # execute query
     real_bounds: Dict[MeasurementType, Dict[str, float]] = {}
     for [mt_id, minval, maxval] in res:
@@ -90,7 +90,7 @@ def get_bounded_datetime_bounds(dw, study: Study) -> Dict[MeasurementType, Dict[
      :param study: Study id
      :return: Dictionary mapping from Measurement Type to the min and max bounds
      """
-    query = file_utils.process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
+    query = process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
     res = dw.return_query_result(query)
     datetime_bounds: Dict[MeasurementType, Dict[str, DateTime]] = {}
     for [mt_id, minval, maxval] in res:

@@ -22,11 +22,11 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 
 
-import file_utils
-import data_warehouse
-import print_io
+from file_utils import process_sql_template
+from data_warehouse import core_sql_for_measurements
+from print_io import print_measurements, print_measurements_to_file
 from tabulate import tabulate
-import datetime
+from _datetime import datetime
 
 
 def check_category_exists(dw, study):
@@ -37,7 +37,7 @@ def check_category_exists(dw, study):
     :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("ordinal_types_not_matching_category.sql", mappings)
+    query = process_sql_template("ordinal_types_not_matching_category.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -49,7 +49,7 @@ def check_integer_bounds_exist(dw, study):
     :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_integer_measurement_types_without_bounds.sql", mappings)
+    query = process_sql_template("bounded_integer_measurement_types_without_bounds.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -61,7 +61,7 @@ def check_real_bounds_exist(dw, study):
     :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_real_measurement_types_without_bounds.sql", mappings)
+    query = process_sql_template("bounded_real_measurement_types_without_bounds.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -73,7 +73,7 @@ def check_datetime_bounds_exist(dw, study):
     :return: the ids and names of measurement types in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_datetime_measurement_types_without_bounds.sql", mappings)
+    query = process_sql_template("bounded_datetime_measurement_types_without_bounds.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -84,8 +84,8 @@ def check_valtype_matches_values(dw, study):
     :param study: study id
     :return: the measurements in the study that fail the test
     """
-    mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
-    query = file_utils.process_sql_template("measurements_lacking_value.sql", mappings)
+    mappings = {"study": str(study), "core_sql": core_sql_for_measurements()}
+    query = process_sql_template("measurements_lacking_value.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -96,8 +96,8 @@ def check_category_in_range(dw, study):
     :param study: study id
     :return: the ids of measurements in the study that fail the test
     """
-    mappings = {"study": str(study), "core_sql": data_warehouse.core_sql_for_measurements()}
-    query = file_utils.process_sql_template("measurements_lacking_value.sql", mappings)
+    mappings = {"study": str(study), "core_sql": core_sql_for_measurements()}
+    query = process_sql_template("measurements_lacking_value.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -109,7 +109,7 @@ def check_bounded_integers(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_integers.sql", mappings)
+    query = process_sql_template("bounded_integers.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -121,7 +121,7 @@ def check_bounded_reals(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_reals.sql", mappings)
+    query = process_sql_template("bounded_reals.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -133,7 +133,7 @@ def check_bounded_datetimes(dw, study):
     :return: the ids of measurements in the study that fail the test
     """
     mappings = {"study": str(study)}
-    query = file_utils.process_sql_template("bounded_datetimes.sql", mappings)
+    query = process_sql_template("bounded_datetimes.sql", mappings)
     return dw.return_query_result(query)
 
 
@@ -178,7 +178,7 @@ def print_check_warehouse(dw, study):
     r1 = check_valtype_matches_values(dw, study)
     n_invalid_entries = len(r1)
     if n_invalid_entries > 0:
-        print_io.print_measurements(r1)
+        print_measurements(r1)
     print(f'({n_invalid_entries} invalid entries)')
 
     print(f'-- Measurements declared as ordinal or nominal that refer to a non-existent category')
@@ -227,7 +227,7 @@ def print_check_warehouse_to_file(dw, study):
     """
 
     file_dir = "reports/"
-    timestamp = datetime.datetime.now()  # use the current date and time if none is specified
+    timestamp = datetime.now()  # use the current date and time if none is specified
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')
     fname = mk_txt_report_file_name(file_dir, "warehouse-check-", time_fname_str)
 
@@ -263,7 +263,7 @@ def print_check_warehouse_to_file(dw, study):
         r1 = check_valtype_matches_values(dw, study)
         n_invalid_entries = len(r1)
         if n_invalid_entries > 0:
-            print_io.print_measurements_to_file(r1, f)
+            print_measurements_to_file(r1, f)
         print(f'({n_invalid_entries} invalid entries)\n', file=f)
 
         print(f'-- Measurements declared as ordinal or nominal that refer to a non-existent category', file=f)

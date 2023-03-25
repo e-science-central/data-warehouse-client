@@ -13,8 +13,7 @@
 # limitations under the License.
 
 
-from typing import List
-import csv
+from csv import writer
 
 
 def export_measurements_as_csv(rows, fname):
@@ -29,11 +28,11 @@ def export_measurements_as_csv(rows, fname):
     :param fname: the filename of the output CSV file
     """
     with open(fname, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(
+        wr = writer(f)
+        wr.writerow(
             ["Id", "Time", "Study", "Participant", "Measurement Type", "Measurement Type Name", "Measurement Group",
              "Measurement Group Instance", "Trial", "Value Type", "Value"])
-        writer.writerows(rows)
+        wr.writerows(rows)
 
 
 def export_measurement_groups_as_csv(header, instances, fname):
@@ -49,6 +48,6 @@ def export_measurement_groups_as_csv(header, instances, fname):
     :param fname: the filename of the output CSV file
     """
     with open(fname, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(instances)
+        wr = writer(f)
+        wr.writerow(header)
+        wr.writerows(instances)

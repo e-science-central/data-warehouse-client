@@ -20,7 +20,8 @@ import data_warehouse
 import pytest
 from type_definitions import Bounds
 from datetime import datetime
-import type_checks
+from type_checks import check_int, check_real, check_string, check_boolean, check_datetime, \
+    check_nominal, check_ordinal, check_bounded_int, check_bounded_real, check_bounded_datetime, check_external
 from print_metadata_table import create_measurement_group_info
 
 
@@ -38,57 +39,57 @@ def bounds_ex1() -> Bounds:
 
 def test_valid_int_generator(bounds_ex1: Bounds):
     i = auto_generate_test_cases.valid_int_generator(10, bounds_ex1)
-    assert type_checks.check_int(i)
+    assert check_int(i)
 
 
 def test_valid_real_generator(bounds_ex1: Bounds):
     r = auto_generate_test_cases.valid_real_generator(11, bounds_ex1)
-    assert type_checks.check_real(r)
+    assert check_real(r)
 
 
 def test_valid_text_generator(bounds_ex1: Bounds):
     t = auto_generate_test_cases.valid_text_generator(12, bounds_ex1)
-    assert type_checks.check_string(t)
+    assert check_string(t)
 
 
 def test_valid_datetime_generator(bounds_ex1: Bounds):
     d = auto_generate_test_cases.valid_datetime_generator(13, bounds_ex1)
-    assert type_checks.check_datetime(d)
+    assert check_datetime(d)
 
 
 def test_valid_boolean_generator(bounds_ex1: Bounds):
     d = auto_generate_test_cases.valid_boolean_generator(14, bounds_ex1)
-    assert type_checks.check_boolean(d)
+    assert check_boolean(d)
 
 
 def test_valid_nominal_by_id(bounds_ex1: Bounds):
     ident = auto_generate_test_cases.valid_nominal_by_id_generator(4, bounds_ex1)
-    assert type_checks.check_nominal(ident, 4, bounds_ex1)
+    assert check_nominal(ident, 4, bounds_ex1)
 
 
 def test_valid_ordinal_by_id(bounds_ex1: Bounds):
     ident = auto_generate_test_cases.valid_ordinal_by_id_generator(4, bounds_ex1)
-    assert type_checks.check_ordinal(ident, 4, bounds_ex1)
+    assert check_ordinal(ident, 4, bounds_ex1)
 
 
 def test_valid_bounded_int(bounds_ex1: Bounds):
     i = auto_generate_test_cases.valid_bounded_int_generator(1, bounds_ex1)
-    assert type_checks.check_bounded_int(i, 1, bounds_ex1)
+    assert check_bounded_int(i, 1, bounds_ex1)
 
 
 def test_valid_bounded_real(bounds_ex1: Bounds):
     r = auto_generate_test_cases.valid_bounded_real_generator(2, bounds_ex1)
-    assert type_checks.check_bounded_real(r, 2, bounds_ex1)
+    assert check_bounded_real(r, 2, bounds_ex1)
 
 
 def test_valid_bounded_datetime(bounds_ex1: Bounds):
     d = auto_generate_test_cases.valid_datetime_generator(3, bounds_ex1)
-    assert type_checks.check_bounded_datetime(d, 3, bounds_ex1)
+    assert check_bounded_datetime(d, 3, bounds_ex1)
 
 
 def test_valid_bounded_external(bounds_ex1: Bounds):
     e = auto_generate_test_cases.valid_external_generator(15, bounds_ex1)
-    assert type_checks.check_external(e, 15, bounds_ex1)
+    assert check_external(e, 15, bounds_ex1)
 
 
 @pytest.fixture()

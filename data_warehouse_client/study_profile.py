@@ -15,7 +15,7 @@
 
 import pandas as pd
 import pandas_profiling as pp
-import datetime
+from datetime import datetime
 
 
 def mk_html_report_file_name(f_dir, report_name, time_string):
@@ -36,7 +36,7 @@ def profile_all_measurement_groups(dw, study, report_dir, select_participants=Fa
     :param hide_trial_column: don't include the Trial column (useful for studies where trial is not used)
     :param filename_prefix: optional string to add to front of filename
     """
-    timestamp = datetime.datetime.now()                        # use the current date and time in the filenames
+    timestamp = datetime.now()                        # use the current date and time in the filenames
     time_fname_str = timestamp.strftime('%Y-%m-%dh%Hm%Ms%S')   # format the date time string used in the filename
     measurement_groups = dw.get_all_measurement_groups(study)  # get all the measurement groups in the study
 

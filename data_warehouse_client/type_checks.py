@@ -14,7 +14,8 @@
 
 from datetime import datetime
 from typing import Tuple, Any
-import check_bounded_values as cbv
+from check_bounded_values import check_category_id, check_bounded_datetime_in_bounds,\
+    check_bounded_int_in_bounds, check_bounded_real_in_bounds
 from type_definitions import Bounds, Value, ValType, MeasurementType
 
 
@@ -84,24 +85,23 @@ def check_boolean(val: Any) -> bool:
 
 
 def check_ordinal(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return check_int(value) and cbv.check_category_id(category_ids(bounds), measurement_type, value)
+    return check_int(value) and check_category_id(category_ids(bounds), measurement_type, value)
 
 
 def check_nominal(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return check_int(value) and cbv.check_category_id(category_ids(bounds), measurement_type, value)
+    return check_int(value) and check_category_id(category_ids(bounds), measurement_type, value)
 
 
 def check_bounded_int(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return check_int(value) and cbv.check_bounded_int_in_bounds(int_bounds(bounds), measurement_type, value)
+    return check_int(value) and check_bounded_int_in_bounds(int_bounds(bounds), measurement_type, value)
 
 
 def check_bounded_real(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return check_real(value) and cbv.check_bounded_real_in_bounds(real_bounds(bounds), measurement_type, value)
+    return check_real(value) and check_bounded_real_in_bounds(real_bounds(bounds), measurement_type, value)
 
 
 def check_bounded_datetime(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return check_datetime(value) and cbv.check_bounded_datetime_in_bounds(datetime_bounds(bounds),
-                                                                          measurement_type, value)
+    return check_datetime(value) and check_bounded_datetime_in_bounds(datetime_bounds(bounds), measurement_type, value)
 
 
 def check_external(value: Value, measurement_type: MeasurementType, bounds: Bounds) -> bool:

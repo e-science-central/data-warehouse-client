@@ -20,26 +20,26 @@ from load_warehouse_helpers import process_measurement_groups
 from type_definitions import LoaderResult, MeasurementGroup, MeasurementType, MeasurementGroupInstance, Source
 from type_definitions import Participant, Study, Trial, Bounds, LoadHelperResult
 from typing import Tuple, List, Optional
-import random
-import string
+from random import randint, uniform, choice, random
+from string import ascii_lowercase, ascii_uppercase, digits
 from datetime import datetime
-import type_checks
+from type_checks import category_ids, int_bounds, real_bounds, datetime_bounds
 from print_metadata_table import create_measurement_group_info
 from check_bounded_values import get_bounds
 
 
 def valid_int_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    return random.randint(-2147483648, +2147483647)
+    return randint(-2147483648, +2147483647)
 
 
 def valid_real_generator(measurement_type: MeasurementType, bounds: Bounds) -> float:
-    return random.uniform(-210000.00, +210000.00)
+    return uniform(-210000.00, +210000.00)
 
 
 def random_string_generator(max_length: int) -> str:
-    size = random.randint(0, 500)
-    chars = string.ascii_lowercase+string.ascii_uppercase+string.digits
-    return ''.join(random.choice(chars) for _ in range(size))
+    size = randint(0, 500)
+    chars = ascii_lowercase+ascii_uppercase+digits
+    return ''.join(choice(chars) for _ in range(size))
 
 
 def valid_text_generator(measurement_type: MeasurementType, bounds: Bounds) -> str:
@@ -49,42 +49,42 @@ def valid_text_generator(measurement_type: MeasurementType, bounds: Bounds) -> s
 def valid_datetime_generator(measurement_type: MeasurementType, bounds: Bounds) -> datetime:
     start_date = datetime(1900, 1, 1)
     end_date = datetime(2100, 1, 1)
-    random_date = start_date + (end_date - start_date) * random.random()
+    random_date = start_date + (end_date - start_date) * random()
     return random_date
 
 
 def valid_boolean_generator(measurement_type: MeasurementType, bounds: Bounds) -> bool:
-    return random.choice([True, False])
+    return choice([True, False])
 
 
 def valid_nominal_by_id_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    cat_ids = type_checks.category_ids(bounds)
-    return random.choice(cat_ids[measurement_type])
+    cat_ids = category_ids(bounds)
+    return choice(cat_ids[measurement_type])
 
 
 def valid_ordinal_by_id_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    cat_ids = type_checks.category_ids(bounds)
-    return random.choice(cat_ids[measurement_type])
+    cat_ids = category_ids(bounds)
+    return choice(cat_ids[measurement_type])
 
 
 def valid_bounded_int_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    integer_bounds = type_checks.int_bounds(bounds)
+    integer_bounds = int_bounds(bounds)
     bounds_mt = integer_bounds[measurement_type]   # get the bounds for this measurement type
-    return random.randint(bounds_mt['minval'], bounds_mt['maxval'])
+    return randint(bounds_mt['minval'], bounds_mt['maxval'])
 
 
 def valid_bounded_real_generator(measurement_type: MeasurementType, bounds: Bounds) -> float:
-    real_bounds = type_checks.real_bounds(bounds)
-    bounds_mt = real_bounds[measurement_type]  # get the bounds for this measurement type
-    return random.uniform(bounds_mt['minval'], bounds_mt['maxval'])
+    r_bounds = real_bounds(bounds)
+    bounds_mt = r_bounds[measurement_type]  # get the bounds for this measurement type
+    return uniform(bounds_mt['minval'], bounds_mt['maxval'])
 
 
 def valid_bounded_datetime_generator(measurement_type: MeasurementType, bounds: Bounds) -> datetime:
-    datetime_bounds = type_checks.datetime_bounds(bounds)
-    bounds_mt = datetime_bounds[measurement_type]  # get the bounds for this measurement type
+    dt_bounds = datetime_bounds(bounds)
+    bounds_mt = dt_bounds[measurement_type]  # get the bounds for this measurement type
     start_date = bounds_mt['minval']
     end_date = bounds_mt['maxval']
-    random_date = start_date + (end_date - start_date) * random.random()
+    random_date = start_date + (end_date - start_date) * random()
     return random_date
 
 
@@ -144,30 +144,28 @@ def invalid_boolean_generator(measurement_type: MeasurementType, bounds: Bounds)
 
 
 def invalid_nominal_by_id_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    cat_ids = type_checks.category_ids(bounds)
     return valid_boolean_generator(measurement_type, bounds)
 
 
 def invalid_ordinal_by_id_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    cat_ids = type_checks.category_ids(bounds)
     return valid_boolean_generator(measurement_type, bounds)
 
 
 def invalid_bounded_int_generator(measurement_type: MeasurementType, bounds: Bounds) -> int:
-    integer_bounds = type_checks.int_bounds(bounds)
+    integer_bounds = int_bounds(bounds)
     bounds_mt = integer_bounds[measurement_type]   # get the bounds for this measurement type
-    return random.randint(bounds_mt['maxval'] + 1, bounds_mt['maxval'] + 99999)
+    return randint(bounds_mt['maxval'] + 1, bounds_mt['maxval'] + 99999)
 
 
 def invalid_bounded_real_generator(measurement_type: MeasurementType, bounds: Bounds) -> float:
-    real_bounds = type_checks.real_bounds(bounds)
-    bounds_mt = real_bounds[measurement_type]  # get the bounds for this measurement type
-    return random.uniform(bounds_mt['maxval'] + 1.0, bounds_mt['maxval'] + 999.5)
+    r_bounds = real_bounds(bounds)
+    bounds_mt = r_bounds[measurement_type]  # get the bounds for this measurement type
+    return uniform(bounds_mt['maxval'] + 1.0, bounds_mt['maxval'] + 999.5)
 
 
 def invalid_bounded_datetime_generator(measurement_type: MeasurementType, bounds: Bounds) -> datetime:
-    datetime_bounds = type_checks.datetime_bounds(bounds)
-    bounds_mt = datetime_bounds[measurement_type]  # get the bounds for this measurement type
+    dt_bounds = datetime_bounds(bounds)
+    bounds_mt = dt_bounds[measurement_type]  # get the bounds for this measurement type
     start_date = bounds_mt['minval']
     end_date = bounds_mt['maxval']
     random_date = end_date + start_date

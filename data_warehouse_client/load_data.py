@@ -14,7 +14,7 @@
 
 from multiple_mg_inserts import insert_measurement_group_instances
 from load_warehouse_helpers import process_measurement_groups
-import check_bounded_values
+from check_bounded_values import get_bounds
 from type_definitions import MeasurementGroupInstance, DataToLoad, Source, Participant, Study, Trial, Loader, Bounds
 from typing import Tuple, List, Optional, Dict
 
@@ -58,7 +58,7 @@ def load_data(data_warehouse_handle,
     """
 
     if bounds is None:
-        bounds = check_bounded_values.get_bounds(data_warehouse_handle, study)
+        bounds = get_bounds(data_warehouse_handle, study)
     loader_found, loader = get_loader_from_data_name(data_name, mapper)  # find the loader function
     if loader_found:
         # get the (message group id, value triples) and other (optional values) to use in the loading

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import psycopg2
-import file_utils
-import type_checks
-import check_bounded_values
+from datetime import datetime
+from file_utils import process_sql_template
+from type_checks import check_value_type
+from check_bounded_values import get_bounds
 from typing import Tuple, List, Optional
 from type_definitions import Bounds, Study, MeasurementGroup, ValueTriple, DateTime, Trial, Participant, Source
 from type_definitions import MeasurementGroupInstance, ValType, MeasurementType, Value
@@ -46,14 +46,14 @@ def insert_measurement_group_instances(data_warehouse_handle,
      :return success boolean, the measurement groups' instanceids, error messages
     """
     if time is None:  # use the current date and time if none is specified
-        time = datetime.datetime.now()  # use the current date and time if none is specified
+        time = datetime.now()  # use the current date and time if none is specified
 
     if cursor is None:  # no cursor has been passed into the function, so create one
         cur = data_warehouse_handle.dbConnection.cursor()
     else:  # used the cursor passed to this function
         cur = cursor
     if bounds is None:
-        bounds = check_bounded_values.get_bounds(data_warehouse_handle, study)
+        bounds = get_bounds(data_warehouse_handle, study)
 
     if len(measurement_group_vals) == 0:   # Catch the edge case where a loader returns nothing to insert
         return False, [], [f'[Error in in insert_measurement_groups - no instances to insert.]']
@@ -120,23 +120,17 @@ def insert_one_measurement(cur, study: Study, participant: Participant, time: Da
         if first_measurement_in_group:  # this is the first measurement in the group to be inserted
             group_instance_id = measurement_id  # set the group instance id field to this value
             update_group_instance_id_map = {'group_instance_id': group_instance_id, 'measurement_id': measurement_id}
-            update_group_instance_id_sql = file_utils.process_sql_template("update_measurement_group_instance_id.sql",
-                                                                           update_group_instance_id_map)
+            update_group_instance_id_sql = process_sql_template("update_measurement_group_instance_id.sql",
+                                                                update_group_instance_id_map)
             cur.execute(update_group_instance_id_sql)  # set the groupinstance id for 1st measurement
         else:  # keep using the measurement_group_instance_id passed to the function
             group_instance_id = measurement_group_instance_id
 
         if text_valued_type(val_type):  # it's a string or external (URI) so make entry in textvalue table
-            # text_insert_map = {'measurement': measurement_id, 'textval': value, 'study': study}
-            # insert_text_sql = file_utils.process_sql_template("insert_text.sql", text_insert_map)
-            # print(insert_text_sql)
-            # cur.execute(insert_text_sql)
             cur.execute("INSERT INTO textvalue(measurement,textval,study) VALUES (%s, %s, %s);",
                         (measurement_id, value, study))
 
         elif datetime_valued_type(val_type):  # it's a datetime value so make entry in datetimevalue table
-            # datetime_insert_map = {'measurement': measurement_id, 'datetimeval': value, 'study': study}
-            # insert_datetime_sql = file_utils.process_sql_template("insert_datetime.sql", datetime_insert_map)
             insert_datetime_template = "INSERT INTO datetimevalue(measurement,datetimeval,study) VALUES (%s, %s, %s);"
             insert_datetime = cur.mogrify(insert_datetime_template, (measurement_id, value, study))
             cur.execute(insert_datetime)
@@ -180,7 +174,7 @@ def insert_one_measurement_group_instance(cur,
     measurement_group_instance_id: MeasurementGroupInstance = 0  # temp val for 1st measurement inserted in instance
 
     for (measurement_type, val_type, value) in values:  # for each measurement to be stored in the group instance
-        success, error_mess = type_checks.check_value_type(val_type, value, measurement_type, bounds)
+        success, error_mess = check_value_type(val_type, value, measurement_type, bounds)
         if not success:  # problem with the type of a measurement
             error_messages = [error_mess +
                               f' Study = {study}, Participant = {participant}, Trial = {trial}, '

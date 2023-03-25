@@ -13,20 +13,20 @@
 # limitations under the License.
 
 import pytest  # see https://realpython.com/pytest-python-testing/
-import type_checks
+from type_checks import check_int
 from type_definitions import Bounds, LoaderResult, DataToLoad, Loader, MeasurementGroup, LoadHelperResult
 from typing import Dict, List, Tuple
-import datetime
+from datetime import datetime
 import import_with_checks as iwc
-import load_data
+from load_data import load_data
 import data_warehouse
-import check_bounded_values
+from check_bounded_values import get_inverse_category_ids_map
 
 
 @pytest.fixture()
 def walking_test_1() -> DataToLoad:
     data = {
-        'visit-date': datetime.datetime.now(),
+        'visit-date': datetime.now(),
         'visit-code': 'visit3',
         'wb_id': "fred",
         'Turn_Id': 2345,
@@ -62,7 +62,7 @@ def test_all_example() -> DataToLoad:
         'Int': 4,
         'Real': 5.45,
         'Text': 'Test Data',
-        'DateTime': datetime.datetime.now(),
+        'DateTime': datetime.now(),
         'Bool': 1,
         'NominalfromValue': 'First',
         'NominalfromId': 1,
@@ -70,13 +70,13 @@ def test_all_example() -> DataToLoad:
         'OrdinalfromId': 2,
         'BoundedInt': 5,
         'BoundedReal': 8.6,
-        'BoundedDateTime': datetime.datetime.now(),
+        'BoundedDateTime': datetime.now(),
         'External': 'External Data',
         'SplitEnum': ['1st', '3rd'],
         'OptionalInt': 4,
         'OptionalReal': 5.45,
         'OptionalText': 'Test Data',
-        'OptionalDateTime': datetime.datetime.now(),
+        'OptionalDateTime': datetime.now(),
         'OptionalBool': 1,
         'OptionalNominalfromValue': 'First',
         'OptionalNominalfromId': 1,
@@ -84,7 +84,7 @@ def test_all_example() -> DataToLoad:
         'OptionalOrdinalfromId': 1,
         'OptionalBoundedInt': 5,
         'OptionalBoundedReal': 8.6,
-        'OptionalBoundedDateTime': datetime.datetime.now(),
+        'OptionalBoundedDateTime': datetime.now(),
         'OptionalExternal': 'External Data',
         'OptionalSplitEnum': ['Deux', 'Trois'],
         'drugs': [{'drug': 'asprin', 'dose': 10}, {'drug': 'calpol', 'dose': 30}, {'drug': 'clopidogrel', 'dose': 20}]
@@ -221,7 +221,7 @@ def test_study():
     ('Int', 4, 410, True),
     ('Real', 5.45, 411, True),
     ('Text', 'Test Data', 412, True),
-    ('DateTime', datetime.datetime.now(), 413, False),
+    ('DateTime', datetime.now(), 413, False),
     ('Bool', 1, 414, True),
     ('NominalfromValue', 'First', 415, True),
     ('NominalfromId', 1, 416, True),
@@ -229,7 +229,7 @@ def test_study():
     ('OrdinalfromId', 2, 418, True),
     ('BoundedInt', 5, 419, True),
     ('BoundedReal', 8.6, 420, True),
-    ('BoundedDateTime', datetime.datetime.now(), 421, False),
+    ('BoundedDateTime', datetime.now(), 421, False),
     ('External', 'External Data', 422, True),
     ('SplitEnum1', True, 423, True),
     ('SplitEnum2', False, 424, True),
@@ -237,7 +237,7 @@ def test_study():
     ('OptionalInt', 4, 426, True),
     ('OptionalReal', 5.45, 427, True),
     ('OptionalText', 'Test Data', 428, True),
-    ('OptionalDateTime', datetime.datetime.now(), 429, False),
+    ('OptionalDateTime', datetime.now(), 429, False),
     ('OptionalBool', 1, 430, True),
     ('OptionalNominalfromValue', 'First', 431, True),
     ('OptionalNominalfromId', 1, 432, True),
@@ -245,7 +245,7 @@ def test_study():
     ('OptionalOrdinalfromId', 1, 434, True),
     ('OptionalBoundedInt', 5, 435, True),
     ('OptionalBoundedReal', 8.6, 436, True),
-    ('OptionalBoundedDateTime', datetime.datetime.now(), 437, False),
+    ('OptionalBoundedDateTime', datetime.now(), 437, False),
     ('OptionalExternal', 'External Data', 438, True),
     ('OptionalSplitEnum1', False, 439, True),
     ('OptionalSplitEnum2', True, 440, True),
@@ -257,8 +257,8 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
     Check each field in the measurement group instance has been inserted into the database
     """
     dw_handle = mk_dw_handle
-    category_value_to_id_map = check_bounded_values.get_inverse_category_ids_map(dw_handle, test_study)
-    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
+    category_value_to_id_map = get_inverse_category_ids_map(dw_handle, test_study)
+    success, mgis, error_msg = load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
     if success:
         main_mgi = mgis[0]  # Get the main mgi (not those of the Drug measurement group instances)
         test_all_mg_id: MeasurementGroup = 50
@@ -274,7 +274,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
                 else:
                     value_to_compare = False
             elif val_type in [5, 6]:  # if categorical data
-                if type_checks.check_int(json_value):   # if it's a key that was in the json, get the value
+                if check_int(json_value):   # if it's a key that was in the json, get the value
                     value_to_compare = category_value_to_id_map[measurement_type][value]
                 else:  # it was a value in the json, which is what will be retrived
                     value_to_compare = json_value
@@ -302,7 +302,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
     ('OrdinalfromId', 77, False),
     ('BoundedInt', 9999999, False),
     ('BoundedReal', 999999.9, False),
-    ('BoundedDateTime', datetime.datetime(1666, 5, 17, 23, 17, 59), False),
+    ('BoundedDateTime', datetime(1666, 5, 17, 23, 17, 59), False),
     ('External', 5, False),
     ('SplitEnum', ['First', 'Fifth'], False),
     ('OptionalInt', '4', False),
@@ -316,7 +316,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
     ('OptionalOrdinalfromId', '1', False),
     ('OptionalBoundedInt', 7.89, False),
     ('OptionalBoundedReal', 4, False),
-    ('OptionalBoundedDateTime', datetime.datetime(2500, 5, 17, 23, 17, 59), False),
+    ('OptionalBoundedDateTime', datetime(2500, 5, 17, 23, 17, 59), False),
     ('OptionalExternal', 5.6, False),
     ('OptionalSplitEnum', [1, 2], False)
 ])
@@ -328,7 +328,7 @@ def test_each_field(mk_dw_handle, test_all_example, fn_mapper, test_study,
     dw_handle = mk_dw_handle
     # category_value_to_id_map = check_bounded_values.get_inverse_category_ids_map(dw_handle, test_study)
     test_all_example[json_key] = json_value
-    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
+    success, mgis, error_msg = load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study)
     if success == valid:
         assert True
     else:
@@ -348,8 +348,8 @@ def test_participant_and_trial_and_source_fields(mk_dw_handle, test_all_example,
     test loading with valid and invalid participants and trials and sources
     """
     dw_handle = mk_dw_handle
-    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study,
-                                                   participant=participant, trial=trial, source=source)
+    success, mgis, error_msg = load_data(dw_handle, test_all_example, "test_all", fn_mapper, test_study,
+                                         participant=participant, trial=trial, source=source)
     if not success and not valid:  # failed when it should fail
         assert len(mgis) == 0 and len(error_msg) > 0
     elif success != valid:  # should not occur
@@ -383,7 +383,7 @@ def test_participant_and_trial_and_source_fields_2(mk_dw_handle, test_all_exampl
     test_all_example['participant'] = participant
     test_all_example['trial'] = trial
     test_all_example['source'] = source
-    success, mgis, error_msg = load_data.load_data(dw_handle, test_all_example, "test_all_2", fn_mapper, test_study)
+    success, mgis, error_msg = load_data(dw_handle, test_all_example, "test_all_2", fn_mapper, test_study)
     if not success and not valid:  # failed when it should fail
         assert len(mgis) == 0 and len(error_msg) > 0
     elif success != valid:  # should not occur

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import file_utils
+from file_utils import process_sql_template
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
 import datetime
 
@@ -121,41 +121,41 @@ def create_measurement_group_info(dw, study):
     :param study: study id
     :return:
     """
-    q1 = file_utils.process_sql_template("get_measurement_group_info.sql", {"study": study})
+    q1 = process_sql_template("get_measurement_group_info.sql", {"study": study})
     r1 = dw.return_query_result(q1)  # return a list of (measurementgroup, measurementtype, name, valtype, optional)
 
-    q2 = file_utils.process_sql_template("get_categories_in_study.sql", {"study": study})
+    q2 = process_sql_template("get_categories_in_study.sql", {"study": study})
     r2 = dw.return_query_result(q2)
 
     cats = {}
     for mt in set([row[0] for row in r2]):
         cats[mt] = dict(map(lambda t: (t[2], t[1]),  filter(lambda r: r[0] == mt, r2)))
 
-    q3 = file_utils.process_sql_template("get_boundsint_in_study.sql", {"study": study})
+    q3 = process_sql_template("get_boundsint_in_study.sql", {"study": study})
     r3 = dw.return_query_result(q3)
     int_bounds = {}
     for [mt_id, minval, maxval] in r3:
         int_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q4 = file_utils.process_sql_template("get_boundsreal_in_study.sql", {"study": study})
+    q4 = process_sql_template("get_boundsreal_in_study.sql", {"study": study})
     r4 = dw.return_query_result(q4)
     real_bounds = {}
     for [mt_id, minval, maxval] in r4:
         real_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q4a = file_utils.process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
+    q4a = process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
     r4a = dw.return_query_result(q4a)
     datetime_bounds = {}
     for [mt_id, minval, maxval] in r4a:
         datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q5 = file_utils.process_sql_template("get_measurement_groups_in_study.sql", {"study": study})
+    q5 = process_sql_template("get_measurement_groups_in_study.sql", {"study": study})
     r5 = dw.return_query_result(q5)
     mg_names = {}
     for [mg_id, mg_name] in r5:
         mg_names[mg_id] = mg_name
 
-    q6 = file_utils.process_sql_template("get_units_in_study.sql", {"study": study})
+    q6 = process_sql_template("get_units_in_study.sql", {"study": study})
     r6 = dw.return_query_result(q6)
     unit_name = {}
     for [mt_id, unit_description] in r6:
