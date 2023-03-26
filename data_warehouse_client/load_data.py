@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from multiple_mg_inserts import insert_measurement_group_instances
-from load_warehouse_helpers import process_measurement_groups
 from check_bounded_values import get_bounds
-from type_definitions import MeasurementGroupInstance, DataToLoad, Source, Participant, Study, Trial, Loader, Bounds
+from type_definitions import MeasurementGroupInstance, DataToLoad, Source, Participant, Study, Trial, Loader,\
+    Bounds, MeasurementGroup, LoadHelperResult, ValueTriple
 from typing import Tuple, List, Optional, Dict
+from load_warehouse_helpers import process_message_group
 
 
 def get_loader_from_data_name(data_name: str, mapper: Dict[str, Loader]) -> Tuple[bool, Optional[Loader]]:
@@ -30,6 +31,30 @@ def get_loader_from_data_name(data_name: str, mapper: Dict[str, Loader]) -> Tupl
         return True, mapper[data_name]
     else:
         return False, None
+
+
+def process_measurement_groups(vals_to_load_in_mgs: List[Tuple[MeasurementGroup, List[LoadHelperResult]]]) ->\
+        Tuple[bool, List[Tuple[MeasurementGroup, List[ValueTriple]]], List[str]]:
+    """
+    takes the result of attempting to load each field in a message group and processes it so it can be inserted into
+    the data warehouse (if there are no errors)
+    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
+    :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
+    """
+    successful: bool = True
+    all_mgs_and_triples: List[Tuple[int, List[ValueTriple]]] = []
+    all_error_messages: List[str] = []
+    for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
+        success, triples, error_messages = process_message_group(vals_to_load_in_mg)
+        successful = successful and success
+        all_mgs_and_triples = [(measurement_group_id, triples)] + all_mgs_and_triples
+        all_error_messages = error_messages + all_error_messages
+
+    combined_error_messages = list(filter(lambda s: s != "", all_error_messages))
+    if successful:
+        return True, all_mgs_and_triples, combined_error_messages
+    else:
+        return False, [], combined_error_messages
 
 
 def load_data(data_warehouse_handle,

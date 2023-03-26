@@ -14,10 +14,10 @@
 import functools
 from datetime import datetime
 import unidecode
-from typing import Tuple, List, Any, Callable, Optional, Dict
+from typing import Tuple, List, Any, Callable
 import itertools
 import type_checks
-from type_definitions import MeasurementGroup, LoadHelperResult, ValueTriple, LoaderResult, DataToLoad
+from type_definitions import MeasurementGroup, LoadHelperResult, LoaderResult, DataToLoad
 
 
 def process_message_group(mg_triples):
@@ -37,45 +37,6 @@ def process_message_group(mg_triples):
         # remove empty strings from error messages
         error_messages = list(filter(lambda s: s != "", list(map(lambda r: r[error_message_index], mg_triples))))
         return False, [], error_messages  # return Failure, no triples and the list of error messages
-
-
-def process_measurement_groups(vals_to_load_in_mgs: List[Tuple[MeasurementGroup, List[LoadHelperResult]]]) ->\
-        Tuple[bool, List[Tuple[MeasurementGroup, List[ValueTriple]]], List[str]]:
-    """
-    takes the result of attempting to load each field in a message group and processes it so it can be inserted into
-    the data warehouse (if there are no errors)
-    :param vals_to_load_in_mgs: [(measurement_group_id, [(Success, [(measurement_type, valtype, val)], [Error Mess])])]
-    :return: (Success, [(measurement_group_id, [(measurement_type, valtype, value)])], [Error Mess])
-    """
-    successful: bool = True
-    all_mgs_and_triples: List[Tuple[int, List[ValueTriple]]] = []
-    all_error_messages: List[str] = []
-    for (measurement_group_id, vals_to_load_in_mg) in vals_to_load_in_mgs:
-        success, triples, error_messages = process_message_group(vals_to_load_in_mg)
-        successful = successful and success
-        all_mgs_and_triples = [(measurement_group_id, triples)] + all_mgs_and_triples
-        all_error_messages = error_messages + all_error_messages
-
-    combined_error_messages = list(filter(lambda s: s != "", all_error_messages))
-    if successful:
-        return True, all_mgs_and_triples, combined_error_messages
-    else:
-        return False, [], combined_error_messages
-
-
-def get_loader_from_data_name(
-        data_name: str,
-        mapper: Dict[str, Callable[[DataToLoad], LoaderResult]]) -> Tuple[bool, Optional[Callable]]:
-    """
-    map from the data_name to the mapper function - used when process_measurement_groups is the way to ingest data
-    :param data_name: the measurement_type_in_the_json
-    :param mapper: the dictionary that maps from the event_type to the mapper function
-    :return: (boolean indicating if the data_name is found, mapper function
-    """
-    if data_name in mapper:
-        return True, mapper[data_name]
-    else:
-        return False, None
 
 
 def missing_mandatory_type_error_message(jfield, measurement_type, data):
