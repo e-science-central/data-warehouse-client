@@ -156,3 +156,5 @@ cython_debug/
 scratchpad.py
 *.pdf
 /data_warehouse_client/production-db-credentials-full-access.json
+data_warehouse_client/dw-credentials-full-access.json
+data_warehouse_client/dw-credentials-read-only.json
