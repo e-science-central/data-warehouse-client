@@ -26,7 +26,8 @@ from file_utils import process_sql_template
 from data_warehouse import core_sql_for_measurements
 from print_io import print_measurements, print_measurements_to_file
 from tabulate import tabulate
-from _datetime import datetime
+from datetime import datetime
+from check_for_datetime_table import datetimebounds_table_in_dw
 
 
 def check_category_exists(dw, study):
@@ -205,13 +206,14 @@ def print_check_warehouse(dw, study):
     print(f'({n_errors} measurements)')
 
     print()
-    print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds')
-    r5 = check_bounded_datetimes(dw, study)
-    n_errors = len(r5)
-    if n_errors > 0:
-        print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
-    print(f'({n_errors} measurements)')
-    print()
+    if datetimebounds_table_in_dw(dw):
+        print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds')
+        r5 = check_bounded_datetimes(dw, study)
+        n_errors = len(r5)
+        if n_errors > 0:
+            print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']))
+        print(f'({n_errors} measurements)')
+        print()
 
 
 def mk_txt_report_file_name(f_dir, report_name, time_string):
@@ -289,10 +291,11 @@ def print_check_warehouse_to_file(dw, study):
                   file=f)
         print(f'({n_errors} measurements)\n', file=f)
 
-        print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds', file=f)
-        r5 = check_bounded_datetimes(dw, study)
-        n_errors = len(r5)
-        if n_errors > 0:
-            print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),
-                  file=f)
-        print(f'({n_errors} measurements)\n', file=f)
+        if datetimebounds_table_in_dw(dw):
+            print(f'-- Measurements declared as Bounded Datetimes whose value is outside of the bounds', file=f)
+            r5 = check_bounded_datetimes(dw, study)
+            n_errors = len(r5)
+            if n_errors > 0:
+                print(tabulate(r5, headers=['Id', 'Value', 'MeasurementType', 'Group', 'Min', 'Max', 'Participant']),
+                      file=f)
+            print(f'({n_errors} measurements)\n', file=f)

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
+from json import dump
+from os import path, makedirs
+from check_for_datetime_table import datetimebounds_table_in_dw
 
 
 def table_to_dictionary(dw, table_name, study_id):
@@ -55,15 +56,19 @@ def data_warehouse_metadata_tables_to_dictionary(dw, study_id):
     :param study_id: the study id
     :return a dictionary of tables, each a list of dictionaries - one for each row of the table
     """
-    return tables_to_dictionary(dw, study_id, metadata_table_names())
+    return tables_to_dictionary(dw, study_id, metadata_table_names(dw))
 
 
-def metadata_table_names():
+def metadata_table_names(dw):
     """
     :return: the names of all the metadata tables in the data warehouse
     """
-    return ["trial", "units", "measurementtype", "measurementgroup", "sourcetype", "boundsreal",
-            "boundsint", "category", "measurementtypetogroup"]
+    if datetimebounds_table_in_dw(dw):   # include 'datetimebounds'
+        return ["trial", "units", "measurementtype", "measurementgroup", "sourcetype", "boundsreal",
+                "boundsint", "boundsdatetime", "category", "measurementtypetogroup"]
+    else:  # exclude 'datetimebounds'
+        return ["trial", "units", "measurementtype", "measurementgroup", "sourcetype", "boundsreal",
+                "boundsint", "category", "measurementtypetogroup"]
 
 
 def dictionary_to_json_file(d, file_name):
@@ -72,9 +77,9 @@ def dictionary_to_json_file(d, file_name):
     :param d: dictionary
     :param file_name: output filename
     """
-    os.makedirs(os.path.dirname(file_name), exist_ok=True)
+    makedirs(path.dirname(file_name), exist_ok=True)
     with open(file_name, 'w') as json_file:
-        json.dump(d, json_file)
+        dump(d, json_file)
 
 
 def data_warehouse_metadata_tables_to_file(dw, study_id, file_name):

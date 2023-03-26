@@ -88,7 +88,7 @@ def form_measurement_group(dw, study, measurement_group, rows):
                             # instance, time of 1st measurement, study, participant, measurementGroup, trial
         for (row_id, time, study_id, participant, mt, tn, mg, mgi, trial, val_type, value) in rows:
             if not (mgi in result_common):           # it's a new instance
-                result_common.update({mgi: [mgi, time, study, trial, participant, mg]})  # store the common values
+                result_common.update({mgi: [mgi, time, study, participant, mg, trial]})  # store the common values
                 result_values.update({mgi: {}})                                          # create empty values for inst
             result_values[mgi][mt] = value  # add values to the dictionary               # add the value
         # Write out the list of measurement groups
@@ -103,7 +103,7 @@ def form_measurement_group(dw, study, measurement_group, rows):
     # prepare the header
     type_names = dw.get_types_in_a_measurement_group(study, measurement_group)
     n_types: int = len(type_names)
-    header = ["Instance", "Time", "Study", "Trial", "Participant", "Measurement Group"]
+    header = ["Instance", "Time", "Study", "Participant", "Measurement Group", "Trial"]
     for t in range(n_types):
         header.append(type_names[t][0])
     return header, result_rows

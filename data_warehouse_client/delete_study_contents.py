@@ -14,6 +14,8 @@
 
 # only run this if you're certain that you want to remove all metadata and measurements from a study!
 
+from check_for_datetime_table import datetimebounds_table_in_dw
+
 
 def delete_study_contents(dw, study):
     """
@@ -22,7 +24,7 @@ def delete_study_contents(dw, study):
     :param dw: data warehouse handle
     :param study: study id
     """
-    for tab in table_names_to_delete():
+    for tab in table_names_to_delete(dw):
         dw.exec_sql_with_no_return("DELETE FROM " + tab + " WHERE study = " + str(study))
 
 
@@ -37,11 +39,12 @@ def delete_study_measurements(dw, study):
         dw.exec_sql_with_no_return("DELETE FROM " + tab + " WHERE study = " + str(study))
 
 
-def table_names_to_delete():
+def table_names_to_delete(dw):
     """
+    :param dw: data warehouse handle
     :return: the names of all the tables in the data warehouse in a study to be deleted (all but study)
     """
-    return measurement_table_names() + metadata_table_names()
+    return measurement_table_names() + metadata_table_names(dw)
 
 
 def measurement_table_names():
@@ -51,14 +54,21 @@ def measurement_table_names():
     return ['textvalue', 'datetimevalue', 'measurement']
 
 
-def metadata_table_names():
+def metadata_table_names(dw):
     """
+    :param dw: data warehouse handle
     :return: the names of all the tables in the data warehouse that hold metadata
     """
-    return ['measurementtypetogroup',
-            'boundsreal', 'boundsint', 'boundsdatetime',
-            'category', 'measurementtype', 'units',
-            'measurementgroup', 'source', 'sourcetype', 'participant', 'trial']
+    if datetimebounds_table_in_dw(dw):
+        return ['measurementtypetogroup',
+                'boundsreal', 'boundsint', 'boundsdatetime',
+                'category', 'measurementtype', 'units',
+                'measurementgroup', 'source', 'sourcetype', 'participant', 'trial']
+    else:
+        return ['measurementtypetogroup',
+                'boundsreal', 'boundsint',
+                'category', 'measurementtype', 'units',
+                'measurementgroup', 'source', 'sourcetype', 'participant', 'trial']
 
 
 def delete_study_completely(dw, study):

@@ -15,6 +15,7 @@
 from file_utils import process_sql_template
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
 import datetime
+from check_for_datetime_table import datetimebounds_table_in_dw
 
 
 def valuetype_to_name():
@@ -143,11 +144,14 @@ def create_measurement_group_info(dw, study):
     for [mt_id, minval, maxval] in r4:
         real_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
 
-    q4a = process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
-    r4a = dw.return_query_result(q4a)
-    datetime_bounds = {}
-    for [mt_id, minval, maxval] in r4a:
-        datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
+    if datetimebounds_table_in_dw(dw):
+        q4a = process_sql_template("get_boundsdatetime_in_study.sql", {"study": study})
+        r4a = dw.return_query_result(q4a)
+        datetime_bounds = {}
+        for [mt_id, minval, maxval] in r4a:
+            datetime_bounds[mt_id] = {'minval': minval, 'maxval': maxval}
+    else:
+        datetime_bounds = {}
 
     q5 = process_sql_template("get_measurement_groups_in_study.sql", {"study": study})
     r5 = dw.return_query_result(q5)
