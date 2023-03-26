@@ -35,7 +35,13 @@ can interpret the data stored there.
 4.	It must support a security regime to restrict each user’s access 
 to the data collected in studies.
 
-For more information see: P. Watson and H. Hiden, "The e-Science Central Study Data Platform" 2022 IEEE 18th International Conference on e-Science (e-Science), Salt Lake City, UT, USA, 2022, pp. 55-64, doi: 10.1109/eScience55777.2022.00020. https://scholar.google.co.uk/citations?view_op=view_citation&hl=en&user=KQJg3lwAAAAJ&sortby=pubdate&citation_for_view=KQJg3lwAAAAJ:z0_F5_TITjQC
+
+For more information see: 
+P. Watson and H. Hiden, "The e-Science Central Study Data Platform"
+2022 IEEE 18th International Conference on e-Science (e-Science),
+Salt Lake City, UT, USA, 2022, pp. 55-64, doi: 10.1109/eScience55777.2022.00020.
+https://scholar.google.co.uk/citations?view_op=view_citation&hl=en&user=KQJg3lwAAAAJ&sortby=pubdate&citation_for_view=KQJg3lwAAAAJ:z0_F5_TITjQC
+
 
 # Running Instructions
 
