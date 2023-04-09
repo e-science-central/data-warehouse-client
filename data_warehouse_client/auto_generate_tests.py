@@ -104,7 +104,7 @@ def database_name():
 
 @pytest.fixture()
 def credentials_full_access_file_name():
-    return "fenland-dw-credentials-full-access.json"
+    return "dw-credentials-full-access.json"
 
 
 @pytest.fixture()
