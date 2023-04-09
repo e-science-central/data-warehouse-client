@@ -7,7 +7,6 @@ data_warehouse_client/db-credentials.json
 data_warehouse_client/db-credentials-read-only.json
 data_warehouse_client/production-db-credentials-read-only.json
 production-db-credentials-read-only.json
-dara_warehouse_client/sql/Data Warehouse Schema.sql
 output/
 input/
 reports/
@@ -159,3 +158,4 @@ scratchpad.py
 /data_warehouse_client/production-db-credentials-full-access.json
 data_warehouse_client/dw-credentials-full-access.json
 data_warehouse_client/dw-credentials-read-only.json
+/data_warehouse_client/sql/Data Warehouse Schema.sql
