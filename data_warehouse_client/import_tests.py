@@ -20,9 +20,10 @@ from data_warehouse_client.check_bounded_values import get_inverse_category_ids_
 from data_warehouse_client.data_warehouse import DataWarehouse
 from data_warehouse_client.load_data import load_data
 from data_warehouse_client.type_checks import check_int
-from data_warehouse_client.type_definitions import DataToLoad, Bounds, LoaderResult, MeasurementGroup, LoadHelperResult, \
-    Loader
+from data_warehouse_client.type_definitions import DataToLoad, Bounds, LoaderResult, MeasurementGroup, \
+    LoadHelperResult, Loader
 from data_warehouse_client import import_with_checks as iwc
+
 
 @pytest.fixture()
 def walking_test_1() -> DataToLoad:

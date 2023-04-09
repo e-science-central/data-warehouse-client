@@ -19,7 +19,7 @@ from json import load
 from more_itertools import intersperse
 
 from data_warehouse_client.file_utils import process_sql_template
-from data_warehouse_client.transform_result_format import form_measurements
+from data_warehouse_client.transform_result_format import form_measurements, form_measurement_group
 
 
 def get_participants_in_result(results):
