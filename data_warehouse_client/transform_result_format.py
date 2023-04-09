@@ -53,6 +53,10 @@ def form_measurements(rows):
             row_out[r][value_index] = rows[r][10]
         elif rows[r][val_type_index] == 8:  # boundedreal
             row_out[r][value_index] = rows[r][11]
+        elif rows[r][val_type_index] == 9:  # bounded datetime
+            row_out[r][value_index] = rows[r][13]
+        elif rows[r][val_type_index] == 10:  # external
+            row_out[r][value_index] = rows[r][12]
         else:
             print("typeval error of ", rows[r][9], " for id", rows[r][0], " study ", rows[r][2])
     return row_out
@@ -78,10 +82,10 @@ def form_measurement_group(dw, study, measurement_group, rows):
     if len(rows) > 0:
         measurement_group: int = rows[0][6]   # get the measurement group from the first measurement
         mts = dw.get_type_ids_in_measurement_group(study, measurement_group)  # get all the measurement type ids
-        # Create a dictionary entry for each instance hoding the common values and the measurement values
+        # Create a dictionary entry for each instance holding the common values and the measurement values
         result_values = {}  # the measurement values
-        result_common = {}  # the common values returned for each instance: instance, time of 1st measurement,
-                            #                                               study, participant, measurementGroup, trial
+        result_common = {}  # the common values returned for each instance:
+                            # instance, time of 1st measurement, study, participant, measurementGroup, trial
         for (row_id, time, study_id, participant, mt, tn, mg, mgi, trial, val_type, value) in rows:
             if not (mgi in result_common):           # it's a new instance
                 result_common.update({mgi: [mgi, time, study, participant, mg, trial]})  # store the common values

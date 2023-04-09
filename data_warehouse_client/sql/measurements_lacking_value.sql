@@ -10,10 +10,10 @@ WHERE
     AND (measurement.valreal = NULL)
   )
   OR (
-    (measurement.valtype = 2)
+    (measurement.valtype IN (2,10))
     AND (textvalue.textval = NULL)
   )
   OR (
-    (measurement.valtype = 3)
+    (measurement.valtype IN (3, 9))
     AND (datetimevalue.datetimeval = NULL)
   );

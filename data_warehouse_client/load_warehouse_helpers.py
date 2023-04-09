@@ -14,13 +14,17 @@
 import functools
 from datetime import datetime
 import unidecode
+from typing import Tuple, List, Any, Callable
+import itertools
+import type_checks
+from type_definitions import MeasurementGroup, LoadHelperResult, LoaderResult, DataToLoad
 
 
 def process_message_group(mg_triples):
     """
     takes the result of attempting to load each field in a message group and processes it
-    :param mg_triples: list of (successful load?, ((measurement_ttpe, valtype, value)))
-    :return: Success?, the list of (measurement_type, valtype, value) triples, the error message list
+    :param mg_triples: [(Success?, [(measurement_type, valtype, value)], Error Message)]
+    :return: Success?, [(measurement_type, valtype, value)], [error messages]
     """
     success_index = 0
     triple_index = 1
@@ -56,7 +60,7 @@ def wrong_type_error_message(jfield, measurement_type, data, val_type):
     :return: error message
     """
     return f'Wrong type for {jfield} (measurement type {measurement_type}) in data {data};' +\
-           f'it should be a {type_names(val_type)} (value type {val_type})'
+           f' it should be a {type_names(val_type)} (value type {val_type})'
 
 
 def type_names(val_type):
@@ -69,7 +73,7 @@ def type_names(val_type):
         return "integer"
     elif val_type in [1, 8]:
         return "real"
-    elif val_type == 3:
+    elif val_type in [3, 9]:
         return "datetime"
     elif val_type == 4:
         return "boolean"
@@ -83,7 +87,7 @@ def convert_epoch_in_ms_to_string(timestamp_in_ms):
     :param timestamp_in_ms: epoch timestamp in ms
     :return: well_formed, date time string
     """
-    if check_int(timestamp_in_ms):
+    if type_checks.check_int(timestamp_in_ms):
         timestamp_in_sec = int(timestamp_in_ms)//1000
         try:
             time_val = datetime.fromtimestamp(timestamp_in_sec)
@@ -101,70 +105,6 @@ def convert_posix_timestamp_to_string(val):
     :return: well_formed, date time string
     """
     return True, val.replace('T', ' ')
-
-
-def check_int(string):
-    """
-    Check if a string represents an integer
-    :param string: string
-    :return: True if the string represents an integer
-    """
-    try:
-        val = int(string)
-        return True
-    except ValueError:
-        return False
-
-
-def check_real(string):
-    """
-    Check if a string represents a real
-    :param string: string
-    :return: True if the string represents a real
-    """
-    try:
-        val = float(string)
-        return True
-    except ValueError:
-        return False
-
-
-def check_datetime(string):
-    """
-    Check if a string represents a datetime
-    :param string: string
-    :return: True if the string represents a datetime
-    """
-    return True  # need to add checking later
-
-
-def check_boolean(string):
-    """
-    Check if a string represents a boolean
-    :param string: 
-    :return: True if the string represents a boolean
-    """
-    return string in ['T', 'Y', 'F', 'N', '0', '1', 0, 1]
-
-
-def type_check(val, val_type):
-    """
-    Check the type of a value retrieved from a field
-    :param val: value
-    :param val_type: the type is should be
-    :return: True if the value has the right type, False otherwise
-    """
-    if val_type in [0, 5, 6, 7]:  # 5 and 6 are there for ordinals and nominals created from id
-        well_typed = check_int(val)
-    elif val_type in [1, 8]:
-        well_typed = check_real(val)
-    elif val_type == 3:
-        well_typed = check_datetime(val)
-    elif val_type == 4:
-        well_typed = check_boolean(val)
-    else:
-        well_typed = True  # everything else is a string
-    return well_typed
 
 
 def get_and_check_value(measurement_type, val_type, data, jfield, optional):
@@ -187,7 +127,7 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
         well_typed = False  # default
     else:
         exists = True
-        well_typed = type_check(val, val_type)
+        well_typed = type_checks.type_check(val, val_type)
     if (not optional) and (not exists):
         error_message = missing_mandatory_type_error_message(jfield, measurement_type, data)
     elif exists and (not well_typed):
@@ -528,9 +468,9 @@ def mk_boolean(measurement_type, data, jfield):
     # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool_string(False)
+            val01 = mk_bool(False)
         else:
-            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     else:
         return False, [], error_messsage
@@ -546,13 +486,13 @@ def mk_optional_boolean(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 2, data, jfield, True)
+    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 4, data, jfield, True)
     # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
     if exists and well_formed:
         if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool_string(False)
+            val01 = mk_bool(False)
         else:
-            val01 = mk_bool_string(True)  # must be 'Y' or 'T' or '1' or 1
+            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
         return True, [(measurement_type, 4, val01)], ""
     elif exists and not well_formed:
         return False, [], error_message
@@ -669,6 +609,86 @@ def mk_ordinal_from_id(measurement_type, data, jfield):
     return mk_basic_field(measurement_type, 6, data, jfield)
 
 
+def mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, val_type, optional: bool):
+    """
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :param val_type: 5 for nominal, 6 for ordinal
+    :param optional: boolean that is True if the id is optional
+    :return: Success?, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    if optional:
+        success, result, error_message = mk_optional_basic_field(measurement_type, val_type, data, jfield)
+    else:
+        success, result, error_message = mk_basic_field(measurement_type, val_type, data, jfield)
+    if success and result != []:  # need to check if value returned is in bounds
+        (measurement_type_returned, val_type_returned, value) = result[0]  # pick the triple from the singleton list
+        if value in id_list:
+            return True, result, ""  # acceptable id value
+        else:  # id is out of range
+            return False, [], f'Category id error for {jfield} (measurement type {measurement_type}) in data: {data}'
+    else:  # in all other cases just return without a check (as no result was returned)
+        return success, result, error_message
+
+
+def mk_nominal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 5, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    nominal_valtype: int = 5
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, nominal_valtype, False)
+
+
+def mk_optional_nominal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 5, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    nominal_valtype: int = 5
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, nominal_valtype, True)
+
+
+def mk_ordinal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make a nominal triple (measurement_type, 6, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    ordinal_valtype: int = 6
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, ordinal_valtype, False)
+
+
+def mk_optional_ordinal_from_id_with_id_check(measurement_type, data, jfield, id_list):
+    """
+    make an odinal triple (measurement_type, 6, value) where the id is stored in the jfield
+    Check it's in range
+    :param measurement_type: the id of the measurementtype that will hold the value
+    :param data: the json structure
+    :param jfield: the name of the field
+    :param id_list: list containing the acceptable value of the id
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    ordinal_valtype: int = 6
+    return mk_categorical_from_id_with_id_check(measurement_type, data, jfield, id_list, ordinal_valtype, True)
+
+
 def mk_optional_nominal_from_dict(measurement_type, data, jfield, cat_dict):
     """
     If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
@@ -733,6 +753,18 @@ def mk_bool_string(bool_val):
         return '0'
 
 
+def mk_bool(bool_val: bool) -> int:
+    """
+    COnvert a boolean value to an integer ready to be inserted into the measurement table
+    :param bool_val: boolean
+    :return: integer (0 = False, 1 = True)
+    """
+    if bool_val:
+        return 1
+    else:
+        return 0
+
+
 def split_enum(measurement_types, data, jfield, valuelist):
     """
     ENUMS (Sets of values) are not represented directly in the warehouse. Instead they are represented as one boolean
@@ -756,7 +788,7 @@ def split_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return False, [], f'Missing Mandatory ENUM field {jfield} for measurement_types {measurement_types} in {data}'
@@ -785,10 +817,123 @@ def split_optional_enum(measurement_types, data, jfield, valuelist):
         exists = True
     if exists:
         for (measurement_type, value) in zip(measurement_types, valuelist):
-            res = res + [(measurement_type, 4, mk_bool_string(value in values))]  # the 4 is because the type is boolean
+            res = res + [(measurement_type, 4, mk_bool(value in values))]  # the 4 is because the type is boolean
         return True, res, ""
     else:
         return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
+
+
+def mk_bounded_datetime(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple for a bounded datetime
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: Error free?, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    bounded_datetime_type = 9
+    return mk_basic_field(measurement_type, bounded_datetime_type, data, jfield)
+
+
+def mk_optional_bounded_datetime(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     Error free?, if field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned, Error message
+        """
+    bounded_datetime_type = 9
+    return mk_optional_basic_field(measurement_type, bounded_datetime_type, data, jfield)
+
+
+def mk_optional_external(measurement_type, data, jfield):
+    """
+    If the jfield exists in the data then return [(measurement_ttpe, valtype, value for the jfield in the data)].
+    If not then return an empty list.
+        :param measurement_type:    measurement type of jfield in the data warehouse
+        :param data:                json that may contain the jfield
+        :param jfield:              the name of the field
+        :return                     Error free?, if field exists then a list is returned holding the appropriate entry
+                                    if the field doesn't exist then an empty list is returned, Error message
+        """
+    external_type = 10
+    return mk_optional_basic_field(measurement_type, external_type, data, jfield)
+
+
+def mk_external(measurement_type, data, jfield):
+    """
+    create a (measurement_type, valtype, value for the jfield in the data) triple for an external reference
+    :param measurement_type: measurement type of jfield in the data warehouse
+    :param data: json that may contain the jfield
+    :param jfield: the name of the field
+    :return: Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+    """
+    external_type = 10
+    return mk_basic_field(measurement_type, external_type, data, jfield)
+
+
+def concat(ls: List[List[Any]]) -> List[Any]:
+    """
+    Concatenate a list of lists
+    :param ls:  list of lists
+    :return: list
+    """
+    return list(itertools.chain.from_iterable(ls))
+
+
+def load_a_list(data: DataToLoad,
+                jfield: str,
+                loader: Callable[[DataToLoad], LoaderResult],
+                mg_id: MeasurementGroup,
+                optional: bool) ->\
+        List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
+    """
+    Load a list within data loaded into the
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :param optional: True if the list is optional
+    :return: list of measurement group ids and the values to load into them
+    """
+    list_val: List[DataToLoad] = data.get(jfield)   # extract the list field
+    if list_val is None:  # missing field
+        if optional:
+            return []    # if optional then it's not an error
+        else:   # there should have been a list, so flag an error
+            return [(mg_id, [(False, [], f'Missing mandatory field {jfield} (list expected) in data: {data}')])]
+    else:  # the list exists
+        # create a single, combined list and ignore the optional fields (Time, Trial, Participant, Source)
+        return concat(list(map(lambda e: loader(e)[0], list_val)))
+
+
+def load_list(data: DataToLoad, jfield: str, loader: Callable[[DataToLoad], LoaderResult],
+              mg_id: MeasurementGroup) -> List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
+    """
+
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :return: list of measurement group ids and the values to load into them
+    """
+    return load_a_list(data, jfield, loader, mg_id, False)
+
+
+def load_optional_list(data: DataToLoad, jfield: str, loader, mg_id: MeasurementGroup) ->\
+        List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
+    """
+
+    :param data: data to load into warehouse - held in a Dictionary
+    :param jfield: name of the field in the Dictionary
+    :param loader: function to load the data
+    :param mg_id: measurement group id - only used if the jfield is not found
+    :return: list of measurement group ids and the values to load into them
+    """
+    return load_a_list(data, jfield, loader, mg_id, True)
 
 
 def get_converter_fn(event_type, mapper_dict):

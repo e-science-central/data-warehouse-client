@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from string import Template
-import pkg_resources
 
 
 def process_sql_template(filename, mappings=None):
@@ -25,10 +23,8 @@ def process_sql_template(filename, mappings=None):
     :return: the text of the SQL query with any variables substituted
     """
     # https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package Option 1
-    resource_package = 'data_warehouse_client'
-    resource_path = '/'.join(('sql', filename))
-    sql_template = pkg_resources.resource_string(resource_package, resource_path)
-    sql_template_bytes = sql_template.decode('utf8')
-    data = ' '.join(sql_template_bytes.replace('\r\n', ' ').split())
+    with open(f"sql/{filename}") as f:
+        file_contents = f.read()
+    data = ' '.join(file_contents.replace('\r\n', ' ').split())
     res = Template(data).substitute(mappings)
     return res

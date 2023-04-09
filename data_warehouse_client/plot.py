@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from data_warehouse_client import data_warehouse
 import matplotlib.pyplot as pyplot
 from matplotlib.backends.backend_pdf import PdfPages
 import print_metadata_table
@@ -126,11 +125,3 @@ def plot_distributions(dw, study):
 #              else:
                     # print('No Measurements Recorded', file=f)
     pdf.close()
-
-
-# test it out
-#  dw_handle = data_warehouse.DataWarehouse("db-credentials-read-only.json", "datawarehouse")
-#
-#  study_id = 8
-#
-#  plot_distributions(dw_handle, study_id)

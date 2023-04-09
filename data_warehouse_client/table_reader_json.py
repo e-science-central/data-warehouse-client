@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+from json import load
 
 
 def read_json_tables(file_name):
@@ -23,7 +23,7 @@ def read_json_tables(file_name):
     """
     try:
         with open(file_name, 'r') as jIn:
-            j = json.load(jIn)
+            j = load(jIn)
             return j
     except Exception as e:
         print("Unable to load the json file! Exiting: \n" + str(e))

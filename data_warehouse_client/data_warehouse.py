@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-import sys
+from datetime import datetime
+from sys import exit
 import psycopg2
-import json
+from json import load
 from more_itertools import intersperse
-from data_warehouse_client import transform_result_format
-
-from data_warehouse_client import file_utils
+from transform_result_format import form_measurements, form_measurement_group
+from file_utils import process_sql_template
 
 
 def get_participants_in_result(results):
@@ -43,7 +42,8 @@ def field_holding_value(val_type):
     """
     val_types = {0: "measurement.valinteger", 1: "measurement.valreal", 2: "textvalue.textval",
                  3: "datetimevalue.datetimeval", 4: "measurement.valinteger", 5: "measurement.valinteger",
-                 6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal"}
+                 6: "measurement.valinteger", 7: "measurement.valinteger", 8: "measurement.valreal",
+                 9: "datetimevalue.datetimeval", 10: "textvalue.textval"}
     try:
         return val_types[val_type]
     except KeyError:
@@ -76,7 +76,7 @@ def core_sql_from_for_measurements():
     Creates the from clause used by many of the functions that query the data warehouse
     :return: the from clause used by several of the functions that query the data warehouse
     """
-    return file_utils.process_sql_template("core_sql_from_for_measurements.sql")
+    return process_sql_template("core_sql_from_for_measurements.sql")
 
 
 def core_sql_for_where_clauses(study: int, participant: int, measurement_type: int, measurement_group: int,
@@ -153,7 +153,7 @@ def core_sql_select_for_measurements():
      Creates the select clause used by many of the functions that query the data warehouse
      :return: the select clause used by several of the functions that query the data warehouse
      """
-    return file_utils.process_sql_template("core_sql_select_for_measurements.sql")
+    return process_sql_template("core_sql_select_for_measurements.sql")
 
 
 def core_sql_for_measurements():
@@ -173,9 +173,9 @@ class DataWarehouse:
         print("Loading credentials..")
         try:
             with open(self.credentialsFile, 'r') as fIn:
-                creds = json.load(fIn)
+                creds = load(fIn)
         except Exception as e:
-            sys.exit("Unable to load the credential's file! Exiting.\n" + str(e))
+            exit("Unable to load the credential's file! Exiting.\n" + str(e))
 
         print("Connecting to the database..")
         # establish connection
@@ -183,7 +183,7 @@ class DataWarehouse:
         try:
             self.dbConnection = psycopg2.connect(conn_string)
         except Exception as e:
-            sys.exit("Unable to connect to the database! Exiting.\n" + str(e))
+            exit("Unable to connect to the database! Exiting.\n" + str(e))
         print("Init successful! Running queries.\n")
 
     def get_measurements(self, study, participant=-1, measurement_type=-1, measurement_group=-1, group_instance=-1,
@@ -208,9 +208,9 @@ class DataWarehouse:
                                                                      measurement_group,
                                                                      group_instance, trial, start_time, end_time)
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause}
-        query = file_utils.process_sql_template("get_measurements.sql", mappings)
+        query = process_sql_template("get_measurements.sql", mappings)
         raw_results = self.return_query_result(query)
-        return transform_result_format.form_measurements(raw_results)
+        return form_measurements(raw_results)
 
     def aggregate_measurements(self, study, measurement_type, aggregation, participant=-1, measurement_group=-1,
                                group_instance=-1, trial=-1, start_time=-1, end_time=-1):
@@ -263,9 +263,9 @@ class DataWarehouse:
         cond = make_value_test(val_type, value_test_condition)
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cond": cond}
-        query = file_utils.process_sql_template("get_measurements_with_value.sql", mappings)
+        query = process_sql_template("get_measurements_with_value.sql", mappings)
         raw_results = self.return_query_result(query)
-        return transform_result_format.form_measurements(raw_results)
+        return form_measurements(raw_results)
 
     def get_measurements_by_cohort(self, study, cohort_id, participant=-1, measurement_type=-1,
                                    measurement_group=-1, group_instance=-1, trial=-1, start_time=-1, end_time=-1):
@@ -289,9 +289,9 @@ class DataWarehouse:
         condition = " WHERE " if first_condition else " AND "
         mappings = {"core_sql": core_sql_for_measurements(), "where_clause": where_clause, "condition": condition,
                     "cohort_id": str(cohort_id), "study": str(study)}
-        query = file_utils.process_sql_template("get_measurements_by_cohort.sql", mappings)
+        query = process_sql_template("get_measurements_by_cohort.sql", mappings)
         raw_results = self.return_query_result(query)
-        return transform_result_format.form_measurements(raw_results)
+        return form_measurements(raw_results)
 
     def num_types_in_a_measurement_group(self, study, measurement_group):
         """
@@ -301,7 +301,7 @@ class DataWarehouse:
         :return: number of measurement types in the measurement group
         """
         mappings = {"measurement_group": str(measurement_group), "study": str(study)}
-        query = file_utils.process_sql_template("num_types_in_a_measurement_group.sql", mappings)
+        query = process_sql_template("num_types_in_a_measurement_group.sql", mappings)
         num_types = self.return_query_result(query)
         return num_types[0][0]
 
@@ -313,7 +313,7 @@ class DataWarehouse:
         :return: list of names of the measurement types in the measurement group
         """
         mappings = {"measurement_group": str(measurement_group), "study": str(study)}
-        query = file_utils.process_sql_template("types_in_a_measurement_group.sql", mappings)
+        query = process_sql_template("types_in_a_measurement_group.sql", mappings)
         type_names = self.return_query_result(query)
         return type_names
 
@@ -371,8 +371,8 @@ class DataWarehouse:
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        formed_measurements = transform_result_format.form_measurements(raw_results)
-        return transform_result_format.form_measurement_group(self, study, measurement_group, formed_measurements)
+        formed_measurements = form_measurements(raw_results)
+        return form_measurement_group(self, study, measurement_group, formed_measurements)
 
     def get_measurement_group_instances_for_cohort(self, study, measurement_group, participants, value_test_conditions,
                                                    trial=-1, start_time=-1, end_time=-1):
@@ -409,8 +409,8 @@ class DataWarehouse:
         outer_query += " ORDER BY groupinstance, measurementtype"
         outer_query += ";"
         raw_results = self.return_query_result(outer_query)
-        formed_measurements = transform_result_format.form_measurements(raw_results)
-        return transform_result_format.form_measurement_group(self, study, measurement_group, formed_measurements)
+        formed_measurements = form_measurements(raw_results)
+        return form_measurement_group(self, study, measurement_group, formed_measurements)
 
     def get_measurement_type_info(self, study, measurement_type_id):
         """
@@ -420,7 +420,7 @@ class DataWarehouse:
         :return: a list containing the elements: id, description, value type, units name
         """
         mappings = {"measurement_type_id": str(measurement_type_id), "study": str(study)}
-        query = file_utils.process_sql_template("get_measurement_type_info.sql", mappings)
+        query = process_sql_template("get_measurement_type_info.sql", mappings)
         return self.return_query_result(query)
 
     def return_query_result(self, query_text):
@@ -460,7 +460,7 @@ class DataWarehouse:
         :return: a list of [measurement group id, measurement group description]
         """
         mappings = {"study": str(study)}
-        query = file_utils.process_sql_template("get_all_measurement_groups.sql", mappings)
+        query = process_sql_template("get_all_measurement_groups.sql", mappings)
         return self.return_query_result(query)
 
     def get_all_measurement_groups_and_types_in_a_study(self, study):
@@ -472,11 +472,11 @@ class DataWarehouse:
         """
         # Return all measurement groups and measurement types in a study
         mappings = {"study": str(study)}
-        query = file_utils.process_sql_template("get_all_measurement_groups_and_types_in_a_study.sql", mappings)
+        query = process_sql_template("get_all_measurement_groups_and_types_in_a_study.sql", mappings)
         return self.return_query_result(query)
 
     def insert_measurement_group(self, study, measurement_group, values,
-                                 time=-1, trial=None, participant=None, source=None, cursor=None):  # None maps to SQL NULL
+                                 time=-1, trial=None, participant=None, source=None, cursor=None):
         """
          Insert one measurement group
          :param study: the study id
@@ -490,7 +490,7 @@ class DataWarehouse:
          :return success boolean, the measurement group instance, error message
          """
         if time == -1:  # use the current date and time if none is specified
-            time = datetime.datetime.now()  # use the current date and time if none is specified
+            time = datetime.now()  # use the current date and time if none is specified
 
         group_instance = 0   # used temporarily for the first measurement inserted in the measurement group
         insert_error = False  # will be set to true if there is an error inserting any measurement in the group
