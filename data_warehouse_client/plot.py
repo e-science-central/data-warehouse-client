@@ -14,9 +14,10 @@
 
 import matplotlib.pyplot as pyplot
 from matplotlib.backends.backend_pdf import PdfPages
-import print_metadata_table
 import datetime
 import numpy as np
+
+from data_warehouse_client import print_metadata_table
 
 
 def plot_measurements(dw, rows, study, measurement_type_id, plot_file):

@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import pytest  # see https://realpython.com/pytest-python-testing/
-from type_checks import check_int
-from type_definitions import Bounds, LoaderResult, DataToLoad, Loader, MeasurementGroup, LoadHelperResult
 from typing import Dict, List, Tuple
 from datetime import datetime
-import import_with_checks as iwc
-from load_data import load_data
-import data_warehouse
-from check_bounded_values import get_inverse_category_ids_map
 
+from data_warehouse_client.check_bounded_values import get_inverse_category_ids_map
+from data_warehouse_client.data_warehouse import DataWarehouse
+from data_warehouse_client.load_data import load_data
+from data_warehouse_client.type_checks import check_int
+from data_warehouse_client.type_definitions import DataToLoad, Bounds, LoaderResult, MeasurementGroup, LoadHelperResult, \
+    Loader
+from data_warehouse_client import import_with_checks as iwc
 
 @pytest.fixture()
 def walking_test_1() -> DataToLoad:
@@ -51,7 +52,7 @@ def database_name():
 
 @pytest.fixture()
 def mk_dw_handle(credentials_file_name, database_name):
-    data_warehouse_handle = data_warehouse.DataWarehouse(credentials_file_name, database_name)
+    data_warehouse_handle = DataWarehouse(credentials_file_name, database_name)
     yield data_warehouse_handle
 
 

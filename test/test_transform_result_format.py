@@ -14,8 +14,9 @@
 
 from unittest import TestCase
 
-from data_warehouse_client import transform_result_format
 import datetime
+
+from data_warehouse_client import transform_result_format
 
 
 class TestTransformResultFormat(TestCase):

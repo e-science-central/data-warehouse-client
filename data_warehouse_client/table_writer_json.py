@@ -14,7 +14,8 @@
 
 from json import dump
 from os import path, makedirs
-from check_for_datetime_table import datetimebounds_table_in_dw
+
+from data_warehouse_client.check_for_datetime_table import datetimebounds_table_in_dw
 
 
 def table_to_dictionary(dw, table_name, study_id):

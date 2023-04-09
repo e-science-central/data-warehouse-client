@@ -14,9 +14,10 @@
 
 from datetime import datetime
 from typing import Tuple, Any
-from check_bounded_values import check_category_id, check_bounded_datetime_in_bounds,\
-    check_bounded_int_in_bounds, check_bounded_real_in_bounds
-from type_definitions import Bounds, Value, ValType, MeasurementType
+
+from data_warehouse_client.check_bounded_values import check_category_id, check_bounded_int_in_bounds, \
+    check_bounded_real_in_bounds, check_bounded_datetime_in_bounds
+from data_warehouse_client.type_definitions import Bounds, MeasurementType, Value, ValType
 
 
 def int_bounds(bounds: Bounds):

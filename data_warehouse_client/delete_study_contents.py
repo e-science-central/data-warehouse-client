@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from data_warehouse_client.check_for_datetime_table import datetimebounds_table_in_dw
+
 
 # only run this if you're certain that you want to remove all metadata and measurements from a study!
-
-from check_for_datetime_table import datetimebounds_table_in_dw
 
 
 def delete_study_contents(dw, study):

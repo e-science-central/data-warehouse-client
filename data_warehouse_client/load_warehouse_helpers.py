@@ -16,8 +16,9 @@ from datetime import datetime
 import unidecode
 from typing import Tuple, List, Any, Callable
 import itertools
-import type_checks
-from type_definitions import MeasurementGroup, LoadHelperResult, LoaderResult, DataToLoad
+
+from data_warehouse_client import type_checks
+from data_warehouse_client.type_definitions import MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult
 
 
 def process_message_group(mg_triples):

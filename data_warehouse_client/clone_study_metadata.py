@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from table_writer_json import data_warehouse_metadata_tables_to_dictionary, write_tables_in_dw_from_dictionary
+from data_warehouse_client.table_writer_json import data_warehouse_metadata_tables_to_dictionary, \
+    write_tables_in_dw_from_dictionary
 
 
 def clone_study_metadata(dw, source_study_id, dest_study_id):

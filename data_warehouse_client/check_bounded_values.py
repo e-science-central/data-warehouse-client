@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from file_utils import process_sql_template
-from type_definitions import Study, MeasurementType, Bounds, DateTime
 from typing import List, Dict
+
+from data_warehouse_client.file_utils import process_sql_template
+from data_warehouse_client.type_definitions import Study, MeasurementType, DateTime, Bounds
 
 
 def get_category_ids(dw, study: Study) -> Dict[MeasurementType, List[int]]:

@@ -14,11 +14,12 @@
 
 
 from typing import Tuple, List, Optional, Dict, Callable, Any
-from type_checks import check_value_type, category_values, check_string
 from functools import reduce
-from type_definitions import Bounds, ValueTriple, MeasurementGroup, MeasurementType, ValType, DataToLoad,\
-    FieldValue, LoadHelperResult, Loader, LoaderResult
 from itertools import chain
+
+from data_warehouse_client.type_checks import check_value_type, category_values, check_string
+from data_warehouse_client.type_definitions import MeasurementGroup, ValueTriple, MeasurementType, DataToLoad, ValType, \
+    FieldValue, Bounds, Loader, LoadHelperResult, LoaderResult
 
 
 def process_measurement_group(mg_triples):

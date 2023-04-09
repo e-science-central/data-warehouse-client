@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from unittest import TestCase
+
 from data_warehouse_client import file_utils
 
 

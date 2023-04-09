@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from string import Template
+import pkgutil
 
 
 def process_sql_template(filename, mappings=None):
@@ -22,9 +23,8 @@ def process_sql_template(filename, mappings=None):
     :param mappings: the variables to be substituted
     :return: the text of the SQL query with any variables substituted
     """
-    # https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package Option 1
-    with open(f"sql/{filename}") as f:
-        file_contents = f.read()
+    # https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package
+    file_contents = pkgutil.get_data(__name__, f"sql/{filename}").decode("utf-8")
     data = ' '.join(file_contents.replace('\r\n', ' ').split())
     res = Template(data).substitute(mappings)
     return res

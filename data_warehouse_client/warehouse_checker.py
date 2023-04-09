@@ -22,12 +22,13 @@
 # no ordinal, nominal, bounded integer or bounded real values are out of bounds
 
 
-from file_utils import process_sql_template
-from data_warehouse import core_sql_for_measurements
-from print_io import print_measurements, print_measurements_to_file
 from tabulate import tabulate
 from datetime import datetime
-from check_for_datetime_table import datetimebounds_table_in_dw
+
+from data_warehouse_client.check_for_datetime_table import datetimebounds_table_in_dw
+from data_warehouse_client.data_warehouse import core_sql_for_measurements
+from data_warehouse_client.file_utils import process_sql_template
+from data_warehouse_client.print_io import print_measurements, print_measurements_to_file
 
 
 def check_category_exists(dw, study):

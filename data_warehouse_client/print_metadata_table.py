@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from file_utils import process_sql_template
 from tabulate import tabulate  # https://github.com/astanin/python-tabulate
 import datetime
-from check_for_datetime_table import datetimebounds_table_in_dw
+
+from data_warehouse_client.check_for_datetime_table import datetimebounds_table_in_dw
+from data_warehouse_client.file_utils import process_sql_template
 
 
 def valuetype_to_name():

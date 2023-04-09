@@ -17,8 +17,9 @@ from sys import exit
 import psycopg2
 from json import load
 from more_itertools import intersperse
-from transform_result_format import form_measurements, form_measurement_group
-from file_utils import process_sql_template
+
+from data_warehouse_client.file_utils import process_sql_template
+from data_warehouse_client.transform_result_format import form_measurements
 
 
 def get_participants_in_result(results):

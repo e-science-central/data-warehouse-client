@@ -16,9 +16,10 @@
 # Summarise a study
 
 from tabulate import tabulate
-from print_io import print_measurement_group_instances, print_measurement_group_instances_to_file
-from csv_io import export_measurement_groups_as_csv
 from datetime import datetime
+
+from data_warehouse_client.csv_io import export_measurement_groups_as_csv
+from data_warehouse_client.print_io import print_measurement_group_instances, print_measurement_group_instances_to_file
 
 
 def get_instances_per_measurement_group(dw, study):

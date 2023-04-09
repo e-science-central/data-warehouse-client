@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from data_warehouse_client.file_utils import process_sql_template
+
 
 # determine if there's a a table called 'boundsdatetime' (this was added in later versions of the warehouse design)
-
-from file_utils import process_sql_template
 
 
 def datetimebounds_table_in_dw(dw_handle):
