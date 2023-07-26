@@ -18,8 +18,8 @@ from functools import reduce
 from itertools import chain
 
 from data_warehouse_client.type_checks import check_value_type, category_values, check_string
-from data_warehouse_client.type_definitions import MeasurementGroup, ValueTriple, MeasurementType, DataToLoad, ValType, \
-    FieldValue, Bounds, Loader, LoadHelperResult, LoaderResult
+from data_warehouse_client.type_definitions import MeasurementGroup, ValueTriple, MeasurementType, DataToLoad,\
+     ValType, FieldValue, Bounds, Loader, LoadHelperResult, LoaderResult
 
 
 def process_measurement_group(mg_triples):
@@ -394,6 +394,100 @@ def load_optional_ordinal_from_id(measurement_type: MeasurementType, data: DataT
      """
     ordinal_type: ValType = 6
     return make_field(measurement_type, ordinal_type, data, jfield, True, bounds)
+
+
+def load_categorical_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
+                                       val_type: int, optional: bool, bounds: Bounds) -> \
+        Tuple[bool, List[ValueTriple], str]:
+    """
+     Load a categorical represented by its id encoded in a string
+     :param measurement_type:    measurement type of jfield in the data warehouse
+     :param data:   json that may contain the jfield
+     :param jfield: the name of the field
+     :param val_type: can be nominal or ordinal
+     :param optional: is the field optional?
+     :param bounds: tuple holding bounds used for checking data
+     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+     """
+    exists, val = get_field(data, jfield)  # try to read the field from the data
+    if exists:   # field exists
+        if check_string(val):
+            if val.isnumeric():  # check if the id string encodes an integer
+                num_val: int = int(val)   # turn the string into an integer
+                well_typed, error_message = check_value_type(val_type, num_val, measurement_type, bounds)
+                if well_typed:
+                    return True, [(measurement_type, val_type, num_val)], ""
+                else:
+                    return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
+            else:
+                return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type,
+                                                           f"Category Id {val} is not Integer represented as a String")
+        else:
+            return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type,
+                                                       f"Category Id {val} is not Integer represented as a String")
+    else:
+        if optional:  # optional field
+            return True, [], ""  # Field doesn't exist, which is OK as this is an optional field
+        else:  # compulsary field is missing
+            return False, [], missing_mandatory_type_error_message(jfield, measurement_type, data)
+
+
+def load_nominal_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
+                                   bounds: Bounds) -> Tuple[bool, List[ValueTriple], str]:
+    """
+     Load a nominal represented by its id encoded in a string
+     :param measurement_type:    measurement type of jfield in the data warehouse
+     :param data:   json that may contain the jfield
+     :param jfield: the name of the field
+     :param bounds: tuple holding bounds used for checking data
+     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+     """
+    nominal_type: ValType = 5
+    return load_categorical_from_id_in_string(measurement_type, data, jfield, nominal_type, False, bounds)
+
+
+def load_optional_nominal_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
+                                            bounds: Bounds) -> Tuple[bool, List[ValueTriple], str]:
+    """
+     Load optional nominal represented by its id encoded in a string
+     :param measurement_type:    measurement type of jfield in the data warehouse
+     :param data:   json that may contain the jfield
+     :param jfield: the name of the field
+     :param bounds: tuple holding bounds used for checking data
+     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+     """
+    nominal_type: ValType = 5
+    return load_categorical_from_id_in_string(measurement_type, data, jfield, nominal_type, True, bounds)
+
+
+def load_ordinal_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
+                                   bounds: Bounds) -> \
+        Tuple[bool, List[ValueTriple], str]:
+    """
+     Load ordinal represented by its id encoded in a string
+     :param measurement_type:    measurement type of jfield in the data warehouse
+     :param data:   json that may contain the jfield
+     :param jfield: the name of the field
+     :param bounds: tuple holding bounds used for checking data
+     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+     """
+    ordinal_type: ValType = 6
+    return load_categorical_from_id_in_string(measurement_type, data, jfield, ordinal_type, False, bounds)
+
+
+def load_optional_ordinal_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
+                                            bounds: Bounds) -> \
+        Tuple[bool, List[ValueTriple], str]:
+    """
+     Load optional ordinal represented by its id encoded in a string
+     :param measurement_type:    measurement type of jfield in the data warehouse
+     :param data:   json that may contain the jfield
+     :param jfield: the name of the field
+     :param bounds: tuple holding bounds used for checking data
+     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
+     """
+    ordinal_type: ValType = 6
+    return load_categorical_from_id_in_string(measurement_type, data, jfield, ordinal_type, True, bounds)
 
 
 def load_categorical_from_value(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
