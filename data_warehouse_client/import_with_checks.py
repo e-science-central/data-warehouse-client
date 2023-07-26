@@ -411,16 +411,20 @@ def load_categorical_from_id_in_string(measurement_type: MeasurementType, data: 
      """
     exists, val = get_field(data, jfield)  # try to read the field from the data
     if exists:   # field exists
-        if val.isnumeric():  # check if the id string encodes an integer
-            num_val: int = int(val)   # turn the string into an integer
-            well_typed, error_message = check_value_type(val_type, num_val, measurement_type, bounds)
-            if well_typed:
-                return True, [(measurement_type, val_type, num_val)], ""
+        if check_string(val):
+            if val.isnumeric():  # check if the id string encodes an integer
+                num_val: int = int(val)   # turn the string into an integer
+                well_typed, error_message = check_value_type(val_type, num_val, measurement_type, bounds)
+                if well_typed:
+                    return True, [(measurement_type, val_type, num_val)], ""
+                else:
+                    return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
             else:
-                return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
+                return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type,
+                                                           f"Category Id {val} is not Integer represented as a String")
         else:
             return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type,
-                                                       f"Category Id {val} is not an Integer represented as a String")
+                                                       f"Category Id {val} is not Integer represented as a String")
     else:
         if optional:  # optional field
             return True, [], ""  # Field doesn't exist, which is OK as this is an optional field

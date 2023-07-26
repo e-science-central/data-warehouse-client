@@ -19,10 +19,12 @@ from datetime import datetime
 from data_warehouse_client.check_bounded_values import get_inverse_category_ids_map
 from data_warehouse_client.data_warehouse import DataWarehouse
 from data_warehouse_client.load_data import load_data
+from data_warehouse_client.load_data import process_measurement_groups as pmg
 from data_warehouse_client.type_checks import check_int
 from data_warehouse_client.type_definitions import DataToLoad, Bounds, LoaderResult, MeasurementGroup, \
     LoadHelperResult, Loader
 from data_warehouse_client import import_with_checks as iwc
+from data_warehouse_client.check_bounded_values import get_bounds
 
 
 @pytest.fixture()
@@ -218,6 +220,27 @@ def test_study():
     return 999
 
 
+@pytest.fixture()
+def bounds_ex1() -> Bounds:
+    return ({419: {'minval': 0, 'maxval': 100}, 435: {'minval': 0, 'maxval': 100}},    # Int Bounds
+            {420: {'minval': 0.0, 'maxval': 100.0}, 436: {'minval': 0, 'maxval': 100}},  # Real Bounds
+            {421: {'minval': datetime(1665, 5, 17, 23, 17, 59),
+                   'maxval': datetime(1668, 5, 17, 23, 17, 59)},
+             437: {'minval': datetime(2400, 5, 17, 23, 17, 59),
+                   'maxval': datetime(2600, 5, 17, 23, 17, 59)}},  # DateTime Bounds
+            {415: [0, 1, 2], 416: [0, 1, 2], 417: [0, 1, 2], 418: [0, 1, 2],
+             431: [0, 1, 2], 432: [0, 1, 2], 433: [0, 1, 2], 434: [0, 1, 2]},  # Category Ids
+            {415: {'First': 0, 'Second': 1, 'Third': 2},
+             416: {'First': 0, 'Second': 1, 'Third': 2},
+             417: {'First': 0, 'Second': 1, 'Third': 2},
+             418: {'First': 0, 'Second': 1, 'Third': 2},
+             431: {'First': 0, 'Second': 1, 'Third': 2},
+             432: {'First': 0, 'Second': 1, 'Third': 2},
+             433: {'First': 0, 'Second': 1, 'Third': 2},
+             434: {'First': 0, 'Second': 1, 'Third': 2}}
+            )  # Category Values to Ids
+
+
 @pytest.mark.parametrize("json_key, json_value, measurement_type, expected_result", [
     ('Int', 4, 410, True),
     ('Real', 5.45, 411, True),
@@ -333,6 +356,57 @@ def test_each_field(mk_dw_handle, test_all_example, fn_mapper, test_study,
     if success == valid:
         assert True
     else:
+        assert False
+
+
+@pytest.mark.parametrize("json_key, json_value, valid", [
+    ('Int', 4.1, False),
+    ('Int', "4", False),
+    ('Real', 5, False),
+    ('Real', "5", False),
+    ('Text', 0, False),
+    ('DateTime', 'Not a Datetime', False),
+    ('DateTime', 32.6, False),
+    ('Bool', 3, False),
+    ('NominalfromValue', 'Fifth', False),
+    ('NominalfromId', 'First', False),
+    ('OrdinalfromValue', 3.142, False),
+    ('OrdinalfromId', 77, False),
+    ('BoundedInt', 9999999, False),
+    ('BoundedReal', 999999.9, False),
+    ('BoundedDateTime', datetime(1666, 5, 17, 23, 17, 59), False),
+    ('External', 5, False),
+    ('SplitEnum', ['First', 'Fifth'], False),
+    ('OptionalInt', '4', False),
+    ('OptionalReal', '3.1', False),
+    ('OptionalText', ['Text List'], False),
+    ('OptionalDateTime', 3, False),
+    ('OptionalBool', 'T', False),
+    ('OptionalNominalfromValue', 'Seventh', False),
+    ('OptionalNominalfromId', 'First', False),
+    ('OptionalOrdinalfromValue', '1', False),
+    ('OptionalOrdinalfromId', '1', False),
+    ('OptionalBoundedInt', 7.89, False),
+    ('OptionalBoundedReal', 4, False),
+    ('OptionalBoundedDateTime', datetime(2500, 5, 17, 23, 17, 59), False),
+    ('OptionalExternal', 5.6, False),
+    ('OptionalSplitEnum', [1, 2], False)
+])
+def test_each_loader(mk_dw_handle, test_study, test_all_example, json_key, measurement_id, json_value, valid):
+    """
+    Check each field in the measurement group instance is handled correctly by the loader
+    """
+    dw_handle = mk_dw_handle
+    bounds = get_bounds(dw_handle, test_study)
+    test_all_example[json_key] = json_value
+    vals_to_load_in_msgs, time_from_data, trial_from_data, participant_from_data, source_from_data = \
+        check_all_loader(test_all_example, bounds)
+    # check for errors in the values
+    successful, all_mgs_and_triples, combined_error_messages = pmg(vals_to_load_in_msgs)
+    if successful == valid:
+        assert True
+    else:
+        print(combined_error_messages)
         assert False
 
 
