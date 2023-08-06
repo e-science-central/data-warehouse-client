@@ -396,6 +396,15 @@ def load_optional_ordinal_from_id(measurement_type: MeasurementType, data: DataT
     return make_field(measurement_type, ordinal_type, data, jfield, True, bounds)
 
 
+def is_integer_in_string(s: str) -> bool:
+    #  returns true if s is a string encoding an integer that can be +ve or -ve (e.g. "123" or "-45")
+    try:
+        x = int(s)
+        return True
+    except ValueError:
+        return False
+
+
 def load_categorical_from_id_in_string(measurement_type: MeasurementType, data: DataToLoad, jfield: str,
                                        val_type: int, optional: bool, bounds: Bounds) -> \
         Tuple[bool, List[ValueTriple], str]:
@@ -412,7 +421,7 @@ def load_categorical_from_id_in_string(measurement_type: MeasurementType, data: 
     exists, val = get_field(data, jfield)  # try to read the field from the data
     if exists:   # field exists
         if check_string(val):
-            if val.isnumeric():  # check if the id string encodes an integer
+            if is_integer_in_string(val):  # check if the id string encodes an integer
                 num_val: int = int(val)   # turn the string into an integer
                 well_typed, error_message = check_value_type(val_type, num_val, measurement_type, bounds)
                 if well_typed:
