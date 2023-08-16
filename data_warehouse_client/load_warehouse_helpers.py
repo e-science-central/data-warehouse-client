@@ -18,7 +18,8 @@ from typing import Tuple, List, Any, Callable
 import itertools
 
 from data_warehouse_client import type_checks
-from data_warehouse_client.type_definitions import MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult
+from data_warehouse_client.type_definitions import (MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult,
+                                                    MeasurementType, OptionalValue, ValType)
 
 
 def process_message_group(mg_triples):
@@ -108,7 +109,8 @@ def convert_posix_timestamp_to_string(val):
     return True, val.replace('T', ' ')
 
 
-def get_and_check_value(measurement_type, val_type, data, jfield, optional):
+def get_and_check_value(measurement_type: MeasurementType, val_type: ValType, data, jfield: str, optional: bool)\
+        -> Tuple[bool, bool, OptionalValue, str]:
     """
     check if a value exists, and if so its type
     :param measurement_type: measurement type of jfield in the data warehouse
@@ -116,24 +118,23 @@ def get_and_check_value(measurement_type, val_type, data, jfield, optional):
     :param data: json that contains the jfield
     :param jfield: the name of the field
     :param optional: if the field is optional
-    :return: (field exists,well typed, value, error_message)
+    :return: (field exists, well typed, value, error_message)
     """
-    error_message = ""
-    val = data.get(jfield)
-    if val is None:
-        exists = False
-        well_typed = False  # default
-    elif val == "":
-        exists = False
-        well_typed = False  # default
-    else:
-        exists = True
-        well_typed = type_checks.type_check(val, val_type)
-    if (not optional) and (not exists):
-        error_message = missing_mandatory_type_error_message(jfield, measurement_type, data)
-    elif exists and (not well_typed):
-        error_message = wrong_type_error_message(jfield, measurement_type, data, val_type)
-    return exists, well_typed, val, error_message
+    val: OptionalValue = data.get(jfield)
+    if (val is None) or (val == ""):   # if field doesn't exist
+        if optional:   # if it's an optional field
+            return False, False, None, ""
+        else:   # it should have been there, so return error message
+            return False, False, None, missing_mandatory_type_error_message(jfield, measurement_type, data)
+    else:  # field exists
+        ok, canonicalised_val, error_msg = type_checks.canonicalise_value(val_type, val)
+        if ok:
+            if type_checks.type_check(canonicalised_val, val_type):   # if it's well typed
+                return True, True, canonicalised_val, ""
+            else:  # it's not well_typed
+                return True, False, canonicalised_val, wrong_type_error_message(jfield, measurement_type, data, val_type)
+        else:   # canonicalisation found a type problem
+            return True, False, val, error_msg
 
 
 def mk_basic_field(measurement_type, val_type, data, jfield):
@@ -465,16 +466,7 @@ def mk_boolean(measurement_type, data, jfield):
     :param jfield: the name of the field
     :return : Error free, [(measurement_type, valtype, value for the jfield in the data)], error_message
     """
-    (exists, well_formed, val, error_messsage) = get_and_check_value(measurement_type, 4, data, jfield, False)
-    # val_type is set to 2 for checking as the field is expected to be a string ("T" or "Y") or ("F" or "N")
-    if exists and well_formed:
-        if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool(False)
-        else:
-            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
-        return True, [(measurement_type, 4, val01)], ""
-    else:
-        return False, [], error_messsage
+    return mk_basic_field(measurement_type, 4, data, jfield)
 
 
 def mk_optional_boolean(measurement_type, data, jfield):
@@ -487,18 +479,7 @@ def mk_optional_boolean(measurement_type, data, jfield):
         :return                     if the field exists then a list is returned holding the appropriate entry
                                     if the field doesn't exist then an empty list is returned
         """
-    (exists, well_formed, val, error_message) = get_and_check_value(measurement_type, 4, data, jfield, True)
-    # val_type is set to 2 for checking as the field is expected to be a string "T" or "F"
-    if exists and well_formed:
-        if val in ['0', 'N', 'F', 0]:
-            val01 = mk_bool(False)
-        else:
-            val01 = mk_bool(True)  # must be 'Y' or 'T' or '1' or 1
-        return True, [(measurement_type, 4, val01)], ""
-    elif exists and not well_formed:
-        return False, [], error_message
-    else:
-        return True, [], ""  # it's optional so OK if the field is not found
+    return mk_optional_basic_field(measurement_type, 4, data, jfield)
 
 
 def mk_category_from_dict(cat_name, cat_dict, measurement_type):
@@ -756,7 +737,7 @@ def mk_bool_string(bool_val):
 
 def mk_bool(bool_val: bool) -> int:
     """
-    COnvert a boolean value to an integer ready to be inserted into the measurement table
+    Convert a boolean value to an integer ready to be inserted into the measurement table
     :param bool_val: boolean
     :return: integer (0 = False, 1 = True)
     """

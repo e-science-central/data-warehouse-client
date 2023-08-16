@@ -76,7 +76,7 @@ def concat(ls: List[List[Any]]) -> List[Any]:
 
 def mk_bool(bool_val: bool) -> int:
     """
-    COnvert a boolean value to an integer ready to be inserted into the measurement table
+    Convert a boolean value to an integer ready to be inserted into the measurement table
     :param bool_val: boolean
     :return: integer (0 = False, 1 = True)
     """
@@ -172,9 +172,7 @@ def get_field(data: DataToLoad, jfield: str) -> Tuple[bool, FieldValue]:
     :return: field exists in the data?, value of the field if it exists
     """
     val = data.get(jfield)
-    if val is None:
-        exists = False
-    elif val == "":
+    if (val is None) or (val == ""):
         exists = False
     else:
         exists = True
