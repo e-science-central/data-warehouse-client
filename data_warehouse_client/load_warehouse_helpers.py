@@ -20,7 +20,7 @@ import itertools
 from data_warehouse_client import type_checks
 from data_warehouse_client.type_definitions import (MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult,
                                                     MeasurementType, OptionalValue, ValType)
-
+from import_with_checks import get_field
 
 def process_message_group(mg_triples):
     """
@@ -120,21 +120,22 @@ def get_and_check_value(measurement_type: MeasurementType, val_type: ValType, da
     :param optional: if the field is optional
     :return: (field exists, well typed, value, error_message)
     """
-    val: OptionalValue = data.get(jfield)
-    if (val is None) or (val == ""):   # if field doesn't exist
-        if optional:   # if it's an optional field
-            return False, False, None, ""
-        else:   # it should have been there, so return error message
-            return False, False, None, missing_mandatory_type_error_message(jfield, measurement_type, data)
-    else:  # field exists
+    exists, val = get_field(data, jfield)
+    if exists:   # if field exists
         ok, canonicalised_val, error_msg = type_checks.canonicalise_value(val_type, val)
         if ok:
             if type_checks.type_check(canonicalised_val, val_type):   # if it's well typed
                 return True, True, canonicalised_val, ""
             else:  # it's not well_typed
-                return True, False, canonicalised_val, wrong_type_error_message(jfield, measurement_type, data, val_type)
+                return (True, False, canonicalised_val,
+                        wrong_type_error_message(jfield, measurement_type, data, val_type))
         else:   # canonicalisation found a type problem
             return True, False, val, error_msg
+    else:  # field doesn't exist
+        if optional:   # if it's an optional field
+            return False, False, None, ""
+        else:   # it should have been there, so return error message
+            return False, False, None, missing_mandatory_type_error_message(jfield, measurement_type, data)
 
 
 def mk_basic_field(measurement_type, val_type, data, jfield):
