@@ -152,6 +152,73 @@ def type_check(val: Any, val_type: ValType):
     return well_typed
 
 
+def canonicalise_real(value: Value) -> Tuple[bool, Value, str]:
+    """
+    canonicalise bools and floats
+    :param value: value to be inserted in the measurement table
+    :type value: Value
+
+    :return: well_formed, Value, Error Message
+    :rtype: Tuple[bool, Value, str]
+    """
+    if check_real(value):
+        return True, value, ""
+    elif check_int(value):
+        return True, float(value), ""
+    else:
+        return False, value, 'Type Error: not a real'
+
+
+def mk_bool(bool_val: bool) -> int:
+    """
+    Convert a boolean value to an integer ready to be inserted into the measurement table
+    :param bool_val: boolean
+    :return: integer (0 = False, 1 = True)
+    """
+    if bool_val:
+        return 1
+    else:
+        return 0
+
+
+def canonicalise_bool(value: Value) -> Tuple[bool, Value, str]:
+    """
+    canonicalise bools and floats
+    :param value: value to be inserted in the measurement table
+    :type value: Value
+
+    :return: well_formed, Value, Error Message
+    :rtype: Tuple[bool, Value, str]
+    """
+    if value in ['1', 1, 'Y', 'Yes', 'T', 'True', True]:
+        return True, mk_bool(True), ""
+    elif value in ['0', 0, 'N', 'No', 'F', 'False', False]:
+        return True, mk_bool(False), ""
+    else:
+        return False, value, "Type Error: not a boolean"
+
+
+def canonicalise_value(val_type: ValType, value: Value) -> Tuple[bool, Value, str]:
+    """
+    canonicalise bools and floats
+    :param val_type: type of the value
+    :type val_type: ValType
+    :param value: value to be inserted in the measurement table
+    :type value: Value
+    :return: well_formed, Value, Error Message
+    :rtype: Tuple[bool, Value, str]
+    """
+    real_type: ValType = 1
+    bounded_real_type: ValType = 8
+    bool_type: ValType = 4
+    if val_type in [real_type, bounded_real_type]:
+        return canonicalise_real(value)
+    elif val_type == bool_type:
+        return canonicalise_bool(value)
+    else:
+        return True, value, ""
+
+
 def check_value_type(val_type: ValType, value: Value, measurement_type: MeasurementType,
                      bounds: Bounds) -> Tuple[bool, str]:
     """
