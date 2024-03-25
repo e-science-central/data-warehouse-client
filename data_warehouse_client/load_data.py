@@ -17,8 +17,8 @@ from typing import Tuple, List, Optional, Dict
 from data_warehouse_client.check_bounded_values import get_bounds
 from data_warehouse_client.load_warehouse_helpers import process_message_group
 from data_warehouse_client.multiple_mg_inserts import insert_measurement_group_instances
-from data_warehouse_client.type_definitions import Loader, MeasurementGroup, LoadHelperResult, ValueTriple, DataToLoad, \
-    Study, Bounds, Trial, Participant, Source, MeasurementGroupInstance
+from data_warehouse_client.type_definitions import Loader, MeasurementGroup, LoadHelperResult, ValueTriple, \
+    DataToLoad, Study, Bounds, Trial, Participant, Source, MeasurementGroupInstance
 
 
 def get_loader_from_data_name(data_name: str, mapper: Dict[str, Loader]) -> Tuple[bool, Optional[Loader]]:

@@ -19,8 +19,8 @@ from typing import Tuple, List, Optional
 from data_warehouse_client.check_bounded_values import get_bounds
 from data_warehouse_client.file_utils import process_sql_template
 from data_warehouse_client.type_checks import check_value_type
-from data_warehouse_client.type_definitions import Study, MeasurementGroup, ValueTriple, Bounds, DateTime, Participant, \
-    Trial, Source, MeasurementType, Value, MeasurementGroupInstance, ValType
+from data_warehouse_client.type_definitions import Study, MeasurementGroup, ValueTriple, Bounds, DateTime, \
+    Participant, Trial, Source, MeasurementType, Value, MeasurementGroupInstance, ValType
 
 
 def insert_measurement_group_instances(data_warehouse_handle,

@@ -290,7 +290,7 @@ def test_each_key(mk_dw_handle, test_all_example, fn_mapper, test_study,
         measurements = dw_handle.get_measurements(test_study, measurement_type=measurement_type,
                                                   measurement_group=test_all_mg_id, group_instance=main_mgi)
         if len(measurements) == 1:  # there should only be one result returned
-            ident, time, study, participant, measurement_type, type_name, measurement_group,\
+            ident, time, study, participant, measurement_type, type_name, measurement_group, \
                 group_instance, trial, val_type, value = measurements[0]  # pick out the fields in that result
             if val_type == 4:   # is a boolean type
                 if value == 'T':  # booleans are turned into 'T' and 'F' by get measurements

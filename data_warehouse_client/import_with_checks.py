@@ -172,7 +172,7 @@ def get_field(data: DataToLoad, field: str) -> Tuple[bool, FieldValue]:
     :param field: field name
     :return: field exists in the data?, value of the field if it exists
     """
-    val = data.get(jfield)
+    val = data.get(field)
     if (val is None) or (val == ""):
         exists = False
     else:
@@ -200,7 +200,7 @@ def make_field(measurement_type: MeasurementType, val_type: ValType, data: DataT
             if well_typed:
                 return True, [(measurement_type, val_type, canonicalised_val)], ""
             else:
-                return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
+                return False, [], wrong_type_error_message(field, measurement_type, data, val_type, error_message)
         else:  # problem with a real or bool
             return False, [], error_msg
     else:
