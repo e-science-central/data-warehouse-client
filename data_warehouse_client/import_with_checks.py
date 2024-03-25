@@ -17,7 +17,7 @@ from typing import Tuple, List, Optional, Dict, Callable, Any
 from functools import reduce
 from itertools import chain
 
-from data_warehouse_client.type_checks import check_value_type, category_values, check_string
+from data_warehouse_client.type_checks import check_value_type, category_values, check_string, canonicalise_value
 from data_warehouse_client.type_definitions import MeasurementGroup, ValueTriple, MeasurementType, DataToLoad,\
      ValType, FieldValue, Bounds, Loader, LoadHelperResult, LoaderResult
 
@@ -76,7 +76,7 @@ def concat(ls: List[List[Any]]) -> List[Any]:
 
 def mk_bool(bool_val: bool) -> int:
     """
-    COnvert a boolean value to an integer ready to be inserted into the measurement table
+    Convert a boolean value to an integer ready to be inserted into the measurement table
     :param bool_val: boolean
     :return: integer (0 = False, 1 = True)
     """
@@ -172,9 +172,7 @@ def get_field(data: DataToLoad, jfield: str) -> Tuple[bool, FieldValue]:
     :return: field exists in the data?, value of the field if it exists
     """
     val = data.get(jfield)
-    if val is None:
-        exists = False
-    elif val == "":
+    if (val is None) or (val == ""):
         exists = False
     else:
         exists = True
@@ -195,11 +193,15 @@ def make_field(measurement_type: MeasurementType, val_type: ValType, data: DataT
     """
     exists, val = get_field(data, jfield)  # try to read the field from the dictionary
     if exists:   # field exists
-        well_typed, error_message = check_value_type(val_type, val, measurement_type, bounds)
-        if well_typed:
-            return True, [(measurement_type, val_type, val)], ""
-        else:
-            return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
+        ok, canonicalised_val, error_msg = canonicalise_value(val_type, val)
+        if ok:  # reals and bools have valid values
+            well_typed, error_message = check_value_type(val_type, canonicalised_val, measurement_type, bounds)
+            if well_typed:
+                return True, [(measurement_type, val_type, canonicalised_val)], ""
+            else:
+                return False, [], wrong_type_error_message(jfield, measurement_type, data, val_type, error_message)
+        else:  # problem with a real or bool
+            return False, [], error_msg
     else:
         if optional:  # optional field
             return True, [], ""  # Field doesn't exist, which is OK as this is an optional field

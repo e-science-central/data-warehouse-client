@@ -518,7 +518,7 @@ class DataWarehouse:
                 val_real = None
                 insert_error = True
                 break   # Don't try to execute the insert if there's an error in the val_type
-            if val_type == 4 and value not in ['0', '1']:    # Error in boolean value
+            if val_type == 4 and value not in [0, 1]:    # Error in boolean value
                 error_message = f'[Error in boolean value in insert_measurement_group' \
                                 f'Study = {study}, Participant = {participant}, Trial = {trial}, ' \
                                 f'Measurement Group = {measurement_group}, Measurement Type = {measurement_type},' \

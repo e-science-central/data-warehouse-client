@@ -19,6 +19,7 @@ MeasurementType = int
 ValType = int
 DateTime = datetime
 Value = Union[int, float, str, DateTime]
+OptionalValue = Union[Value, None]
 ValueTriple = Tuple[MeasurementType, ValType, Value]
 
 Source = int
