@@ -13,14 +13,14 @@
 # limitations under the License.
 
 
-from typing import Tuple, List, Optional, Dict, Callable, Any
+from typing import Tuple, List, Optional, Dict, Any
 from functools import reduce
 from itertools import chain
 
 
 from data_warehouse_client.type_checks import check_value_type, category_values, check_string, canonicalise_value
 from data_warehouse_client.type_definitions import MeasurementGroup, ValueTriple, MeasurementType, DataToLoad, \
-     ValType, FieldValue, Bounds, Loader, LoadHelperResult, LoaderResult
+     ValType, FieldValue, Bounds, Loader, LoadHelperResult
 
 
 def process_measurement_group(mg_triples):
@@ -776,7 +776,7 @@ def load_a_list(data: DataToLoad, field: str, loader: Loader, mg_id: Measurement
         return concat(list(map(lambda e: loader(e, bounds)[0], list_val)))
 
 
-def load_list(data: DataToLoad, field: str, loader: Callable[[DataToLoad], LoaderResult],
+def load_list(data: DataToLoad, field: str, loader: Loader,
               mg_id: MeasurementGroup, bounds: Bounds) -> \
         List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
     """
@@ -791,7 +791,7 @@ def load_list(data: DataToLoad, field: str, loader: Callable[[DataToLoad], Loade
     return load_a_list(data, field, loader, mg_id, False, bounds)
 
 
-def load_optional_list(data: DataToLoad, field: str, loader: Callable[[DataToLoad], LoaderResult],
+def load_optional_list(data: DataToLoad, field: str, loader: Loader,
                        mg_id: MeasurementGroup, bounds: Bounds) -> \
         List[Tuple[MeasurementGroup, List[LoadHelperResult]]]:
     """
