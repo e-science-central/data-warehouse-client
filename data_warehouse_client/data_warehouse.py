@@ -751,7 +751,7 @@ class DataWarehouse:
     ###########################################################################
     # Study methods
     ###########################################################################
-    def get_studies(self):
+    def get_studies(self) -> list:
         """
         Get all studies in the data warehouse
         :return: list of all the studies (id and studyid)
@@ -760,7 +760,7 @@ class DataWarehouse:
         res = self.return_query_result(q)
         return res
 
-    def get_study(self, local_study_id):
+    def get_study(self, local_study_id: str) -> tuple:
         """
         Gets the unique id of a study from a local study ID
         :param local_study_id: the local study id (researcher name for the study)
@@ -792,7 +792,7 @@ class DataWarehouse:
         self.dbConnection.commit()
         return free_id
     
-    def add_study_if_unique(self: object, local_study_id: str):
+    def add_study_if_unique(self: object, local_study_id: str) -> tuple:
         """
         Add a study into the data warehouse unless its label already exists
         :param local_study_id: researcher-defined label identifying the study
@@ -828,6 +828,48 @@ class DataWarehouse:
             # print("Trial", trial_description, " not found in trial table")
             return found, None
 
+    def add_trial(self: object, study: int, trial_description: str) -> int:
+        """
+        Add a trial into the data warehouse, for a particular study
+        :param study: the study id to attach the trial to
+        :param trial_description: a researcher-defined relevant string describing the trial
+        :return the database id of the new trial
+        """
+        cur = self.dbConnection.cursor()
+        q = " SELECT MAX(id) FROM trial; "
+        res = self.return_query_result(q)  # find the biggest id
+        max_id = res[0][0]
+        if max_id is None:
+            free_id = 0
+        else:
+            free_id = max_id + 1  # the next free id
+        cur.execute("""
+                    INSERT INTO trial (id, study, description)
+                    VALUES (%s, %s, %s);
+                    """,
+                    (free_id, study, trial_description))  # insert the new entry
+        self.dbConnection.commit()
+        return free_id
+    
+    def add_trial_if_unique(self: object, study: int, trial_description: str) -> tuple:
+        """
+        Add a trial into the data warehouse unless its label already exists
+        :param study: the study id to attach the trial to
+        :param trial_description: a researcher-defined relevant string describing the trial
+        :return (trial added, (id(s)))
+        """
+        cur = self.dbConnection.cursor()
+        q = " SELECT (id) FROM trial WHERE description='{}' AND study={};".format(trial_description, study)
+        res = self.return_query_result(q)
+        trialyid_already_exists = len(res) > 0
+        if trialyid_already_exists:
+            return False, tuple([res[i][0] for i in range(len(res))])
+        else:
+            return True, (self.add_trial(study, trial_description),)
+    
+    ###########################################################################
+    # Category methods
+    ###########################################################################
     def get_category_id_from_name(self, study, measurement_type, category_name):
         """
         return the category id of a category
