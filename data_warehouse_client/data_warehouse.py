@@ -454,6 +454,28 @@ class DataWarehouse:
         cur.execute(query_text)
         self.dbConnection.commit()
 
+    ###########################################################################
+    # Measurement Group methods
+    ###########################################################################
+    def get_measurement_group(self, study_id, measurementgroup_description):
+        """
+        maps from the measurementgroup_description to the measurement group id used within the warehouse
+        :param study_id: the study id
+        :param measurementgroup_description: the description field of the measurement group
+        :return (whether the measurement group exists, the measurement group)
+        """
+
+        q = " SELECT id FROM measurementgroup " \
+            " WHERE measurementgroup.study       = " + str(study_id) + \
+            " AND   measurementgroup.description = '" + measurementgroup_description + "';"
+        res = self.return_query_result(q)
+        found = len(res) == 1
+        if found:
+            return found, res[0][0]
+        else:
+            # print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
+            return found, res
+
     def get_all_measurement_groups(self, study):
         """
         A helper function that returns information on all the measurement groups in a study
@@ -572,6 +594,63 @@ class DataWarehouse:
             cur.close()
         return success, group_instance, error_message
 
+    def n_mg_instances(self, mg_id, study):
+        """
+        Return the number of instances of a measurement group in a study
+        :param mg_id:
+        :param study:
+        :return: number of instances
+        """
+        q = " SELECT COUNT(DISTINCT measurement.groupinstance) FROM measurement "
+        q += " WHERE measurement.study       = " + str(study)
+        q += " AND measurement.measurementgroup = " + str(mg_id)
+        q += " ;"
+        res = self.return_query_result(q)
+        return res[0][0]
+
+    def mg_instances(self, mg_id, study):
+        """
+        Return the ids of instances of a measurement group in a study
+        :param mg_id:
+        :param study:
+        :return: ids
+        """
+        q = " SELECT DISTINCT measurement.groupinstance FROM measurement "
+        q += " WHERE measurement.study       = " + str(study)
+        q += " AND measurement.measurementgroup = " + str(mg_id)
+        q += " ORDER BY measurement.groupinstance;"
+        res = self.return_query_result(q)
+        return res
+    
+    def get_type_ids_in_measurement_group(self, study, measurement_group):
+        """
+        A helper function that returns the ids of the measurement types in a measurement group
+        :param study: study id
+        :param measurement_group: measurement group id
+        :return: list of ids of the measurement types in the measurement group
+        """
+        q = ""
+        q += " SELECT "
+        q += "    measurementtypetogroup.measurementtype  "
+        q += " FROM "
+        q += "    measurementtypetogroup "
+        q += " WHERE "
+        q += "    measurementtypetogroup.measurementgroup = "
+        q += str(measurement_group)
+        q += " AND "
+        q += "    measurementtypetogroup.study = "
+        q += str(study)
+        q += " ORDER BY measurementtypetogroup.measurementtype"
+        q += ";"
+        type_ids = self.return_query_result(q)
+        result = []
+        for r in type_ids:
+            result = result + [r[0]]
+        return result
+    
+    ###########################################################################
+    # Participant methods
+    ###########################################################################
     def get_participant_by_id(self, study, participant):
         """
          maps from unique participant.id to the local id stored with measurements in the warehouse
@@ -606,25 +685,6 @@ class DataWarehouse:
             return found, res[0][0]
         else:
             # print("Participant", local_participant_id, " not found in participant.participantid")
-            return found, res
-
-    def get_measurement_group(self, study_id, measurementgroup_description):
-        """
-        maps from the measurementgroup_description to the measurement group id used within the warehouse
-        :param study_id: the study id
-        :param measurementgroup_description: the description field of the measurement group
-        :return (whether the measurement group exists, the measurement group)
-        """
-
-        q = " SELECT id FROM measurementgroup " \
-            " WHERE measurementgroup.study       = " + str(study_id) + \
-            " AND   measurementgroup.description = '" + measurementgroup_description + "';"
-        res = self.return_query_result(q)
-        found = len(res) == 1
-        if found:
-            return found, res[0][0]
-        else:
-            # print("Event_type", measurementgroup_description, " not found in measurementgroup.description")
             return found, res
 
     def get_participants(self, study_id):
@@ -688,60 +748,68 @@ class DataWarehouse:
             self.dbConnection.commit()
             return True, participant_id
 
-    def n_mg_instances(self, mg_id, study):
+    ###########################################################################
+    # Study methods
+    ###########################################################################
+    def get_studies(self):
         """
-        Return the number of instances of a measurement group in a study
-        :param mg_id:
-        :param study:
-        :return: number of instances
+        Get all studies in the data warehouse
+        :return: list of all the studies (id and studyid)
         """
-        q = " SELECT COUNT(DISTINCT measurement.groupinstance) FROM measurement "
-        q += " WHERE measurement.study       = " + str(study)
-        q += " AND measurement.measurementgroup = " + str(mg_id)
-        q += " ;"
-        res = self.return_query_result(q)
-        return res[0][0]
-
-    def mg_instances(self, mg_id, study):
-        """
-        Return the ids of instances of a measurement group in a study
-        :param mg_id:
-        :param study:
-        :return: ids
-        """
-        q = " SELECT DISTINCT measurement.groupinstance FROM measurement "
-        q += " WHERE measurement.study       = " + str(study)
-        q += " AND measurement.measurementgroup = " + str(mg_id)
-        q += " ORDER BY measurement.groupinstance;"
+        q = " SELECT (id, studyid) FROM study; "
         res = self.return_query_result(q)
         return res
 
-    def get_type_ids_in_measurement_group(self, study, measurement_group):
+    def get_study(self, local_study_id):
         """
-        A helper function that returns the ids of the measurement types in a measurement group
-        :param study: study id
-        :param measurement_group: measurement group id
-        :return: list of ids of the measurement types in the measurement group
+        Gets the unique id of a study from a local study ID
+        :param local_study_id: the local study id (researcher name for the study)
+        :return The data warehouse id of the study
         """
-        q = ""
-        q += " SELECT "
-        q += "    measurementtypetogroup.measurementtype  "
-        q += " FROM "
-        q += "    measurementtypetogroup "
-        q += " WHERE "
-        q += "    measurementtypetogroup.measurementgroup = "
-        q += str(measurement_group)
-        q += " AND "
-        q += "    measurementtypetogroup.study = "
-        q += str(study)
-        q += " ORDER BY measurementtypetogroup.measurementtype"
-        q += ";"
-        type_ids = self.return_query_result(q)
-        result = []
-        for r in type_ids:
-            result = result + [r[0]]
-        return result
+        q = " SELECT id FROM study WHERE study.studyid ='{}'; ".format(local_study_id)
+        res = self.return_query_result(q)
+        return (len(res) > 0), tuple(res)
 
+    def add_study(self: object, local_study_id: str) -> int:
+        """
+        Add a study into the data warehouse
+        :param local_study_id: researcher-defined label identifying the study
+        :return the database id of the new study
+        """
+        cur = self.dbConnection.cursor()
+        q = " SELECT MAX(id) FROM study; "
+        res = self.return_query_result(q)  # find the biggest id
+        max_id = res[0][0]
+        if max_id is None:
+            free_id = 0
+        else:
+            free_id = max_id + 1  # the next free id
+        cur.execute("""
+                    INSERT INTO study (id, studyid)
+                    VALUES (%s, %s);
+                    """,
+                    (free_id, local_study_id))  # insert the new entry
+        self.dbConnection.commit()
+        return free_id
+    
+    def add_study_if_unique(self: object, local_study_id: str):
+        """
+        Add a study into the data warehouse unless its label already exists
+        :param local_study_id: researcher-defined label identifying the study
+        :return (study added, (studyid(s)))
+        """
+        cur = self.dbConnection.cursor()
+        q = " SELECT (id) FROM study WHERE studyid='{}';".format(local_study_id)
+        res = self.return_query_result(q)
+        studyid_already_exists = len(res) > 0
+        if studyid_already_exists:
+            return False, tuple([res[i][0] for i in range(len(res))])
+        else:
+            return True, (self.add_study(local_study_id),)
+    
+    ###########################################################################
+    # Trial methods
+    ###########################################################################
     def get_trial_id_from_description(self, study, trial_description):
         """
          maps from the trial description to the trial id
