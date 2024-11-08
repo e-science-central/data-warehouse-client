@@ -828,6 +828,15 @@ class DataWarehouse:
             # print("Trial", trial_description, " not found in trial table")
             return found, None
 
+    def get_trials_in_study(self: object, study: int) -> list:
+        """
+        Get all trials in the given study ID
+        :return: list of all the trials (id, study, description)
+        """
+        q = " SELECT (id, study, description) FROM trial WHERE trial.study={} ; ".format(study)
+        res = self.return_query_result(q)
+        return res
+
     def add_trial(self: object, study: int, trial_description: str) -> int:
         """
         Add a trial into the data warehouse, for a particular study
@@ -853,7 +862,7 @@ class DataWarehouse:
     
     def add_trial_if_unique(self: object, study: int, trial_description: str) -> tuple:
         """
-        Add a trial into the data warehouse unless its label already exists
+        Add a trial into the data warehouse unless its label already exists in the given study
         :param study: the study id to attach the trial to
         :param trial_description: a researcher-defined relevant string describing the trial
         :return (trial added, (id(s)))
