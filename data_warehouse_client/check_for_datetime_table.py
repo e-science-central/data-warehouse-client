@@ -14,7 +14,7 @@
 from data_warehouse_client.file_utils import process_sql_template
 
 
-# determine if there's a a table called 'boundsdatetime' (this was added in later versions of the warehouse design)
+# determine if there's a table called 'boundsdatetime' (this was added in later versions of the warehouse design)
 
 
 def datetimebounds_table_in_dw(dw_handle):

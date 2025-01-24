@@ -18,12 +18,9 @@ from typing import Tuple, List, Any, Callable
 import itertools
 
 from data_warehouse_client import type_checks
-from data_warehouse_client.type_definitions import (MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult,
-                                                    MeasurementType, OptionalValue, ValType)
 from data_warehouse_client.import_with_checks import get_field
 from data_warehouse_client.type_definitions import (MeasurementGroup, DataToLoad, LoadHelperResult, LoaderResult,
                                                     MeasurementType, OptionalValue, ValType)
-# from import_with_checks import get_field
 
 
 def process_message_group(mg_triples):
